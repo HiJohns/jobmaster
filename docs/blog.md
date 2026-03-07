@@ -14,7 +14,11 @@
 jobmaster/
 ├── cmd/           # Application entry points
 ├── internal/      # Private application code
+│   ├── models/    # Data models (User, Order, Organization)
+│   ├── repositories/ # Data access layer
+│   └── services/  # Business logic
 ├── pkg/           # Public libraries
+│   └── permissions/ # RBAC permission matrix
 ├── api/           # API definitions (protobuf, OpenAPI)
 ├── frontend/      # React + TypeScript frontend
 ├── docs/          # Documentation
@@ -53,6 +57,99 @@ Following Google Engineering Practices:
 - React 18 with TypeScript (strict mode)
 - Ant Design 5.x for UI components
 - Zustand for state management
+
+---
+
+## Dependencies & Organization Model - 2024-03-07
+
+### Completed Tasks
+- [x] Initialize Go module: `go mod init jobmaster`
+- [x] Install Go dependencies:
+  - github.com/gin-gonic/gin (Web framework)
+  - gorm.io/gorm (ORM)
+  - gorm.io/driver/postgres (PostgreSQL driver)
+  - gorm.io/datatypes (JSONB support)
+- [x] Initialize frontend package.json
+- [x] Install frontend dependencies:
+  - antd ^5.15.0
+  - react ^18.2.0
+  - zustand ^4.5.2
+  - @tanstack/react-query ^5.24.0
+- [x] Design 5-party organization model
+- [x] Implement User model with role-based permissions
+- [x] Implement Order model with state machine
+- [x] Create permission matrix (RBAC)
+
+### Organization Model (五方协同)
+
+**Entities:**
+1. **BrandHQ** (总店) - Global configuration, cross-region coordination
+2. **Store** (分店) - Order creation, on-site coordination, final approval
+3. **MainContractor** (工程公司) - Order assessment, vendor assignment
+4. **Vendor** (供应商) - Execution coordination
+5. **Engineer** (工程师) - Field work execution
+
+**Relationships:**
+```
+BrandHQ (1) ───< (N) Store
+              ───< (N) User
+
+MainContractor (1) ───< (N) Vendor
+                   ───< (N) User
+                   ───< (N) Order
+
+Vendor (1) ───< (N) Engineer
+           ───< (N) User
+           ───< (N) Order
+
+Order ───> Store (creator)
+      ───> MainContractor (dispatcher)
+      ───> Vendor (assigned)
+      ───> Engineer (executor)
+```
+
+**Permission Matrix:**
+| Role | Create | Dispatch | Execute | Approve | View |
+|------|--------|----------|---------|---------|------|
+| BrandHQ | - | - | - | - | All |
+| Store | ✅ | - | - | ✅ | Own |
+| MainContractor | - | ✅ | - | - | Assigned |
+| Vendor | - | - | ✅ | - | Assigned |
+| Engineer | - | - | ✅ | - | Assigned |
+
+### Order State Machine
+```
+PENDING (报修)
+    ↓ [Store creates order]
+DISPATCHED (已指派)
+    ↓ [MainContractor assigns vendor]
+RESERVED (已预约)
+    ↓ [Vendor confirms schedule]
+ARRIVED (已到场)
+    ↓ [Engineer GPS check-in]
+WORKING (施工中)
+    ↓ [Engineer starts work]
+FINISHED (离场确认)
+    ↓ [Engineer completes work]
+OBSERVING (观察期)
+    ↓ [Store approves]
+CLOSED (已关闭)
+    ↑ [Store rejects - goes back to DISPATCHED]
+```
+
+### Key Files Created
+- `internal/models/user.go` - User entity with roles
+- `internal/models/organization.go` - BrandHQ, Store, MainContractor, Vendor, Engineer
+- `internal/models/order.go` - Order entity with state machine
+- `pkg/permissions/permissions.go` - RBAC permission system
+- `internal/models/README.md` - Model documentation
+
+### Next Steps
+- [ ] Create database migrations
+- [ ] Implement repository layer
+- [ ] Set up Gin router and middleware
+- [ ] Create authentication service
+- [ ] Implement order API endpoints
 
 ---
 

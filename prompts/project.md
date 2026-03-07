@@ -166,26 +166,26 @@ const OrderContainer: React.FC = () => {
 ## 6. 任务看板
 
 ### [READY]
-*暂无*
+- [x] 项目基础结构初始化
+  - 创建 docs/blog.md 文件
+  - 建立 Go 项目目录结构: cmd/, internal/, pkg/
+  - 建立前端目录: frontend/
+  - 建立接口定义目录: api/
+- [x] 依赖管理初始化
+  - 执行 go mod init jobmaster
+  - 安装 Go 依赖: gin, gorm, pgx
+  - 初始化前端 package.json
+  - 安装前端依赖: Ant Design, Zustand
+- [x] 组织架构模型设计
+  - 五方角色的数据模型定义 (internal/models/)
+  - 权限矩阵设计 (pkg/permissions/)
+  - 角色关联关系（Store ↔ Vendor ↔ Engineer）
 
 ### [WIP]
 *暂无*
 
 ### [TODO]
-- [ ] 组织架构模型设计
-  - 五方角色的数据模型定义
-  - 权限矩阵设计
-  - 角色关联关系（Store ↔ Vendor ↔ Engineer）
-- [ ] 项目基础结构初始化
-  - 创建 docs/blog.md 文件
-  - 建立 Go 项目目录结构: cmd/, internal/, pkg/
-  - 建立前端目录: frontend/
-  - 建立接口定义目录: api/
-- [ ] 依赖管理初始化
-  - 执行 go mod init jobmaster
-  - 安装 Go 依赖: gin, gorm, pgx
-  - 初始化前端 package.json
-  - 安装前端依赖: Ant Design, Zustand
+*暂无*
 
 ---
 
