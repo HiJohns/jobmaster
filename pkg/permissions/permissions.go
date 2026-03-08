@@ -1,7 +1,7 @@
 package permissions
 
 import (
-	"jobmaster/internal/models"
+	"jobmaster/internal/model"
 )
 
 // Action represents a system action
@@ -33,40 +33,40 @@ const (
 )
 
 // PermissionMatrix defines what actions each role can perform
-var PermissionMatrix = map[models.Role][]Action{
-	models.RoleBrandHQ: {
+var PermissionMatrix = map[model.UserRole][]Action{
+	model.UserRoleBrandHQ: {
 		ActionOrderView,
 		ActionUserCreate, ActionUserView, ActionUserUpdate, ActionUserDelete,
 		ActionOrgView, ActionOrgManage,
 		ActionReportView, ActionReportExport,
 	},
-	models.RoleStore: {
+	model.UserRoleStore: {
 		ActionOrderCreate, ActionOrderView, ActionOrderApprove, ActionOrderReject, ActionOrderCancel,
 		ActionUserView,
 		ActionOrgView,
 		ActionReportView,
 	},
-	models.RoleMainContractor: {
+	model.UserRoleMainContractor: {
 		ActionOrderView, ActionOrderDispatch,
 		ActionUserCreate, ActionUserView, ActionUserUpdate,
 		ActionOrgView, ActionOrgManage,
 		ActionReportView, ActionReportExport,
 	},
-	models.RoleVendor: {
+	model.UserRoleVendor: {
 		ActionOrderView, ActionOrderExecute,
 		ActionUserView,
 		ActionOrgView,
 		ActionReportView,
 	},
-	models.RoleEngineer: {
+	model.UserRoleEngineer: {
 		ActionOrderView, ActionOrderExecute,
 		ActionReportView,
 	},
 }
 
 // HasPermission checks if a user has permission to perform an action
-func HasPermission(user *models.User, action Action) bool {
-	if user == nil || user.Status != models.UserStatusActive {
+func HasPermission(user *model.User, action Action) bool {
+	if user == nil || user.Status != model.UserStatusActive {
 		return false
 	}
 
@@ -84,26 +84,27 @@ func HasPermission(user *models.User, action Action) bool {
 }
 
 // CanPerformOrderAction checks if user can perform a specific order action based on order status
-func CanPerformOrderAction(user *models.User, order *models.Order, action Action) bool {
+func CanPerformOrderAction(user *model.User, order *model.Order, action Action) bool {
 	if !HasPermission(user, action) {
 		return false
 	}
 
 	switch action {
 	case ActionOrderCreate:
-		return user.CanCreateOrder()
+		return user.Role == model.UserRoleStore && user.Status == model.UserStatusActive
 	case ActionOrderDispatch:
-		return user.CanDispatchOrder() && order.Status == models.OrderStatusPending
+		return user.Role == model.UserRoleMainContractor && order.Status == model.OrderStatusPending
 	case ActionOrderExecute:
-		return user.CanExecuteOrder() && (order.Status == models.OrderStatusReserved || order.Status == models.OrderStatusArrived)
+		return (user.Role == model.UserRoleVendor || user.Role == model.UserRoleEngineer) &&
+			(order.Status == model.OrderStatusReserved || order.Status == model.OrderStatusArrived)
 	case ActionOrderApprove, ActionOrderReject:
-		return user.CanApproveOrder() && order.Status == models.OrderStatusObserving
+		return user.Role == model.UserRoleStore && order.Status == model.OrderStatusObserving
 	case ActionOrderCancel:
 		// Store can cancel pending orders, MainContractor can cancel dispatched orders
-		if user.Role == models.RoleStore && order.Status == models.OrderStatusPending {
+		if user.Role == model.UserRoleStore && order.Status == model.OrderStatusPending {
 			return true
 		}
-		if user.Role == models.RoleMainContractor && order.Status == models.OrderStatusDispatched {
+		if user.Role == model.UserRoleMainContractor && order.Status == model.OrderStatusDispatched {
 			return true
 		}
 		return false
@@ -113,8 +114,8 @@ func CanPerformOrderAction(user *models.User, order *models.Order, action Action
 }
 
 // GetAllowedActions returns all actions a user can perform
-func GetAllowedActions(user *models.User) []Action {
-	if user == nil || user.Status != models.UserStatusActive {
+func GetAllowedActions(user *model.User) []Action {
+	if user == nil || user.Status != model.UserStatusActive {
 		return []Action{}
 	}
 
@@ -130,23 +131,23 @@ func GetAllowedActions(user *models.User) []Action {
 }
 
 // GetOrderStatusPermissions returns what actions can be performed on an order in a specific status
-func GetOrderStatusPermissions(status models.OrderStatus) []Action {
+func GetOrderStatusPermissions(status model.OrderStatus) []Action {
 	switch status {
-	case models.OrderStatusPending:
+	case model.OrderStatusPending:
 		return []Action{ActionOrderView, ActionOrderDispatch, ActionOrderCancel}
-	case models.OrderStatusDispatched:
+	case model.OrderStatusDispatched:
 		return []Action{ActionOrderView, ActionOrderDispatch, ActionOrderCancel}
-	case models.OrderStatusReserved:
+	case model.OrderStatusReserved:
 		return []Action{ActionOrderView, ActionOrderExecute}
-	case models.OrderStatusArrived:
+	case model.OrderStatusArrived:
 		return []Action{ActionOrderView, ActionOrderExecute}
-	case models.OrderStatusWorking:
+	case model.OrderStatusWorking:
 		return []Action{ActionOrderView, ActionOrderExecute}
-	case models.OrderStatusFinished:
+	case model.OrderStatusFinished:
 		return []Action{ActionOrderView}
-	case models.OrderStatusObserving:
+	case model.OrderStatusObserving:
 		return []Action{ActionOrderView, ActionOrderApprove, ActionOrderReject}
-	case models.OrderStatusClosed:
+	case model.OrderStatusClosed:
 		return []Action{ActionOrderView}
 	default:
 		return []Action{ActionOrderView}

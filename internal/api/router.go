@@ -1,0 +1,57 @@
+package api
+
+import (
+	"github.com/gin-gonic/gin"
+	"jobmaster/internal/middleware"
+)
+
+// SetupRouter configures the API routes with middleware pipeline
+// Middleware execution order: Recovery -> Logger -> Auth -> Impersonation -> Tenant
+func SetupRouter() *gin.Engine {
+	r := gin.New()
+
+	// Global middleware - system level
+	r.Use(gin.Recovery())
+	r.Use(gin.Logger())
+
+	// Health check endpoint (no auth required)
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status": "ok",
+		})
+	})
+
+	// API v1 routes
+	v1 := r.Group("/api/v1")
+	{
+		// Public routes (no authentication required)
+		public := v1.Group("/auth")
+		{
+			public.POST("/login", Login)
+		}
+
+		// Protected routes (authentication required)
+		protected := v1.Group("")
+		protected.Use(middleware.AuthMiddleware())
+		protected.Use(middleware.ImpersonationMiddleware())
+		protected.Use(middleware.TenantMiddleware())
+		{
+			// Auth routes (require authentication)
+			protected.POST("/auth/refresh", RefreshToken)
+
+			// Organization routes (require authentication)
+			protected.GET("/organizations", ListOrganizations)
+			protected.POST("/organizations", CreateOrganization)
+			protected.GET("/organizations/tree", GetOrganizationTree)
+
+			// User routes (require authentication)
+			protected.GET("/users", ListUsers)
+			protected.POST("/users", CreateUser)
+			protected.GET("/users/:id", GetUser)
+			protected.PUT("/users/:id", UpdateUser)
+			protected.DELETE("/users/:id", DeleteUser)
+		}
+	}
+
+	return r
+}

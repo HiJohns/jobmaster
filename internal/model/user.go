@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -79,4 +80,20 @@ func (u *User) CanManageOrders() bool {
 // CanExecuteWork checks if the user can execute maintenance work
 func (u *User) CanExecuteWork() bool {
 	return u.Role == UserRoleEngineer || u.Role == UserRoleVendor
+}
+
+// HashPassword hashes the password using bcrypt
+func (u *User) HashPassword(password string) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	u.PasswordHash = string(hashedPassword)
+	return nil
+}
+
+// CheckPassword verifies the password against the stored hash
+func (u *User) CheckPassword(password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password))
+	return err == nil
 }

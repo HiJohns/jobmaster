@@ -180,10 +180,21 @@ const OrderContainer: React.FC = () => {
   - 五方角色的数据模型定义 (internal/models/)
   - 权限矩阵设计 (pkg/permissions/)
   - 角色关联关系（Store ↔ Vendor ↔ Engineer）
-- [x] 数据库基础架构 (2024-03-08)
+- [x] 数据库基础架构 (2026-03-08)
   - PostgreSQL 连接池初始化 (sync.Once 线程安全)
   - Organization 模型 (HQ, Store, MainContractor, Vendor)
   - User 模型 (RBAC 角色权限)
+- [x] 用户认证与权限系统 (2026-03-08)
+  - bcrypt 密码哈希与验证
+  - JWT Token 生成与验证 (环境变量密钥)
+  - 登录 API 与 Token 刷新
+  - Auth/Impersonation/Tenant 中间件
+  - 统一 API 响应格式
+- [x] 组织架构与用户管理 API (2026-03-08)
+  - 组织创建、列表、树状查询 (BrandHQ/MainContractor)
+  - 用户 CRUD、分页查询 (BrandHQ/MainContractor)
+  - 角色权限校验与租户隔离
+  - 模型目录重构 (models → model)
 
 ### [READY]
 *暂无*

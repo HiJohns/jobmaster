@@ -1,11 +1,18 @@
-package models
+package model
 
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
+
+// GPSLocation represents GPS coordinates
+type GPSLocation struct {
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+}
 
 // OrderStatus represents the work order state machine
 type OrderStatus string
@@ -23,13 +30,16 @@ const (
 
 // Order represents a work order in the system
 type Order struct {
-	ID               uint64      `gorm:"primaryKey" json:"id"`
-	OrderNumber      string      `gorm:"uniqueIndex;not null" json:"order_number"`
-	Status           OrderStatus `gorm:"index;default:pending" json:"status"`
-	StoreID          uint64      `gorm:"index;not null" json:"store_id"`
-	MainContractorID *uint64     `gorm:"index" json:"main_contractor_id,omitempty"`
-	VendorID         *uint64     `gorm:"index" json:"vendor_id,omitempty"`
-	EngineerID       *uint64     `gorm:"index" json:"engineer_id,omitempty"`
+	ID          uuid.UUID   `gorm:"type:uuid;primary_key" json:"id"`
+	OrderNumber string      `gorm:"uniqueIndex;not null" json:"order_number"`
+	Status      OrderStatus `gorm:"index;default:pending" json:"status"`
+	TenantID    uuid.UUID   `gorm:"type:uuid;not null;index" json:"tenant_id"`
+
+	// Organization relationships
+	StoreID          uuid.UUID  `gorm:"type:uuid;not null;index" json:"store_id"`
+	MainContractorID *uuid.UUID `gorm:"type:uuid;index" json:"main_contractor_id,omitempty"`
+	VendorID         *uuid.UUID `gorm:"type:uuid;index" json:"vendor_id,omitempty"`
+	EngineerID       *uuid.UUID `gorm:"type:uuid;index" json:"engineer_id,omitempty"`
 
 	// Equipment info (stored in JSONB)
 	EquipmentInfo datatypes.JSON `gorm:"type:jsonb" json:"equipment_info"`
@@ -70,15 +80,23 @@ type Order struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Relationships
-	Store          Store           `gorm:"foreignKey:StoreID" json:"store,omitempty"`
-	MainContractor *MainContractor `gorm:"foreignKey:MainContractorID" json:"main_contractor,omitempty"`
-	Vendor         *Vendor         `gorm:"foreignKey:VendorID" json:"vendor,omitempty"`
-	Engineer       *Engineer       `gorm:"foreignKey:EngineerID" json:"engineer,omitempty"`
+	Store          Organization  `gorm:"foreignKey:StoreID" json:"store,omitempty"`
+	MainContractor *Organization `gorm:"foreignKey:MainContractorID" json:"main_contractor,omitempty"`
+	Vendor         *Organization `gorm:"foreignKey:VendorID" json:"vendor,omitempty"`
+	Engineer       *User         `gorm:"foreignKey:EngineerID" json:"engineer,omitempty"`
 }
 
 // TableName returns the table name for Order
 func (Order) TableName() string {
 	return "orders"
+}
+
+// BeforeCreate hook to generate UUID
+func (o *Order) BeforeCreate(tx *gorm.DB) error {
+	if o.ID == uuid.Nil {
+		o.ID = uuid.New()
+	}
+	return nil
 }
 
 // IsValidTransition checks if a status transition is valid
@@ -114,5 +132,5 @@ func (o *Order) CanTransitionTo(status OrderStatus) bool {
 
 // IsRejected returns true if the order was rejected during observation
 func (o *Order) IsRejected() bool {
-	return o.RejectedAt != nil && o.RejectionReason != ""
+	return o.Status == OrderStatusDispatched && o.RejectedAt != nil && o.RejectionReason != ""
 }

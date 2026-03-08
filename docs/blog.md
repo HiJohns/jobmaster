@@ -200,4 +200,79 @@ CLOSED (已关闭)
 
 ---
 
+## Authentication & API Implementation - 2026-03-08
+
+### Completed Tasks
+- [x] User authentication core with bcrypt password hashing
+- [x] JWT token generation and validation with secure secret handling
+- [x] Login API with proper error handling and context
+- [x] Global middleware pipeline: Auth, Impersonation (read-only mode), Tenant isolation
+- [x] Unified API response format: `{ "code": 200, "data": {}, "msg": "success" }`
+- [x] Organization management API (create, list, tree view) for BrandHQ/MainContractor
+- [x] User management API (CRUD, pagination, role-based filtering) for BrandHQ/MainContractor
+- [x] Model directory refactor: `internal/models/` → `internal/model/` (singular convention)
+
+### Security Features
+
+**JWT Implementation (`pkg/utils/jwt.go`):**
+- Environment-based secret configuration (JWT_SECRET required)
+- Claims include: UserID, OrgID, TenantID, Role, IsImpersonated
+- Token expiration: 24 hours
+- Proper error wrapping with user context
+
+**Authentication Flow:**
+- Password hashing with bcrypt (DefaultCost)
+- Login validation with proper error messages (no info leak)
+- Token refresh endpoint for authenticated users
+- Last login time tracking (non-blocking)
+
+**Middleware Pipeline:**
+- AuthMiddleware: JWT validation and context injection
+- ImpersonationMiddleware: Blocks all non-GET requests when IsImpersonated=true
+- TenantMiddleware: Ensures tenant isolation for all DB operations
+
+**Permission Control:**
+- Role-based access control (RBAC)
+- Organization hierarchy enforcement
+- Cross-tenant data isolation (tenant_id filtering on all queries)
+
+### API Endpoints
+
+**Public:**
+- `POST /api/v1/auth/login` - User login
+
+**Protected (require authentication):**
+- `POST /api/v1/auth/refresh` - Refresh JWT token
+- `GET /api/v1/organizations` - List organizations
+- `POST /api/v1/organizations` - Create organization (BrandHQ/MainContractor)
+- `GET /api/v1/organizations/tree` - Get organization tree
+- `GET /api/v1/users` - List users (paginated)
+- `POST /api/v1/users` - Create user (BrandHQ/MainContractor)
+- `GET /api/v1/users/:id` - Get user details
+- `PUT /api/v1/users/:id` - Update user
+- `DELETE /api/v1/users/:id` - Soft delete user
+
+### Code Quality
+- All errors wrapped with context using `fmt.Errorf("...: %w", err)`
+- Context key constants centralized in `pkg/utils/jwt.go`
+- Input validation with gin binding tags
+- Soft delete support for User model (GORM)
+- Request/Response DTOs for type safety
+
+### Files Created/Modified
+- `pkg/utils/jwt.go` - JWT utilities
+- `pkg/utils/config.go` - Environment helper
+- `pkg/response/response.go` - Unified response format
+- `internal/api/auth.go` - Login and token refresh
+- `internal/api/user.go` - User CRUD operations
+- `internal/api/organization.go` - Organization management
+- `internal/api/router.go` - Route configuration
+- `internal/middleware/auth.go` - JWT validation
+- `internal/middleware/impersonation.go` - Read-only mode
+- `internal/middleware/tenant.go` - Tenant context
+- `internal/model/order.go` - Order state machine model
+- `internal/model/user.go` - Added bcrypt password methods
+
+---
+
 *Last Updated: 2026-03-08*
