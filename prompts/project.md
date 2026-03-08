@@ -165,7 +165,7 @@ const OrderContainer: React.FC = () => {
 
 ## 6. 任务看板
 
-### [READY]
+### [DONE]
 - [x] 项目基础结构初始化
   - 创建 docs/blog.md 文件
   - 建立 Go 项目目录结构: cmd/, internal/, pkg/
@@ -180,6 +180,13 @@ const OrderContainer: React.FC = () => {
   - 五方角色的数据模型定义 (internal/models/)
   - 权限矩阵设计 (pkg/permissions/)
   - 角色关联关系（Store ↔ Vendor ↔ Engineer）
+- [x] 数据库基础架构 (2024-03-08)
+  - PostgreSQL 连接池初始化 (sync.Once 线程安全)
+  - Organization 模型 (HQ, Store, MainContractor, Vendor)
+  - User 模型 (RBAC 角色权限)
+
+### [READY]
+*暂无*
 
 ### [WIP]
 *暂无*

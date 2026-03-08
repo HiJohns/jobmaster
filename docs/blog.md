@@ -153,4 +153,51 @@ CLOSED (已关闭)
 
 ---
 
-*Last Updated: 2024-03-07*
+---
+
+## Database Infrastructure & Models - 2024-03-08
+
+### Completed Tasks
+- [x] Implement PostgreSQL connection pool with thread-safe initialization (sync.Once)
+- [x] Add environment-based configuration for database settings
+- [x] Implement Organization model (HQ, Store, MainContractor, Vendor)
+- [x] Implement User model with role-based permissions
+- [x] Add UUID generation with BeforeCreate hooks
+- [x] Implement secure DSN handling with password masking for logs
+- [x] Add configurable GORM log levels via DB_LOG_LEVEL env var
+
+### Technical Details
+
+**PostgreSQL Connection Pool (`pkg/database/postgres.go`):**
+- Thread-safe initialization using `sync.Once` pattern
+- Connection pool settings: MaxOpenConns=25, MaxIdleConns=10
+- Connection lifetime: 5 minutes
+- Environment-based configuration (12-Factor compliant)
+- Safe GetDB() returns error if not initialized
+
+**Organization Model (`internal/model/organization.go`):**
+- UUID primary keys for distributed system compatibility
+- Self-referential relationship for hierarchy (Parent/Children)
+- Multi-tenant support with TenantID
+- Soft delete support with gorm.DeletedAt
+
+**User Model (`internal/model/user.go`):**
+- Role enum: BRAND_HQ, STORE, MAIN_CONTRACTOR, VENDOR, ENGINEER, ADMIN
+- Password hash field (prepared for bcrypt integration)
+- Foreign key to Organization
+- Helper methods: IsActive(), CanManageOrders(), CanExecuteWork()
+
+### Files Created/Modified
+- `pkg/database/postgres.go` - Database connection management
+- `internal/model/organization.go` - Organization entity
+- `internal/model/user.go` - User entity
+- `go.mod`, `go.sum` - Added direct dependencies (uuid, postgres driver)
+
+### Security Improvements
+- Password masking in DSN logs (DSNHidden method)
+- JSON tag exclusion for sensitive fields (`json:"-"`)
+- Explicit error handling with context wrapping
+
+---
+
+*Last Updated: 2024-03-08*
