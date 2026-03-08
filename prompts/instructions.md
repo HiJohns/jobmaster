@@ -40,7 +40,7 @@ When starting a new session or restoring context, read `docs/blog.md` to underst
 
 ### 📝 Documentation & Conventions
 * **Documentation Synchronization:** All documents in the `docs/` directory are maintained in Chinese, with corresponding English translations in the `docs/en/` directory. When you update any document in `docs/`, you **MUST** simultaneously update its English counterpart in `docs/en/` to ensure content parity.
-* **Adhere to Conventions:** You must also adhere to all rules and conventions outlined in `prompts/customs.md`.
+* **Adhere to Conventions:** You must also adhere to all rules and conventions outlined in `prompts/project.md`.
 
 ## 4. Multi-Level Settings
 
