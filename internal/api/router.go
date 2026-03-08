@@ -50,6 +50,14 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/users/:id", GetUser)
 			protected.PUT("/users/:id", UpdateUser)
 			protected.DELETE("/users/:id", DeleteUser)
+
+			// WorkOrder routes (require authentication)
+			protected.GET("/workorders", ListWorkOrders)
+			protected.POST("/workorders", CreateWorkOrder)
+			protected.GET("/workorders/:id", GetWorkOrder)
+			protected.POST("/workorders/:id/dispatch", DispatchWorkOrder)
+			protected.POST("/workorders/:id/accept", AcceptWorkOrder)
+			protected.POST("/workorders/:id/reject", RejectWorkOrder)
 		}
 	}
 

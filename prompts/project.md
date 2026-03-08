@@ -195,6 +195,21 @@ const OrderContainer: React.FC = () => {
   - 用户 CRUD、分页查询 (BrandHQ/MainContractor)
   - 角色权限校验与租户隔离
   - 模型目录重构 (models → model)
+- [x] WorkOrder 核心模型与状态机 (2026-03-08)
+  - 基础字段：ID (UUID), OrderNo (人类可读单号), StoreID, CreatedBy, TenantID, Status (int)
+  - JSONB 扩展：定义 info 字段，存储报修描述、设备详情、照片 URL 数组、is_urgent 标记
+  - 状态机服务：TransitTo() 方法、Map 流转白名单、ErrInvalidStateTransition
+  - GORM Scopes：TenantScope, StoreScope, StatusScope 强制执行数据隔离
+  - 数据库迁移：DDL、GIN 索引 (jsonb_path_ops)、复合索引
+- [x] 单号生成器 (pkg/utils/orderno.go)
+  - 格式：WO-YYYYMMDD-C{OrgID}-XXXX
+  - crypto/rand 并发安全随机数生成
+- [x] 工单 API 实现
+  - 分店报修（STORE 角色）：创建工单、状态初始化 PENDING、地理位置记录
+  - 工单列表查询：角色视图隔离（STORE/HQ/MAIN_CONTRACTOR）、分页筛选
+  - 指派工单（MAIN_CONTRACTOR）：PENDING → DISPATCHED
+  - 接单/拒单（VENDOR/ENGINEER）：DISPATCHED → RESERVED/PENDING
+  - 审计日志：只增不减的 JSONB 数组模式（证据链）
 
 ### [READY]
 *暂无*

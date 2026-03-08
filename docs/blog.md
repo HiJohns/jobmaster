@@ -275,4 +275,70 @@ CLOSED (已关闭)
 
 ---
 
+## WorkOrder Core Model & API Implementation - 2026-03-08
+
+### Completed Tasks
+- [x] WorkOrder core model with 8 status constants (int-based)
+- [x] JSONB flexible fields: info (equipment, photos, location, urgency), logs (audit trail)
+- [x] GORM Scopes: TenantScope, StoreScope, StatusScope, CreatedAtScope, IsUrgentScope
+- [x] State machine service with TransitTo() method and transition whitelist
+- [x] Order number generator: WO-YYYYMMDD-C{OrgID}-XXXX format with crypto/rand
+- [x] Database migration with GIN index on JSONB (jsonb_path_ops)
+- [x] WorkOrder API endpoints:
+  - Create (STORE role only)
+  - List (role-based view isolation)
+  - Get by ID
+  - Dispatch (MAIN_CONTRACTOR only)
+  - Accept/Reject (VENDOR/ENGINEER only)
+- [x] Audit log system: append-only JSONB array for evidence trail
+- [x] State entry hooks: auto-set timestamps (arrived_at, started_at, finished_at, closed_at)
+- [x] Observation deadline auto-calculation (7 days)
+
+### Technical Details
+
+**WorkOrder Model (`internal/model/workorder.go`):**
+- Status enum: int-based (1-PENDING to 8-CLOSED)
+- Flexible JSONB: info (description, equipment, photos, urgency, location), logs (audit trail)
+- GORM Scopes for query filtering and data isolation
+- State transition validation with ErrInvalidStateTransition
+
+**State Machine Service (`internal/service/order.go`):**
+- Centralized TransitTo() method with transaction safety
+- Transition whitelist supporting rejection flow (DISPATCHED→PENDING)
+- Auto-timestamp on state entry (arrived_at, started_at, finished_at, closed_at)
+- Specialized methods: Dispatch(), Accept(), Reject()
+
+**Order Number Generator (`pkg/utils/orderno.go`):**
+- Format: WO-YYYYMMDD-C{StoreIDPrefix}-XXXX
+- Crypto-secure random suffix using crypto/rand
+- Interface-based design for SaaS scalability
+
+**Database Migration (`migrations/001_workorder.up.sql`):**
+- UUID primary key with foreign key constraints
+- GIN index on JSONB for flexible search (info jsonb_path_ops)
+- Composite indexes: tenant_id+status, store_id+status
+- Soft delete support (deleted_at)
+
+**API Endpoints:**
+- `POST /api/v1/workorders` - Create work order (STORE)
+- `GET /api/v1/workorders` - List with pagination and filters
+- `GET /api/v1/workorders/:id` - Get single work order
+- `POST /api/v1/workorders/:id/dispatch` - Dispatch to vendor/engineer (MAIN_CONTRACTOR)
+- `POST /api/v1/workorders/:id/accept` - Accept with scheduled time (VENDOR/ENGINEER)
+- `POST /api/v1/workorders/:id/reject` - Reject with reason (VENDOR/ENGINEER)
+
+### Security & Quality
+- Role-based access control on all endpoints
+- Tenant isolation enforced via GORM Scopes
+- SQL injection protection via parameterized queries
+- Audit logs: user ID, name, action, timestamps, status changes
+- Error handling with context using fmt.Errorf("...: %w", err)
+
+### Fixes Applied (Review Feedback)
+- [x] Replaced math/rand with crypto/rand for thread-safe order number generation
+- [x] Added getCurrentUserName() helper for audit log completeness
+- [x] Removed redundant init() function (Go 1.20+ auto-seeds)
+
+---
+
 *Last Updated: 2026-03-08*
