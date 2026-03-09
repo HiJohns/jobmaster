@@ -1,6 +1,9 @@
 package model
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,6 +15,23 @@ import (
 type GPSLocation struct {
 	Latitude  float64 `json:"latitude"`
 	Longitude float64 `json:"longitude"`
+}
+
+// Value implements the driver.Valuer interface
+func (g GPSLocation) Value() (driver.Value, error) {
+	return json.Marshal(g)
+}
+
+// Scan implements the sql.Scanner interface
+func (g *GPSLocation) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+	return json.Unmarshal(bytes, g)
 }
 
 // OrderStatus represents the work order state machine

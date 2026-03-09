@@ -165,6 +165,73 @@ const OrderContainer: React.FC = () => {
 
 ## 6. Task Board
 
+### [DONE]
+- [x] Project structure initialization
+  - Create docs/blog.md file
+  - Establish Go project directory: cmd/, internal/, pkg/
+  - Establish frontend directory: frontend/
+  - Establish API directory: api/
+- [x] Dependency management initialization
+  - Execute go mod init jobmaster
+  - Install Go dependencies: gin, gorm, pgx
+  - Initialize frontend package.json
+  - Install frontend dependencies: Ant Design, Zustand
+- [x] Organizational model design
+  - Five-party role data model definitions (internal/models/)
+  - Permission matrix design (pkg/permissions/)
+  - Role association relationships (Store ↔ Vendor ↔ Engineer)
+- [x] Database infrastructure (2026-03-08)
+  - PostgreSQL connection pool initialization (sync.Once thread-safe)
+  - Organization models (HQ, Store, MainContractor, Vendor)
+  - User models (RBAC roles and permissions)
+- [x] User authentication and permission system (2026-03-08)
+  - bcrypt password hashing and verification
+  - JWT Token generation and validation (environment variable secret key)
+  - Login API and Token refresh
+  - Auth/Impersonation/Tenant middleware
+  - Unified API response format
+- [x] Organizational structure and user management API (2026-03-08)
+  - Organization creation, listing, tree queries (BrandHQ/MainContractor)
+  - User CRUD, pagination queries (BrandHQ/MainContractor)
+  - Role permission validation and tenant isolation
+  - Model directory refactoring (models → model)
+- [x] WorkOrder core model and state machine (2026-03-08)
+  - Basic fields: ID (UUID), OrderNo (human-readable), StoreID, CreatedBy, TenantID, Status (int)
+  - JSONB extension: info field storing repair description, equipment details, photo URLs, is_urgent flag
+  - State machine service: TransitTo() method, Map transition whitelist, ErrInvalidStateTransition
+  - GORM Scopes: TenantScope, StoreScope, StatusScope enforcing data isolation
+  - Database migration: DDL, GIN index (jsonb_path_ops), composite indexes
+- [x] Order number generator (pkg/utils/orderno.go)
+  - Format: WO-YYYYMMDD-C{OrgID}-XXXX
+  - crypto/rand concurrent-safe random number generation
+- [x] WorkOrder API implementation
+  - Store repair request (STORE role): create work order, status init PENDING, location recording
+  - WorkOrder list query: role view isolation (STORE/HQ/MAIN_CONTRACTOR), pagination and filtering
+  - Dispatch work order (MAIN_CONTRACTOR): PENDING → DISPATCHED
+  - Accept/Reject (VENDOR/ENGINEER): DISPATCHED → RESERVED/PENDING
+  - Audit logs: append-only JSONB array pattern (evidence chain)
+- [x] WorkOrder Model & DDL Upgrade (2026-03-09)
+  - Multi-level category: CategoryPath, BrandName
+  - Fee fields: LaborFee, MaterialFee, OtherFee (DECIMAL)
+  - Appointment time: AppointedAt + index
+  - Location: AddressDetail, Coordinates (JSONB + GIN index)
+  - GPSLocation implements Valuer/Scanner interfaces
+  - Log Action constants
+- [x] Task List API (2026-03-09)
+  - ListMyTasks: calendar filtering, fuzzy search, pagination
+  - GetTaskStatistics: count by status
+  - Permission validation and error handling fixes
+- [x] WorkOrder Detail API (2026-03-09)
+  - GetWorkOrderDetail: full data, role-based views
+  - buildWorkOrderDetail: fee masking (hidden for STORE role)
+  - extractWorkRecords: extract work records from logs
+- [x] Execution Action Service & API (2026-03-09)
+  - Reserve: set appointment time, DISPATCHED → RESERVED
+  - Arrive: GPS check-in, RESERVED → ARRIVED
+  - Finish: complete work, WORKING → FINISHED, fee recording
+  - Ownership validation: verify engineer/vendor assignment
+  - Fee range validation: 0-999999
+
 ### [READY]
 *None*
 
@@ -172,10 +239,7 @@ const OrderContainer: React.FC = () => {
 *None*
 
 ### [TODO]
-- [ ] Organizational Architecture Model Design
-  - Data model definitions for five-party roles
-  - Permission matrix design
-  - Role relationship mapping (Store ↔ Vendor ↔ Engineer)
+*None*
 
 ---
 
@@ -186,5 +250,5 @@ This document is the Chinese master document, English translation located at `do
 
 ---
 
-*Last Updated: 2024-03-07*
+*Last Updated: 2026-03-09*
 *Version: 1.0.0*

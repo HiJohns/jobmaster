@@ -61,6 +61,9 @@ type WorkOrderInfo struct {
 	Location      *GPSLocation `json:"location,omitempty"`
 	ContactName   string       `json:"contact_name,omitempty"`
 	ContactPhone  string       `json:"contact_phone,omitempty"`
+	// Multi-level category support
+	CategoryPath []string `json:"category_path,omitempty"`
+	BrandName    string   `json:"brand_name,omitempty"`
 }
 
 // Value implements the driver.Valuer interface
@@ -90,6 +93,21 @@ type WorkOrderLog struct {
 	OldStatus WorkOrderStatus `json:"old_status,omitempty"`
 	NewStatus WorkOrderStatus `json:"new_status,omitempty"`
 }
+
+// Log action constants
+const (
+	LogActionCreate                   = "create"
+	LogActionDispatch                 = "dispatch"
+	LogActionAccept                   = "accept"
+	LogActionReject                   = "reject"
+	LogActionReserve                  = "reserve"
+	LogActionArrive                   = "arrive"
+	LogActionFinish                   = "finish"
+	LogActionStatusChangeToWorking    = "status_changed_ARRIVED_to_WORKING"
+	LogActionStatusChangeToFinished   = "status_changed_WORKING_to_FINISHED"
+	LogActionStatusChangeToClosed     = "status_changed_OBSERVING_to_CLOSED"
+	LogActionStatusChangeToDispatched = "status_changed_OBSERVING_to_DISPATCHED"
+)
 
 // WorkOrderLogs is a slice of log entries
 type WorkOrderLogs []WorkOrderLog
@@ -144,12 +162,24 @@ type WorkOrder struct {
 	FinishedAt  *time.Time `json:"finished_at,omitempty"`
 	ClosedAt    *time.Time `json:"closed_at,omitempty"`
 
+	// Appointment time for calendar view
+	AppointedAt *time.Time `json:"appointed_at,omitempty"`
+
 	// Observation period
 	ObservingDeadline *time.Time `json:"observing_deadline,omitempty"`
 
 	// Settlement (manual entry in v1)
 	SettlementAmount *float64 `json:"settlement_amount,omitempty"`
 	SettlementNote   string   `json:"settlement_note,omitempty"`
+
+	// Fee breakdown (decimal for precision)
+	LaborFee    float64 `json:"labor_fee" gorm:"default:0"`
+	MaterialFee float64 `json:"material_fee" gorm:"default:0"`
+	OtherFee    float64 `json:"other_fee" gorm:"default:0"`
+
+	// Location details
+	AddressDetail string       `json:"address_detail,omitempty"`
+	Coordinates   *GPSLocation `json:"coordinates,omitempty"`
 
 	// Flexible JSONB fields
 	Info WorkOrderInfo `gorm:"type:jsonb" json:"info"`
@@ -266,5 +296,33 @@ func CreatedAtScope(start, end time.Time) func(db *gorm.DB) *gorm.DB {
 func IsUrgentScope() func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		return db.Where("info->>'is_urgent' = ?", "true")
+	}
+}
+
+// AppointedAtScope filters work orders by appointment date range
+func AppointedAtScope(start, end time.Time) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("appointed_at BETWEEN ? AND ?", start, end)
+	}
+}
+
+// EngineerScope filters work orders by engineer ID
+func EngineerScope(engineerID uuid.UUID) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("engineer_id = ?", engineerID)
+	}
+}
+
+// VendorScope filters work orders by vendor ID
+func VendorScope(vendorID uuid.UUID) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("vendor_id = ?", vendorID)
+	}
+}
+
+// OrderNoLikeScope filters work orders by order number (fuzzy search)
+func OrderNoLikeScope(keyword string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("order_no ILIKE ?", "%"+keyword+"%")
 	}
 }

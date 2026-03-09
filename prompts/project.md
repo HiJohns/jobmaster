@@ -210,6 +210,27 @@ const OrderContainer: React.FC = () => {
   - 指派工单（MAIN_CONTRACTOR）：PENDING → DISPATCHED
   - 接单/拒单（VENDOR/ENGINEER）：DISPATCHED → RESERVED/PENDING
   - 审计日志：只增不减的 JSONB 数组模式（证据链）
+- [x] WorkOrder 模型与 DDL 升级 (2026-03-09)
+  - 多级分类：CategoryPath, BrandName
+  - 费用字段：LaborFee, MaterialFee, OtherFee (DECIMAL)
+  - 预约时间：AppointedAt + 索引
+  - 地理位置：AddressDetail, Coordinates (JSONB + GIN 索引)
+  - GPSLocation 实现 Valuer/Scanner 接口
+  - 日志 Action 常量定义
+- [x] 任务清单 API (2026-03-09)
+  - ListMyTasks：日历过滤、模糊搜索、分页
+  - GetTaskStatistics：按状态统计
+  - 权限校验与错误处理修复
+- [x] 工单详情 API (2026-03-09)
+  - GetWorkOrderDetail：全量数据、角色视图
+  - buildWorkOrderDetail：费用脱敏（STORE 角色隐藏）
+  - extractWorkRecords：从日志提取施工记录
+- [x] 施工动作服务与 API (2026-03-09)
+  - Reserve：预约时间，DISPATCHED → RESERVED
+  - Arrive：GPS 签到，RESERVED → ARRIVED
+  - Finish：完工确认，WORKING → FINISHED，费用记录
+  - 所有权验证：校验工程师/供应商指派关系
+  - 费用范围校验：0-999999
 
 ### [READY]
 *暂无*

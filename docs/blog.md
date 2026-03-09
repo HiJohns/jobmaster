@@ -341,4 +341,54 @@ CLOSED (已关闭)
 
 ---
 
-*Last Updated: 2026-03-08*
+## [2026-03-09] | WorkOrder 升级：模型扩展、任务清单与施工动作
+
+### 变更摘要
+升级工单系统以支持多级分类、费用记录、地理位置追踪，新增工程师/供应商任务清单接口和施工动作 API。
+
+### 模型扩展 (`internal/model/workorder.go`)
+- **多级分类**: `CategoryPath []string`, `BrandName string` (in Info JSONB)
+- **费用字段**: `LaborFee`, `MaterialFee`, `OtherFee` float64 (default:0)
+- **预约时间**: `AppointedAt *time.Time` (日历视图支持)
+- **地理位置**: `AddressDetail string`, `Coordinates *GPSLocation`
+- **GPSLocation**: 实现 `driver.Valuer` / `sql.Scanner` 接口支持 JSONB 持久化
+- **日志常量**: 新增 `LogActionCreate`, `LogActionDispatch`, `LogActionAccept`, `LogActionReject`, `LogActionReserve`, `LogActionArrive`, `LogActionFinish` 等
+- **GORM Scopes**: `AppointedAtScope`, `EngineerScope`, `VendorScope`, `OrderNoLikeScope`
+
+### 数据库迁移 (`migrations/002_workorder_upgrade.up.sql`)
+- 添加费用列: `labor_fee`, `material_fee`, `other_fee` (DECIMAL(10,2))
+- 添加时间列: `appointed_at` (TIMESTAMP WITH TIME ZONE)
+- 添加位置列: `address_detail` (TEXT), `coordinates` (JSONB)
+- 创建索引: `idx_workorder_appointed_at`, `idx_workorder_engineer_appointed`, `idx_workorder_vendor_appointed`, `idx_workorder_coordinates` (GIN)
+
+### API 接口 (`internal/api/workorder.go`)
+- **任务清单**: `GET /api/v1/my-tasks` - 日历过滤、模糊搜索、分页
+- **任务统计**: `GET /api/v1/my-tasks/statistics` - 按状态统计数量
+- **工单详情**: `GET /api/v1/workorders/:id` → `GetWorkOrderDetail` - 全量数据、权限脱敏
+- **预约动作**: `POST /api/v1/workorders/:id/reserve` - DISPATCHED → RESERVED
+- **签到动作**: `POST /api/v1/workorders/:id/arrive` - RESERVED → ARRIVED (LBS 验证)
+- **完工动作**: `POST /api/v1/workorders/:id/finish` - WORKING → FINISHED
+
+### 响应结构体
+- `MyTaskResponse` - 任务列表项
+- `TaskStatisticsResponse` - 统计结果
+- `WorkOrderDetailResponse` - 详情响应（含费用脱敏）
+- `WorkRecordResponse` - 施工记录
+- `OrganizationBrief`, `UserBrief` - 简要信息
+
+### 安全与质量改进
+- **错误检查**: 所有 `middleware.GetXxx()` 返回值检查 `ok`，失败返回 401
+- **关键词限制**: `ListMyTasks` 关键词长度限制 50 字符
+- **费用校验**: 范围 0-999999，防止负数和溢出
+- **所有权验证**: Reserve/Arrive/Finish 校验工程师/供应商指派关系
+- **费用脱敏**: STORE 角色隐藏费用信息
+- **硬编码消除**: 日志 action 字符串改用 model 常量
+
+### 服务层增强 (`internal/service/order.go`)
+- `Reserve()` - 预约时间设置、所有权验证
+- `Arrive()` - GPS 坐标记录、所有权验证
+- `Finish()` - 完工确认、费用记录、范围校验
+
+---
+
+*Last Updated: 2026-03-09*

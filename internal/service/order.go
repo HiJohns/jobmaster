@@ -138,7 +138,7 @@ func (s *OrderService) Dispatch(ctx context.Context, orderID uuid.UUID, userID u
 		}
 
 		// Add audit log
-		order.Logs.AddLog(userID, userName, "dispatch", details, oldStatus, model.WorkOrderStatusDispatched)
+		order.Logs.AddLog(userID, userName, model.LogActionDispatch, details, oldStatus, model.WorkOrderStatusDispatched)
 
 		if err := tx.Save(&order).Error; err != nil {
 			return fmt.Errorf("failed to save work order: %w", err)
@@ -178,7 +178,7 @@ func (s *OrderService) Accept(ctx context.Context, orderID uuid.UUID, userID uui
 		order.ScheduledAt = &scheduledAt
 
 		details := fmt.Sprintf("Scheduled for %s", scheduledAt.Format(time.RFC3339))
-		order.Logs.AddLog(userID, userName, "accept", details, oldStatus, model.WorkOrderStatusReserved)
+		order.Logs.AddLog(userID, userName, model.LogActionAccept, details, oldStatus, model.WorkOrderStatusReserved)
 
 		if err := tx.Save(&order).Error; err != nil {
 			return fmt.Errorf("failed to save work order: %w", err)
@@ -224,7 +224,172 @@ func (s *OrderService) Reject(ctx context.Context, orderID uuid.UUID, userID uui
 		order.Status = model.WorkOrderStatusPending
 
 		details := fmt.Sprintf("Reason: %s", reason)
-		order.Logs.AddLog(userID, userName, "reject", details, oldStatus, model.WorkOrderStatusPending)
+		order.Logs.AddLog(userID, userName, model.LogActionReject, details, oldStatus, model.WorkOrderStatusPending)
+
+		if err := tx.Save(&order).Error; err != nil {
+			return fmt.Errorf("failed to save work order: %w", err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &order, nil
+}
+
+// Reserve sets the appointment time for a dispatched work order
+// Transitions from DISPATCHED to RESERVED
+func (s *OrderService) Reserve(ctx context.Context, orderID uuid.UUID, userID uuid.UUID, orgID uuid.UUID, userName string, appointedAt time.Time) (*model.WorkOrder, error) {
+	db, err := database.GetDB()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database connection: %w", err)
+	}
+
+	var order model.WorkOrder
+	err = db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.First(&order, "id = ?", orderID).Error; err != nil {
+			return fmt.Errorf("work order not found: %w", err)
+		}
+
+		// Validate ownership - must be assigned to this vendor or engineer
+		if order.VendorID != nil && *order.VendorID != orgID {
+			return fmt.Errorf("not assigned to this order: vendor mismatch")
+		}
+		if order.EngineerID != nil && *order.EngineerID != userID {
+			return fmt.Errorf("not assigned to this order: engineer mismatch")
+		}
+
+		// Validate transition to RESERVED
+		oldStatus := order.Status
+		if err := order.CanTransitionTo(model.WorkOrderStatusReserved); err != nil {
+			return err
+		}
+
+		order.Status = model.WorkOrderStatusReserved
+		order.AppointedAt = &appointedAt
+
+		details := fmt.Sprintf("Appointment scheduled for %s", appointedAt.Format(time.RFC3339))
+		order.Logs.AddLog(userID, userName, model.LogActionReserve, details, oldStatus, model.WorkOrderStatusReserved)
+
+		if err := tx.Save(&order).Error; err != nil {
+			return fmt.Errorf("failed to save work order: %w", err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &order, nil
+}
+
+// Arrive checks in at the work site with GPS coordinates
+// Transitions from RESERVED to ARRIVED
+func (s *OrderService) Arrive(ctx context.Context, orderID uuid.UUID, userID uuid.UUID, orgID uuid.UUID, userName string, latitude, longitude float64) (*model.WorkOrder, error) {
+	db, err := database.GetDB()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database connection: %w", err)
+	}
+
+	var order model.WorkOrder
+	err = db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.First(&order, "id = ?", orderID).Error; err != nil {
+			return fmt.Errorf("work order not found: %w", err)
+		}
+
+		// Validate ownership - must be assigned to this engineer or vendor
+		if order.EngineerID != nil && *order.EngineerID != userID {
+			return fmt.Errorf("not assigned to this order: engineer mismatch")
+		}
+		if order.EngineerID == nil && order.VendorID != nil && *order.VendorID != orgID {
+			return fmt.Errorf("not assigned to this order: vendor mismatch")
+		}
+
+		// Validate transition to ARRIVED
+		oldStatus := order.Status
+		if err := order.CanTransitionTo(model.WorkOrderStatusArrived); err != nil {
+			return err
+		}
+
+		now := time.Now()
+		order.Status = model.WorkOrderStatusArrived
+		order.ArrivedAt = &now
+
+		details := fmt.Sprintf("Arrived at location [%.6f, %.6f]", latitude, longitude)
+		order.Logs.AddLog(userID, userName, model.LogActionArrive, details, oldStatus, model.WorkOrderStatusArrived)
+
+		if err := tx.Save(&order).Error; err != nil {
+			return fmt.Errorf("failed to save work order: %w", err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &order, nil
+}
+
+// Finish completes the work and records completion details
+// Transitions from WORKING to FINISHED
+func (s *OrderService) Finish(ctx context.Context, orderID uuid.UUID, userID uuid.UUID, orgID uuid.UUID, userName string, description string, photoURLs []string, laborFee, materialFee, otherFee float64) (*model.WorkOrder, error) {
+	if description == "" {
+		return nil, fmt.Errorf("completion description is required")
+	}
+
+	// Validate fee ranges
+	if laborFee < 0 || laborFee > 999999 {
+		return nil, fmt.Errorf("labor fee must be between 0 and 999999")
+	}
+	if materialFee < 0 || materialFee > 999999 {
+		return nil, fmt.Errorf("material fee must be between 0 and 999999")
+	}
+	if otherFee < 0 || otherFee > 999999 {
+		return nil, fmt.Errorf("other fee must be between 0 and 999999")
+	}
+
+	db, err := database.GetDB()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database connection: %w", err)
+	}
+
+	var order model.WorkOrder
+	err = db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.First(&order, "id = ?", orderID).Error; err != nil {
+			return fmt.Errorf("work order not found: %w", err)
+		}
+
+		// Validate ownership - must be assigned to this engineer
+		if order.EngineerID != nil && *order.EngineerID != userID {
+			return fmt.Errorf("not assigned to this order: engineer mismatch")
+		}
+
+		// Validate transition to FINISHED
+		oldStatus := order.Status
+		if err := order.CanTransitionTo(model.WorkOrderStatusFinished); err != nil {
+			return err
+		}
+
+		now := time.Now()
+		order.Status = model.WorkOrderStatusFinished
+		order.FinishedAt = &now
+		order.LaborFee = laborFee
+		order.MaterialFee = materialFee
+		order.OtherFee = otherFee
+
+		// Build completion details
+		details := fmt.Sprintf("Work completed: %s", description)
+		if len(photoURLs) > 0 {
+			details += fmt.Sprintf(" | Photos: %d attached", len(photoURLs))
+		}
+		order.Logs.AddLog(userID, userName, model.LogActionFinish, details, oldStatus, model.WorkOrderStatusFinished)
 
 		if err := tx.Save(&order).Error; err != nil {
 			return fmt.Errorf("failed to save work order: %w", err)
