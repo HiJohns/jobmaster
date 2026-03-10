@@ -6,7 +6,7 @@ CMD_DIR := ./cmd/api
 BUILD_DIR := ./build
 CONFIG_FILE := config.yaml
 GO := go
-DOCKER_COMPOSE := docker-compose
+DOCKER_COMPOSE := docker compose
 
 # 默认目标
 .DEFAULT_GOAL := help
@@ -38,7 +38,7 @@ dev: ## 开发模式运行 (热重载)
 		$(GO) run $(CMD_DIR)/main.go; \
 	fi
 
-test: ## 运行所有测试
+test: ## 运行所有单元测试
 	@echo "正在运行单元测试..."
 	$(GO) test -v ./...
 
@@ -47,6 +47,46 @@ test-coverage: ## 运行测试并生成覆盖率报告
 	$(GO) test -coverprofile=coverage.out ./...
 	$(GO) tool cover -html=coverage.out -o coverage.html
 	@echo "覆盖率报告已生成: coverage.html"
+
+httptest: ## 运行 HTTP 集成测试 (Go)
+	@echo "正在运行 HTTP 集成测试..."
+	$(GO) test -v ./tests/httptest/...
+
+pytest: ## 运行 Python 集成测试
+	@echo "正在运行 Python 集成测试..."
+	@if [ ! -d "tests/pytest" ]; then \
+		echo "错误: tests/pytest 目录不存在"; \
+		exit 1; \
+	fi
+	@cd tests/pytest && \
+	if [ ! -f "venv/bin/activate" ]; then \
+		echo "创建 Python 虚拟环境..."; \
+		python3 -m venv venv; \
+	fi && \
+	. venv/bin/activate && \
+	pip install -q -r requirements.txt && \
+	pytest -v
+
+check: ## 提交前检查：运行所有测试和代码检查
+	@echo "========================================="
+	@echo "  运行提交前全面检查"
+	@echo "========================================="
+	@echo ""
+	@echo "1. 运行 Go 单元测试..."
+	$(GO) test ./... || exit 1
+	@echo ""
+	@echo "2. 运行 HTTP 集成测试..."
+	$(GO) test ./tests/httptest/... || exit 1
+	@echo ""
+	@echo "3. 运行 Python 集成测试..."
+	$(MAKE) pytest || exit 1
+	@echo ""
+	@echo "4. 运行代码格式化检查..."
+	$(GO) fmt ./...
+	@echo ""
+	@echo "========================================="
+	@echo "  ✅ 所有检查通过！"
+	@echo "========================================="
 
 docker-up: ## 启动开发环境 Docker 容器 (PostgreSQL)
 	@echo "正在启动开发环境容器..."

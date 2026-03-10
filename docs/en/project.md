@@ -238,6 +238,18 @@ const OrderContainer: React.FC = () => {
   - cmd/api/main.go: application entry, database init, AutoMigrate, Seeder
   - internal/db/seed.go: default HQ organization and super admin initialization
   - Security fixes: remove hardcoded secrets, password masking
+- [x] Test Framework (2026-03-10)
+  - Go HTTP Test Framework (tests/httptest)
+    - main_test.go: DB init, ExecuteRequest helper, transaction rollback
+    - auth_test.go: login tests, token interception tests
+  - Python Test Environment (tests/pytest)
+    - requirements.txt: pytest, requests dependencies
+    - conftest.py: base_url and admin_token fixtures, auto cleanup
+    - test_basic.py: /health tests, parameterized test scenarios
+  - Makefile Test Commands
+    - make httptest: Run Go HTTP integration tests
+    - make pytest: Run Python integration tests
+    - make check: Run all tests
 
 ### [READY]
 *None*

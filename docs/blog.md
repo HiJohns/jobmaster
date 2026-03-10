@@ -418,4 +418,30 @@ CLOSED (已关闭)
 
 ---
 
+## [2026-03-10] | 测试框架建设：Go HTTP测试 + Python集成测试
+
+### 变更摘要
+建立完整的测试基础设施，包括 Go HTTP 集成测试框架、Python pytest 集成测试、Makefile 测试指令。
+
+### 新增文件
+- **tests/httptest/main_test.go**: 测试框架核心，提供 ExecuteRequest/ExecuteRequestWithAuth 辅助函数，事务回滚支持
+- **tests/httptest/auth_test.go**: 登录接口测试、Token 拦截测试、参数化测试用例
+- **tests/pytest/requirements.txt**: pytest, requests, python-dotenv 依赖
+- **tests/pytest/conftest.py**: pytest fixtures (base_url, admin_token, auth_headers, cleanup)
+- **tests/pytest/test_basic.py**: /health、/api/v1/* 接口测试、参数化测试
+
+### Makefile 新增指令
+- `make httptest`: 运行 Go HTTP 集成测试
+- `make pytest`: 运行 Python 集成测试（自动创建虚拟环境）
+- `make check`: 提交前全面检查（单元测试 + 集成测试 + 格式化）
+
+### 代码审查修复
+- [x] main_test.go: ExecuteRequest 改为接受 *testing.T 参数，使用 t.Fatalf() 替代 panic
+- [x] main_test.go: setupTestDB 改用 log.Fatalf() + os.Exit(1)
+- [x] auth_test.go: 移除包含明文凭证的注释
+- [x] conftest.py: 添加 cleanup 端点实现说明文档
+- [x] order.go: ArrivalLocation 字段添加 JSON 格式说明注释
+
+---
+
 *Last Updated: 2026-03-10*

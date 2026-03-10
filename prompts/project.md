@@ -238,6 +238,18 @@ const OrderContainer: React.FC = () => {
   - cmd/api/main.go: 应用入口、数据库初始化、AutoMigrate、Seeder
   - internal/db/seed.go: 默认 HQ 组织和超级管理员初始化
   - 安全修复：移除硬编码敏感信息、密码遮蔽
+- [x] 测试基础框架建设 (2026-03-10)
+  - Go HTTP测试框架 (tests/httptest)
+    - main_test.go: 数据库初始化、ExecuteRequest辅助函数、事务回滚
+    - auth_test.go: 登录测试、Token拦截测试
+  - Python测试环境 (tests/pytest)
+    - requirements.txt: pytest, requests依赖
+    - conftest.py: base_url和admin_token fixtures、自动清理
+    - test_basic.py: /health测试、参数化测试多组场景
+  - Makefile测试指令
+    - make httptest: 运行Go HTTP集成测试
+    - make pytest: 运行Python集成测试
+    - make check: 一键运行所有测试
 
 ### [READY]
 *暂无*

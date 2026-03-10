@@ -75,8 +75,10 @@ type Order struct {
 	FinishedAt  *time.Time `json:"finished_at,omitempty"`
 	ClosedAt    *time.Time `json:"closed_at,omitempty"`
 
-	// Location verification
-	ArrivalLocation *GPSLocation `gorm:"embedded;embeddedPrefix:arrival_" json:"arrival_location,omitempty"`
+	// Location verification stored as JSONB
+	// Format: {"latitude": float64, "longitude": float64, "accuracy": float64}
+	// Use GPSLocation struct for parsing in application code
+	ArrivalLocation datatypes.JSON `gorm:"type:jsonb" json:"arrival_location,omitempty"`
 
 	// Work summary
 	WorkSummary string         `json:"work_summary,omitempty"`
