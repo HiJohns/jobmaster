@@ -258,7 +258,14 @@ const OrderContainer: React.FC = () => {
 *暂无*
 
 ### [TODO]
-*暂无*
+- [x] 使用 Vite 初始化 React + TypeScript 前端项目 (2026-03-10)
+  - 在 frontend/ 目录下初始化项目
+  - 安装依赖：antd, antd-mobile, axios, zustand, react-router-dom, dayjs
+  - 配置样式：Tailwind CSS 或 Less，Ant Design 主题色 #0033FF
+  - 配置 vite.config.ts 代理：/api 指向 http://localhost:5555
+- [x] 封装 API 请求层与状态机 (2026-03-10)
+  - Axios 拦截器：自动注入 Authorization Header，401 自动跳转登录
+  - Zustand Store：useAuthStore（用户、Token、isImpersonated），useGlobalStore（Loading、消息提示）
 
 ---
 
