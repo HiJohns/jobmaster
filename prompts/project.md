@@ -250,6 +250,12 @@ const OrderContainer: React.FC = () => {
     - make httptest: 运行Go HTTP集成测试
     - make pytest: 运行Python集成测试
     - make check: 一键运行所有测试
+- [x] 登录页与权限路由 (2026-03-10)
+  - 登录页面：对齐后端 /auth/login 接口，支持记住账号
+  - 基础布局 (Layout)：移动端 TabBar（勘查、资料、派工、服务、费用）
+  - 顶栏：显示当前租户名称和"只读模式"水印（模拟登录状态）
+  - 响应式：移动端显示 TabBar，桌面端隐藏
+  - 路由集成：使用 Layout 包裹需认证的路由
 
 ### [READY]
 *暂无*

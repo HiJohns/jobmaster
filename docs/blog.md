@@ -458,4 +458,13 @@ Commit: f3cdbbbc
 
 ---
 
+## [2026-03-10] | Raw | 登录页、基础布局与权限路由
+
+- 登录页面：集成后端 /auth/login 接口，实现"记住账号"功能（localStorage）
+- 基础布局组件 (AppLayout)：顶栏显示租户名称、只读模式水印、响应式 TabBar
+- 移动端 TabBar：勘查、资料、派工、服务、费用五个导航项
+- 权限路由集成：ProtectedRoute 使用 AppLayout 包裹受保护页面
+
+---
+
 *Last Updated: 2026-03-10*

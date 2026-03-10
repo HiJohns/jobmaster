@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
+import AppLayout from './components/Layout'
 import { useAuthStore } from './store/useAuthStore'
 
 // Protected route component
@@ -11,7 +12,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />
   }
   
-  return <>{children}</>
+  return <AppLayout>{children}</AppLayout>
 }
 
 function AppRouter() {
