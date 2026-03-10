@@ -231,6 +231,13 @@ const OrderContainer: React.FC = () => {
   - Finish: complete work, WORKING → FINISHED, fee recording
   - Ownership validation: verify engineer/vendor assignment
   - Fee range validation: 0-999999
+- [x] Project Basic Configuration (2026-03-10)
+  - Makefile: build, run, test, docker-up, docker-down, lint, fmt commands
+  - docker-compose.yaml: PostgreSQL 15 + Redis 7 development environment
+  - config.yaml.example: local development config template
+  - cmd/api/main.go: application entry, database init, AutoMigrate, Seeder
+  - internal/db/seed.go: default HQ organization and super admin initialization
+  - Security fixes: remove hardcoded secrets, password masking
 
 ### [READY]
 *None*

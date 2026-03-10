@@ -391,4 +391,31 @@ CLOSED (已关闭)
 
 ---
 
-*Last Updated: 2026-03-09*
+## [2026-03-10] | 项目基础配置：Makefile、docker-compose、config、main、seed
+
+### 变更摘要
+完成开发环境基础设施配置，包括 Makefile 构建脚本、docker-compose 本地开发环境、配置文件模板、应用入口与数据库初始化。
+
+### 新增文件
+- **Makefile**: 包含 build、run、test、docker-up、docker-down、lint、fmt 等指令
+- **docker-compose.yaml**: PostgreSQL 15 + Redis 7 开发环境配置，带健康检查和数据卷持久化
+- **config.yaml.example**: 本地开发配置模板（DB、JWT、Redis）
+- **cmd/api/main.go**: 应用入口，加载配置、初始化数据库、AutoMigrate、运行 Seeder
+- **internal/db/seed.go**: 数据库初始化，创建默认 HQ 组织和超级管理员账号
+- **.gitignore**: 排除 config.yaml、.env、构建产物等
+
+### 安全修复（Review 反馈）
+- [x] 删除 config.yaml，仅保留 config.yaml.example（避免硬编码敏感信息）
+- [x] Makefile docker-up 目标隐藏数据库密码（使用 *** 替代）
+- [x] 重构 main.go 数据库初始化，直接传递 Config 对象而非 os.Setenv()
+- [x] seed.go 移除日志中的明文密码提示
+
+### 技术细节
+- **数据库连接**: 使用 sync.Once 线程安全初始化，支持自定义日志级别
+- **AutoMigrate**: 启动时自动迁移 User、Organization、Order、WorkOrder 模型
+- **Seeder**: 检测数据库是否为空，自动创建默认组织和 admin 账号
+- **Graceful Shutdown**: 监听 SIGINT/SIGTERM 信号，优雅关闭服务
+
+---
+
+*Last Updated: 2026-03-10*

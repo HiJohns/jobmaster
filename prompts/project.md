@@ -231,6 +231,13 @@ const OrderContainer: React.FC = () => {
   - Finish：完工确认，WORKING → FINISHED，费用记录
   - 所有权验证：校验工程师/供应商指派关系
   - 费用范围校验：0-999999
+- [x] 项目基础配置 (2026-03-10)
+  - Makefile: build, run, test, docker-up, docker-down 等指令
+  - docker-compose.yaml: PostgreSQL 15 + Redis 7 开发环境
+  - config.yaml.example: 本地开发配置模板
+  - cmd/api/main.go: 应用入口、数据库初始化、AutoMigrate、Seeder
+  - internal/db/seed.go: 默认 HQ 组织和超级管理员初始化
+  - 安全修复：移除硬编码敏感信息、密码遮蔽
 
 ### [READY]
 *暂无*

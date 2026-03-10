@@ -59,9 +59,13 @@ func (c *Config) DSNHidden() string {
 		c.Host, c.User, c.Database, c.Port, c.SSLMode)
 }
 
-// getLogMode returns the GORM log mode based on environment variable
-func getLogMode() logger.LogLevel {
-	level := strings.ToLower(os.Getenv("DB_LOG_LEVEL"))
+// getLogMode returns the GORM log mode based on input or environment variable
+func getLogMode(level string) logger.LogLevel {
+	if level == "" {
+		level = strings.ToLower(os.Getenv("DB_LOG_LEVEL"))
+	} else {
+		level = strings.ToLower(level)
+	}
 	switch level {
 	case "silent":
 		return logger.Silent
@@ -77,6 +81,11 @@ func getLogMode() logger.LogLevel {
 // InitDB initializes the database connection with connection pooling
 // Thread-safe, can be called multiple times but only executes once
 func InitDB(config *Config) (*gorm.DB, error) {
+	return InitDBWithLogLevel(config, "")
+}
+
+// InitDBWithLogLevel initializes the database with custom log level
+func InitDBWithLogLevel(config *Config, logLevel string) (*gorm.DB, error) {
 	dbOnce.Do(func() {
 		if config == nil {
 			config = NewConfigFromEnv()
@@ -85,7 +94,7 @@ func InitDB(config *Config) (*gorm.DB, error) {
 		dsn := config.DSN()
 
 		dbInstance, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-			Logger: logger.Default.LogMode(getLogMode()),
+			Logger: logger.Default.LogMode(getLogMode(logLevel)),
 		})
 		if err != nil {
 			dbErr = fmt.Errorf("failed to connect to database: %w", err)
