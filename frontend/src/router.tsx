@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
+import WorkOrderList from './pages/WorkOrderList'
+import WorkOrderDetail from './pages/WorkOrderDetail'
 import AppLayout from './components/Layout'
 import { useAuthStore } from './store/useAuthStore'
 
@@ -25,6 +27,22 @@ function AppRouter() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/workorders" 
+          element={
+            <ProtectedRoute>
+              <WorkOrderList />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/workorder/:id" 
+          element={
+            <ProtectedRoute>
+              <WorkOrderDetail />
             </ProtectedRoute>
           } 
         />
