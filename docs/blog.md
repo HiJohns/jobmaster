@@ -444,4 +444,18 @@ CLOSED (已关闭)
 
 ---
 
+## [2026-03-10] | Raw | 前端项目初始化与状态管理
+
+- 使用 Vite 初始化 React + TypeScript 项目
+- 配置 Tailwind CSS 与 PostCSS
+- 集成 Ant Design 5.x 组件库
+- 封装 Axios 请求层（自动注入 Token、401 拦截）
+- 实现 Zustand 状态管理（useAuthStore、useGlobalStore）
+- 配置 React Router 路由结构
+- 实现 Login 和 Dashboard 基础页面
+
+Commit: f3cdbbbc
+
+---
+
 *Last Updated: 2026-03-10*
