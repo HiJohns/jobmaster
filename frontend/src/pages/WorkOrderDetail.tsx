@@ -4,17 +4,7 @@ import { Timeline, Card, Tag, Flex, Text, Button, Modal, Input, ActivityIndicato
 import dayjs from 'dayjs'
 import { workorderApi, WorkOrderDetail } from '../api/workorder'
 import { useAuthStore } from '../store/useAuthStore'
-
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: 'orange',
-  DISPATCHED: 'blue',
-  RESERVED: 'cyan',
-  ARRIVED: 'green',
-  WORKING: 'green',
-  FINISHED: 'purple',
-  OBSERVING: 'magenta',
-  CLOSED: 'gray',
-}
+import { getStatusConfig, canPerformAction, getAvailableActions } from '../config/status'
 
 function WorkOrderDetail() {
   const { id } = useParams<{ id: string }>()
@@ -62,6 +52,11 @@ function WorkOrderDetail() {
         },
         (error) => {
           reject(error)
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
         }
       )
     })
@@ -127,46 +122,43 @@ function WorkOrderDetail() {
   }
 
   const getStatusText = (status: string) => {
-    const statusMap: Record<string, string> = {
-      PENDING: '待指派',
-      DISPATCHED: '已指派',
-      RESERVED: '已预约',
-      ARRIVED: '已到场',
-      WORKING: '施工中',
-      FINISHED: '待验收',
-      OBSERVING: '观察期',
-      CLOSED: '已完成',
-    }
-    return statusMap[status] || status
+    return getStatusConfig(status as WorkOrderStatus).text
+  }
+  
+  const getStatusColor = (status: string) => {
+    return getStatusConfig(status as WorkOrderStatus).color
   }
 
   const getActionButtons = () => {
     if (!order || isImpersonated) return null
 
+    const actions = getAvailableActions(order.status)
     const buttons: React.ReactNode[] = []
-    switch (order.status) {
-      case 'DISPATCHED':
-        buttons.push(
-          <Button key="reserve" onClick={() => setReserveModalVisible(true)} loading={actionLoading}>
-            预约进场
-          </Button>
-        )
-        break
-      case 'RESERVED':
-        buttons.push(
-          <Button key="arrive" onClick={handleArrive} loading={actionLoading} color="success">
-            到场签到
-          </Button>
-        )
-        break
-      case 'WORKING':
-        buttons.push(
-          <Button key="finish" onClick={() => setFinishModalVisible(true)} loading={actionLoading} color="primary">
-            完工提交
-          </Button>
-        )
-        break
+    
+    if (canPerformAction(order.status, 'reserve')) {
+      buttons.push(
+        <Button key="reserve" onClick={() => setReserveModalVisible(true)} loading={actionLoading}>
+          预约进场
+        </Button>
+      )
     }
+    
+    if (canPerformAction(order.status, 'arrive')) {
+      buttons.push(
+        <Button key="arrive" onClick={handleArrive} loading={actionLoading} color="success">
+          到场签到
+        </Button>
+      )
+    }
+    
+    if (canPerformAction(order.status, 'finish')) {
+      buttons.push(
+        <Button key="finish" onClick={() => setFinishModalVisible(true)} loading={actionLoading} color="primary">
+          完工提交
+        </Button>
+      )
+    }
+    
     return buttons
   }
 
@@ -193,7 +185,7 @@ function WorkOrderDetail() {
       <Card style={{ marginBottom: 12 }}>
         <Flex justify="between" align="center" style={{ marginBottom: 12 }}>
           <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{order.order_no}</Text>
-          <Tag color={STATUS_COLORS[order.status]}>{getStatusText(order.status)}</Tag>
+          <Tag color={getStatusColor(order.status)}>{getStatusText(order.status)}</Tag>
         </Flex>
 
         {order.category_path && (

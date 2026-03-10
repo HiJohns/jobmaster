@@ -477,4 +477,12 @@ Commit: f3cdbbbc
 
 ---
 
+## [2026-03-10] | Raw | 前端工单管理模块修复
+
+- 修复 Home.tsx 分页逻辑：使用 currentCount = (currentPage - 1) * PAGE_SIZE + list.length 替代陈旧状态引用
+- 修复 Layout.tsx 组件：添加 Outlet 组件支持 react-router 嵌套路由
+- 完善状态映射表：统一 8 个工单状态的文字、颜色、图标和操作权限管理
+
+---
+
 *Last Updated: 2026-03-10*

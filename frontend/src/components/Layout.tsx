@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Layout as AntLayout, Watermark, Typography } from 'antd'
+import { Layout as AntLayout, Typography } from 'antd'
+import { Outlet } from 'react-router-dom'
 import { useMediaQuery } from 'react-responsive'
 import { useAuthStore } from '../store/useAuthStore'
 import TabBar from './TabBar'
@@ -7,11 +8,7 @@ import TabBar from './TabBar'
 const { Header, Content } = AntLayout
 const { Text } = Typography
 
-interface AppLayoutProps {
-  children: React.ReactNode
-}
-
-function AppLayout({ children }: AppLayoutProps) {
+function AppLayout() {
   const { userInfo, isImpersonated, tenantId } = useAuthStore()
   const [tenantName, setTenantName] = useState<string>('')
   const isMobile = useMediaQuery({ query: '(max-width: 768px)' })
@@ -47,7 +44,7 @@ function AppLayout({ children }: AppLayoutProps) {
         )}
       </Header>
       <Content style={{ background: '#f5f5f5' }}>
-        {children}
+        <Outlet />
       </Content>
       {isMobile && (
         <TabBar />
