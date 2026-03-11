@@ -1,6 +1,11 @@
 package api
 
 import (
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"jobmaster/internal/middleware"
 )
@@ -13,13 +18,6 @@ func SetupRouter() *gin.Engine {
 	// Global middleware - system level
 	r.Use(gin.Recovery())
 	r.Use(gin.Logger())
-
-	// Root endpoint
-	r.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "JobMaster API is running",
-		})
-	})
 
 	// Health check endpoint (no auth required)
 	r.GET("/health", func(c *gin.Context) {
@@ -69,6 +67,40 @@ func SetupRouter() *gin.Engine {
 			protected.POST("/workorders/:id/arrive", ArriveWorkOrder)
 			protected.POST("/workorders/:id/finish", FinishWorkOrder)
 		}
+	}
+
+	// Serve frontend static files
+	frontendDist := "./frontend/dist"
+	if _, err := os.Stat(frontendDist); err == nil {
+		r.NoRoute(func(c *gin.Context) {
+			path := c.Request.URL.Path
+
+			// If it's an API route that's not found, return 404 JSON
+			if strings.HasPrefix(path, "/api/") {
+				c.JSON(http.StatusNotFound, gin.H{"error": "API route not found"})
+				return
+			}
+
+			// Try to serve static files from the dist directory
+			fullPath := filepath.Join(frontendDist, path)
+			if info, err := os.Stat(fullPath); err == nil && !info.IsDir() {
+				c.File(fullPath)
+				return
+			}
+
+			// For all other routes (client-side routing), serve index.html
+			c.File(filepath.Join(frontendDist, "index.html"))
+		})
+	} else {
+		// Fallback if frontend is not built
+		r.GET("/", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{
+				"message": "JobMaster API is running (Frontend not built. Please run 'cd frontend && npm run build')",
+			})
+		})
+		r.NoRoute(func(c *gin.Context) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Route not found"})
+		})
 	}
 
 	return r
