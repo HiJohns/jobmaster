@@ -58,6 +58,9 @@ func SetupRouter() *gin.Engine {
 			protected.POST("/workorders/:id/dispatch", DispatchWorkOrder)
 			protected.POST("/workorders/:id/accept", AcceptWorkOrder)
 			protected.POST("/workorders/:id/reject", RejectWorkOrder)
+			protected.POST("/workorders/:id/reserve", ReserveWorkOrder)
+			protected.POST("/workorders/:id/arrive", ArriveWorkOrder)
+			protected.POST("/workorders/:id/finish", FinishWorkOrder)
 		}
 	}
 

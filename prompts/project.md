@@ -293,6 +293,19 @@ const OrderContainer: React.FC = () => {
 
 ---
 
+### [DONE]
+
+- [x] 优化 main.go 启动逻辑，AutoMigrate 设为可选 (--migrate flag)
+  - 引入 --migrate flag，迁移模式执行后退出
+  - 默认模式跳过迁移，实现秒开
+- [x] 更新 Makefile 指令集
+  - make migrate: 执行数据库迁移
+  - make run: 秒开模式
+  - make dev: 先迁移再热重载
+  - make grand-tour: 全链路集成测试
+
+---
+
 ### [READY]
 
 ### 22. [Investigation] 2026-03-10 全量任务执行报告

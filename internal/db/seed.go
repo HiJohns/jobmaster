@@ -101,7 +101,7 @@ func (s *Seeder) seedSuperAdmin() error {
 		Username:       "admin",
 		Email:          "admin@jobmaster.local",
 		Phone:          "13800138000",
-		Role:           model.UserRoleAdmin,
+		Role:           model.UserRoleBrandHQ,
 		Status:         model.UserStatusActive,
 		DisplayName:    "超级管理员",
 	}

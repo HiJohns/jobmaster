@@ -485,4 +485,21 @@ Commit: f3cdbbbc
 
 ---
 
-*Last Updated: 2026-03-10*
+---
+
+## [2026-03-11] | Raw | main.go 启动逻辑优化与 Makefile 指令更新
+
+- 优化 main.go 启动逻辑：引入 --migrate flag，实现迁移与运行分离
+- 迁移模式 (--migrate)：执行数据库迁移和 Seed 后立即退出
+- 默认模式：跳过迁移，秒开 API（解决 GORM AutoMigrate 耗时问题）
+- 更新 Makefile 指令：
+  - make migrate：执行数据库迁移 (--migrate flag)
+  - make run：秒开模式，跳过迁移
+  - make dev：先迁移再热重载
+  - make grand-tour：全链路集成测试
+- 修复 seed.go：admin 用户角色从 UserRoleAdmin 改为 UserRoleBrandHQ
+- 修复 router.go：添加缺失的 reserve/arrive/finish 端点
+
+---
+
+*Last Updated: 2026-03-11*

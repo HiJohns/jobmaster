@@ -21,16 +21,17 @@ build: ## 编译主程序
 	$(GO) build -ldflags="-w -s" -o $(BUILD_DIR)/$(APP_NAME) $(CMD_DIR)
 	@echo "编译完成: $(BUILD_DIR)/$(APP_NAME)"
 
-run: ## 运行程序并加载环境变量
-	@echo "正在启动 $(APP_NAME)..."
+run: ## 运行程序 (跳过迁移，秒开模式)
+	@echo "正在启动 $(APP_NAME) (跳过迁移)..."
 	@if [ ! -f $(CONFIG_FILE) ]; then \
 		echo "错误: 未找到 $(CONFIG_FILE)，请复制 config.yaml.example 并配置"; \
 		exit 1; \
 	fi
 	$(GO) run $(CMD_DIR)/main.go
 
-dev: ## 开发模式运行 (热重载)
-	@echo "正在以开发模式启动..."
+dev: ## 开发模式：先迁移，再热重载
+	@echo "正在以开发模式启动 (迁移 + 热重载)..."
+	@$(MAKE) migrate
 	@if command -v air >/dev/null 2>&1; then \
 		air; \
 	else \
@@ -66,6 +67,36 @@ pytest: ## 运行 Python 集成测试
 	. venv/bin/activate && \
 	pip install -q -r requirements.txt && \
 	pytest -v
+
+grand-tour: ## 运行全链路集成测试 (Grand Tour)
+	@echo "========================================="
+	@echo "  运行全链路集成测试 (Grand Tour)"
+	@echo "========================================="
+	@echo ""
+	@echo "步骤:"
+	@echo "  1. 检查后端服务状态"
+	@echo "  2. 初始化五方角色账号"
+	@echo "  3. 执行工单全生命周期测试"
+	@echo "  4. 生成测试报告"
+	@echo ""
+	@# Check if backend is running
+	@echo "检查后端服务..."
+	@curl -s http://localhost:5555/health > /dev/null 2>&1 || (echo "错误: 后端服务未运行，请先执行 'make run'"; exit 1)
+	@echo "后端服务已就绪"
+	@echo ""
+	@cd tests/pytest && \
+	if [ ! -f "venv/bin/activate" ]; then \
+		echo "创建 Python 虚拟环境..."; \
+		python3 -m venv venv; \
+	fi && \
+	. venv/bin/activate && \
+	pip install -q -r requirements.txt && \
+	echo "运行 Grand Tour 测试..." && \
+	pytest test_grand_tour.py -v --tb=short 2>&1 | tee tour_report.txt && \
+	echo "" && \
+	echo "=========================================" && \
+	echo "  测试报告已生成: tests/pytest/tour_report.txt" && \
+	echo "========================================="
 
 check: ## 提交前检查：运行所有测试和代码检查
 	@echo "========================================="
@@ -105,9 +136,9 @@ docker-clean: ## 停止并清理开发环境 (包括数据卷)
 	$(DOCKER_COMPOSE) down -v --remove-orphans
 	@echo "开发环境已清理"
 
-migrate: ## 运行数据库迁移
+migrate: ## 运行数据库迁移 (--migrate flag)
 	@echo "正在执行数据库迁移..."
-	$(GO) run $(CMD_DIR)/main.go migrate
+	$(GO) run $(CMD_DIR)/main.go --migrate
 
 seed: ## 运行数据库种子
 	@echo "正在执行数据库种子..."

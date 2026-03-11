@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 
+	"jobmaster/internal/api"
 	dbseeder "jobmaster/internal/db"
 	"jobmaster/internal/model"
 	"jobmaster/pkg/database"
@@ -50,6 +52,10 @@ type Config struct {
 }
 
 func main() {
+	// Parse command line flags
+	migrate := flag.Bool("migrate", false, "Run database migration and seed, then exit")
+	flag.Parse()
+
 	// Load configuration
 	config, err := loadConfig()
 	if err != nil {
@@ -64,14 +70,30 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
-	// Run auto-migration
-	if err := autoMigrate(); err != nil {
-		log.Fatalf("Failed to auto-migrate: %v", err)
+	// Migration mode: run migration and seed, then exit
+	if *migrate {
+		log.Println("Running in migration mode...")
+
+		// Run auto-migration
+		if err := autoMigrate(); err != nil {
+			log.Fatalf("Failed to auto-migrate: %v", err)
+		}
+
+		// Run database seeder
+		if err := runSeeder(); err != nil {
+			log.Fatalf("Failed to seed database: %v", err)
+		}
+
+		log.Println("Migration completed successfully")
+		os.Exit(0)
 	}
 
-	// Run database seeder
-	if err := runSeeder(); err != nil {
-		log.Fatalf("Failed to seed database: %v", err)
+	// Normal mode: skip migration for faster startup
+	log.Println("Skipping migration in normal mode (use --migrate flag to run migration)")
+
+	// Initialize JWT secret from config
+	if config.JWT.Secret != "" {
+		os.Setenv("JWT_SECRET", config.JWT.Secret)
 	}
 
 	// Setup router
@@ -227,29 +249,7 @@ func runSeeder() error {
 
 // setupRouter configures the Gin router
 func setupRouter(config *Config) *gin.Engine {
-	router := gin.New()
-
-	// Middleware
-	router.Use(gin.Recovery())
-	router.Use(gin.Logger())
-
-	// Health check
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-			"time":   time.Now().Unix(),
-		})
-	})
-
-	// API routes (to be implemented)
-	api := router.Group("/api/v1")
-	{
-		api.GET("/ping", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{
-				"message": "pong",
-			})
-		})
-	}
-
+	// Use the centralized router setup from internal/api package
+	router := api.SetupRouter()
 	return router
 }
