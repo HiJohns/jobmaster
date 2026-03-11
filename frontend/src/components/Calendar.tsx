@@ -15,6 +15,12 @@ function WeekCalendar({ onDateChange, selectedDate: initialDate }: WeekCalendarP
     generateWeekDays(dayjs())
   }, [])
 
+  useEffect(() => {
+    if (initialDate) {
+      setSelectedDate(initialDate)
+    }
+  }, [initialDate])
+
   const generateWeekDays = (baseDate: Dayjs) => {
     const startOfWeek = baseDate.startOf('week')
     const days: Dayjs[] = []

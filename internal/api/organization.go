@@ -41,7 +41,7 @@ type OrganizationResponse struct {
 func CreateOrganization(c *gin.Context) {
 	// Check permission
 	userRole, _ := middleware.GetRole(c)
-	if !permissions.HasPermission(&model.User{Role: model.UserRole(userRole)}, permissions.ActionOrgManage) {
+	if !permissions.HasPermission(&model.User{Role: model.UserRole(userRole), Status: model.UserStatusActive}, permissions.ActionOrgManage) {
 		response.Forbidden(c, "insufficient permissions to create organization")
 		return
 	}

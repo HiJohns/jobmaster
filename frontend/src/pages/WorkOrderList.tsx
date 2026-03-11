@@ -65,7 +65,7 @@ function WorkOrderList() {
 
   useEffect(() => {
     fetchOrders()
-  }, [activeTab, searchText, sortOrder, selectedDate])
+  }, [activeTab, searchText, sortOrder, selectedDate.format('YYYY-MM-DD')])
 
   const handleRefresh = async () => {
     setRefreshing(true)
