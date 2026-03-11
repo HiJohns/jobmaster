@@ -44,7 +44,7 @@ function AppLayout() {
           </Text>
         )}
       </Header>
-      <Content style={{ background: '#f5f5f5' }}>
+      <Content style={{ background: 'var(--bg-color)' }}>
         <Outlet />
       </Content>
       {isMobile && (

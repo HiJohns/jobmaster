@@ -6,7 +6,23 @@ export default {
   ],
   theme: {
     extend: {
-      colors: {
+      animation: {
+          'breath-blue': 'breath-blue 2s ease-in-out infinite',
+        },
+        keyframes: {
+          'breath-blue': {
+            '0%, 100%': { boxShadow: '0 0 4px rgba(0, 51, 255, 0.4)', borderColor: 'rgba(0, 51, 255, 0.4)' },
+            '50%': { boxShadow: '0 0 16px rgba(0, 51, 255, 0.8)', borderColor: '#0033FF' },
+          }
+        },
+        boxShadow: {
+          'card': '0 4px 12px rgba(0,0,0,0.05)',
+        },
+        colors: {
+        success: '#00B578',
+        warning: '#FF8F1F',
+        danger: '#FF3141',
+        background: '#F5F7FA',
         primary: {
           DEFAULT: '#0033FF',
           50: '#E6ECFF',

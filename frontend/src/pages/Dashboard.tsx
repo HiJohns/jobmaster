@@ -1,8 +1,8 @@
 import { Layout, Menu, Avatar, Dropdown } from 'antd'
 import {
-  HomeOutlined,
-  FileTextOutlined,
-  SettingOutlined,
+  HomeTwoTone,
+  FileTextTwoTone,
+  SettingTwoTone,
   UserOutlined,
   LogoutOutlined,
 } from '@ant-design/icons'
@@ -20,17 +20,17 @@ function Dashboard() {
   const menuItems: MenuProps['items'] = [
     {
       key: '/',
-      icon: <HomeOutlined />,
+      icon: <HomeTwoTone twoToneColor="#0033FF" />,
       label: '首页',
     },
     {
       key: '/workorders',
-      icon: <FileTextOutlined />,
+      icon: <FileTextTwoTone twoToneColor="#0033FF" />,
       label: '工单管理',
     },
     {
       key: '/settings',
-      icon: <SettingOutlined />,
+      icon: <SettingTwoTone twoToneColor="#0033FF" />,
       label: '系统设置',
     },
   ]
@@ -64,7 +64,7 @@ function Dashboard() {
   return (
     <Layout className="min-h-screen">
       <Sider
-        theme="light"
+        theme="dark"
         className="shadow-md"
         breakpoint="lg"
         collapsedWidth="0"
@@ -73,6 +73,7 @@ function Dashboard() {
           <h1 className="text-xl font-bold text-primary">JobMaster</h1>
         </div>
         <Menu
+          theme="dark"
           mode="inline"
           selectedKeys={[location.pathname]}
           items={menuItems}
@@ -96,7 +97,7 @@ function Dashboard() {
           </Dropdown>
         </Header>
         
-        <Content className="m-6 p-6 bg-white rounded-lg shadow-sm">
+        <Content className="m-6 p-6 card-layout">
           <div className="text-center py-20">
             <h2 className="text-2xl font-bold mb-4">欢迎使用 JobMaster</h2>
             <p className="text-gray-500">智能工单管理系统</p>
