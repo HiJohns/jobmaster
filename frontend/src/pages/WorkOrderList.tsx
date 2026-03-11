@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Tabs, SearchBar, PullToRefresh, Card, Tag, SpinLoading } from 'antd-mobile'
+import { Tabs, SearchBar, PullToRefresh, SpinLoading } from 'antd-mobile'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { workorderApi, WorkOrder } from '../api/workorder'
 import { useAuthStore } from '../store/useAuthStore'
 import WeekCalendar from '../components/Calendar'
+import WorkOrderCard from '../components/WorkOrderCard'
 
 const STATUS_TABS = [
   { key: 'pending', title: '待服务', status: ['PENDING', 'DISPATCHED'] },
@@ -13,16 +14,6 @@ const STATUS_TABS = [
   { key: 'completed', title: '已完成', status: ['CLOSED'] },
 ]
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: 'orange',
-  DISPATCHED: 'blue',
-  RESERVED: 'cyan',
-  ARRIVED: 'green',
-  WORKING: 'green',
-  FINISHED: 'purple',
-  OBSERVING: 'magenta',
-  CLOSED: 'gray',
-}
 
 function WorkOrderList() {
   const navigate = useNavigate()
@@ -77,53 +68,10 @@ function WorkOrderList() {
     navigate(`/workorder/${orderId}`)
   }
 
-  const getStatusText = (status: string) => {
-    const statusMap: Record<string, string> = {
-      PENDING: '待指派',
-      DISPATCHED: '已指派',
-      RESERVED: '已预约',
-      ARRIVED: '已到场',
-      WORKING: '施工中',
-      FINISHED: '待验收',
-      OBSERVING: '观察期',
-      CLOSED: '已完成',
-    }
-    return statusMap[status] || status
-  }
+
 
   const renderOrderCard = (order: WorkOrder) => (
-    <Card
-      key={order.id}
-      onClick={() => handleOrderClick(order.id)}
-      style={{ marginBottom: 12 }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <span style={{ fontWeight: 'bold' }}>{order.order_no}</span>
-        <Tag color={STATUS_COLORS[order.status] || 'blue'}>
-          {getStatusText(order.status)}
-        </Tag>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
-        <span style={{ fontSize: 14 }}>网点: {order.store_name || order.store_id}</span>
-        {order.brand_name && <span style={{ fontSize: 14 }}>品牌: {order.brand_name}</span>}
-        {order.category_path && <span style={{ fontSize: 14 }}>分类: {order.category_path}</span>}
-        {order.photo_urls && order.photo_urls.length > 0 && (
-          <div style={{ display: "flex", marginTop: 8 }}>
-            {order.photo_urls.slice(0, 3).map((url, idx) => (
-              <img
-                key={idx}
-                src={url}
-                alt=""
-                style={{ width: 60, height: 60, objectFit: 'cover', marginRight: 8, borderRadius: 4 }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-      {order.is_urgent && (
-        <Tag color="red" style={{ marginTop: 8 }}>加急</Tag>
-      )}
-    </Card>
+    <WorkOrderCard key={order.id} order={order} onClick={handleOrderClick} />
   )
 
   return (

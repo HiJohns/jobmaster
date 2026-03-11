@@ -78,8 +78,9 @@ function WeekCalendar({ onDateChange, selectedDate: initialDate }: WeekCalendarP
             justifyContent: 'center',
             alignItems: 'center',
             cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            boxShadow: isSelected(date) ? '0 2px 8px rgba(255, 215, 0, 0.4)' : 'none',
+            transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            transform: isSelected(date) ? 'scale(1.08)' : 'scale(1)',
+            boxShadow: isSelected(date) ? '0 4px 12px rgba(255, 215, 0, 0.5)' : 'none',
           }}
         >
           <div style={{ textAlign: 'center' }}>

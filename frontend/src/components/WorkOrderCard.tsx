@@ -45,13 +45,21 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
   return (
     <Card
       onClick={handleClick}
+      className="card-layout transition-all active:scale-[0.98] hover:shadow-lg"
       style={{
-        marginBottom: 12,
+        marginBottom: 16,
+        position: 'relative',
         borderRadius: 12,
         overflow: 'hidden',
+        border: 'none',
       }}
-      bodyStyle={{ padding: 16 }}
+      bodyStyle={{ padding: 0 }}
     >
+      {/* Left color bar */}
+      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 6, backgroundColor: statusConfig.color, zIndex: 10 }} />
+      
+      <div style={{ padding: '16px 16px 16px 20px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
       {/* Header: Order number and Status */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <span
@@ -141,52 +149,25 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
         )}
       </div>
 
-      {/* Photo thumbnails */}
-      {order.photo_urls && order.photo_urls.length > 0 && (
-        <div style={{ display: "flex", marginTop: 12 }}>
-          {order.photo_urls.slice(0, 3).map((url, idx) => (
-            <div
-              key={idx}
-              style={{
-                width: 64,
-                height: 64,
-                marginRight: 8,
-                borderRadius: 8,
-                overflow: 'hidden',
-                backgroundColor: '#f5f5f5',
-              }}
-            >
-              <img
-                src={url}
-                alt={`Photo ${idx + 1}`}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                }}
-              />
-            </div>
-          ))}
-          {order.photo_urls.length > 3 && (
-            <div
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: 8,
-                backgroundColor: '#f5f5f5',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 14,
-                color: '#666',
-              }}
-            >
-              +{order.photo_urls.length - 3}
-            </div>
-          )}
-        </div>
-      )}
-    </Card>
+      </div>
+        
+        {/* Right side thumbnail */}
+        {order.photo_urls && order.photo_urls.length > 0 && (
+          <div style={{ width: 80, height: 80, flexShrink: 0, borderRadius: 8, overflow: 'hidden', position: 'relative' }}>
+            <img 
+              src={order.photo_urls[0]} 
+              alt="Thumbnail" 
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+            />
+            {order.photo_urls.length > 1 && (
+              <div style={{ position: 'absolute', right: 4, bottom: 4, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 10, padding: '2px 6px', borderRadius: 10 }}>
+                {order.photo_urls.length}图
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      </Card>
   )
 }
 
