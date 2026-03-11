@@ -492,9 +492,9 @@ Commit: ac61bd39
 - 路由配置 (`router.go`)：配置 `r.NoRoute` 代理前端 `dist` 目录，使得对 `GET /` 以及非 API 路由的请求都会自动返回前端编译后的 `index.html`。
 - 如果前端没有编译 (`frontend/dist` 目录不存在)，则友好的返回 JSON 提示语 `(Frontend not built. Please run 'cd frontend && npm run build')`。
 - 修复 `vite build` 报错问题：补充缺失的 `tsconfig.json` 和 `tsconfig.node.json`，并将 TailwindCSS 的 PostCSS 插件更新为 `@tailwindcss/postcss` 兼容最新版 V4。
-- **注意**: 目前执行 `npm run build` 会报 TS 编译错误，原因是代码引用的 `antd-mobile` `Flex`, `Text`, `Timeline` 等组件在当前依赖版本 (V5) 中已被移除，需要后续升级或重构前端 UI 代码以完全通过类型校验。
+- 修复 `npm run build` TypeScript 编译错误：移除代码引用的 `antd-mobile` 中已被弃用的组件（如 `Flex`, `Text`, `Timeline`, `ActivityIndicator`），替换为标准 `div`/`span` 和 `SpinLoading`；修复 `PullToRefresh` 与 `Modal` 在 V5 版本的 API 调用规则；修正 `useAuthStore` 解构中的状态字段和 React Hook 未使用警告。目前前端已完全通过 TS 检查并可成功编译生产环境静态文件。
 
-Commit: 1ac9c8bb
+Commit: 67054567
 
 ---
 
