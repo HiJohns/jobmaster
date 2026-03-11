@@ -59,8 +59,8 @@ function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <Card className="w-full max-w-md shadow-lg">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-gray-100 to-indigo-100">
+      <Card className="w-full shadow-card border border-white/50" style={{ maxWidth: 400, background: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(10px)', borderRadius: 16 }}>
         <div className="text-center mb-8">
           <Title level={3} className="!text-primary !mb-2">
             JobMaster
@@ -80,6 +80,7 @@ function Login() {
             rules={[{ required: true, message: '请输入用户名' }]}
           >
             <Input
+              className="breath-input"
               prefix={<UserOutlined />}
               placeholder="用户名"
               autoFocus
@@ -91,6 +92,7 @@ function Login() {
             rules={[{ required: true, message: '请输入密码' }]}
           >
             <Input.Password
+              className="breath-input"
               prefix={<LockOutlined />}
               placeholder="密码"
             />
@@ -101,7 +103,7 @@ function Login() {
               type="primary"
               htmlType="submit"
               loading={loading}
-              className="w-full"
+              className="w-full h-10 text-lg rounded-md transition-all hover:scale-[1.02]"
               style={{ backgroundColor: '#0033FF' }}
             >
               登录
