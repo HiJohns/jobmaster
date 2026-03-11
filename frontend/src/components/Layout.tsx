@@ -9,7 +9,8 @@ const { Header, Content } = AntLayout
 const { Text } = Typography
 
 function AppLayout() {
-  const { userInfo, isImpersonated, tenantId } = useAuthStore()
+  const { userInfo, isImpersonated } = useAuthStore()
+  const tenantId = userInfo?.tenantId || ''
   const [tenantName, setTenantName] = useState<string>('')
   const isMobile = useMediaQuery({ query: '(max-width: 768px)' })
 

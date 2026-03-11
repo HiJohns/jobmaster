@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Flex, Text } from 'antd-mobile'
+
 import dayjs, { Dayjs } from 'dayjs'
 
 interface WeekCalendarProps {
@@ -52,9 +52,9 @@ function WeekCalendar({ onDateChange, selectedDate: initialDate }: WeekCalendarP
   }
 
   return (
-    <Flex style={{ padding: 12, backgroundColor: '#fff', overflowX: 'auto' }}>
+    <div style={{ display: 'flex', padding: 12, backgroundColor: '#fff', overflowX: 'auto' }}>
       {currentWeek.map((date, index) => (
-        <Flex.Item
+        <div
           key={index}
           onClick={() => handleDateSelect(date)}
           style={{
@@ -68,7 +68,7 @@ function WeekCalendar({ onDateChange, selectedDate: initialDate }: WeekCalendarP
           }}
         >
           <div style={{ textAlign: 'center' }}>
-            <Text
+            <span
               style={{
                 fontSize: 12,
                 color: isSelected(date) ? '#fff' : '#999',
@@ -76,8 +76,8 @@ function WeekCalendar({ onDateChange, selectedDate: initialDate }: WeekCalendarP
               }}
             >
               {formatDay(date)}
-            </Text>
-            <Text
+            </span>
+            <span
               style={{
                 fontSize: 18,
                 fontWeight: 'bold',
@@ -86,11 +86,11 @@ function WeekCalendar({ onDateChange, selectedDate: initialDate }: WeekCalendarP
               }}
             >
               {formatDate(date)}
-            </Text>
+            </span>
           </div>
-        </Flex.Item>
+        </div>
       ))}
-    </Flex>
+    </div>
   )
 }
 

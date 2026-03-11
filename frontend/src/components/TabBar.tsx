@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { TabBar as AntTabBar } from 'antd-mobile'
 import {
   CompassOutlined,

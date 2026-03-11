@@ -9,7 +9,7 @@
  * - Type-safe API methods
  */
 
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
+import axios, { AxiosInstance, AxiosRequestConfig, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
 import { Toast } from 'antd-mobile'
 import { useAuthStore } from '../store/useAuthStore'
 
@@ -31,7 +31,7 @@ const createRequest = (): AxiosInstance => {
 
   // Request interceptor - inject auth token
   instance.interceptors.request.use(
-    (config: AxiosRequestConfig) => {
+    (config: InternalAxiosRequestConfig) => {
       const { token } = useAuthStore.getState()
       
       if (token && config.headers) {

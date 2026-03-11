@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Tabs, SearchBar, PullRefresh, Card, Tag, Flex, Text, ActivityIndicator } from 'antd-mobile'
+import { Tabs, SearchBar, PullToRefresh, Card, Tag, SpinLoading } from 'antd-mobile'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { workorderApi, WorkOrder } from '../api/workorder'
@@ -26,14 +26,14 @@ const STATUS_COLORS: Record<string, string> = {
 
 function WorkOrderList() {
   const navigate = useNavigate()
-  const { userInfo } = useAuthStore()
+  useAuthStore()
   const [activeTab, setActiveTab] = useState('pending')
   const [searchText, setSearchText] = useState('')
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   const [selectedDate, setSelectedDate] = useState(dayjs())
   const [orders, setOrders] = useState<WorkOrder[]>([])
   const [loading, setLoading] = useState(false)
-  const [refreshing, setRefreshing] = useState(false)
+  const [, setRefreshing] = useState(false)
 
   const fetchOrders = async () => {
     const tab = STATUS_TABS.find((t) => t.key === activeTab)
@@ -44,7 +44,7 @@ function WorkOrderList() {
       const params = {
         status: tab.status.join(','),
         keyword: searchText,
-        sort_by: 'created_at',
+        sort_by: 'created_at' as 'created_at' | 'updated_at',
         sort_order: sortOrder,
         start_date: selectedDate.startOf('day').toISOString(),
         end_date: selectedDate.endOf('day').toISOString(),
@@ -97,18 +97,18 @@ function WorkOrderList() {
       onClick={() => handleOrderClick(order.id)}
       style={{ marginBottom: 12 }}
     >
-      <Flex justify="between" align="center" style={{ marginBottom: 8 }}>
-        <Text style={{ fontWeight: 'bold' }}>{order.order_no}</Text>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <span style={{ fontWeight: 'bold' }}>{order.order_no}</span>
         <Tag color={STATUS_COLORS[order.status] || 'blue'}>
           {getStatusText(order.status)}
         </Tag>
-      </Flex>
-      <Flex direction="column" align="start" style={{ gap: 4 }}>
-        <Text style={{ fontSize: 14 }}>网点: {order.store_name || order.store_id}</Text>
-        {order.brand_name && <Text style={{ fontSize: 14 }}>品牌: {order.brand_name}</Text>}
-        {order.category_path && <Text style={{ fontSize: 14 }}>分类: {order.category_path}</Text>}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+        <span style={{ fontSize: 14 }}>网点: {order.store_name || order.store_id}</span>
+        {order.brand_name && <span style={{ fontSize: 14 }}>品牌: {order.brand_name}</span>}
+        {order.category_path && <span style={{ fontSize: 14 }}>分类: {order.category_path}</span>}
         {order.photo_urls && order.photo_urls.length > 0 && (
-          <Flex style={{ marginTop: 8 }}>
+          <div style={{ display: "flex", marginTop: 8 }}>
             {order.photo_urls.slice(0, 3).map((url, idx) => (
               <img
                 key={idx}
@@ -117,9 +117,9 @@ function WorkOrderList() {
                 style={{ width: 60, height: 60, objectFit: 'cover', marginRight: 8, borderRadius: 4 }}
               />
             ))}
-          </Flex>
+          </div>
         )}
-      </Flex>
+      </div>
       {order.is_urgent && (
         <Tag color="red" style={{ marginTop: 8 }}>加急</Tag>
       )}
@@ -137,15 +137,15 @@ function WorkOrderList() {
         style={{ background: '#fff' }}
       />
 
-      <Flex justify="between" align="center" style={{ padding: '8px 12px', background: '#fff' }}>
-        <Text style={{ fontSize: 12, color: '#666' }}>共 {orders.length} 条</Text>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: '#fff' }}>
+        <span style={{ fontSize: 12, color: '#666' }}>共 {orders.length} 条</span>
         <div
           onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
           style={{ cursor: 'pointer', color: '#0033FF' }}
         >
           创建时间 {sortOrder === 'desc' ? '↓' : '↑'}
         </div>
-      </Flex>
+      </div>
 
       <Tabs
         activeKey={activeTab}
@@ -154,21 +154,21 @@ function WorkOrderList() {
       >
         {STATUS_TABS.map((tab) => (
           <Tabs.Tab key={tab.key} title={tab.title}>
-            <PullRefresh refreshing={refreshing} onRefresh={handleRefresh}>
+            <PullToRefresh  onRefresh={handleRefresh}>
               <div style={{ padding: 12, minHeight: 200 }}>
                 {loading ? (
-                  <Flex justify="center" align="center" style={{ padding: 40 }}>
-                    <ActivityIndicator size="large" />
-                  </Flex>
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 40 }}>
+                    <SpinLoading style={{ "--size": "32px" } as any} />
+                  </div>
                 ) : orders.length === 0 ? (
-                  <Flex justify="center" align="center" style={{ padding: 40 }}>
-                    <Text style={{ color: '#999' }}>暂无工单</Text>
-                  </Flex>
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 40 }}>
+                    <span style={{ color: '#999' }}>暂无工单</span>
+                  </div>
                 ) : (
                   orders.map(renderOrderCard)
                 )}
               </div>
-            </PullRefresh>
+            </PullToRefresh>
           </Tabs.Tab>
         ))}
       </Tabs>

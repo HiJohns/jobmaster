@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { Timeline, Card, Tag, Flex, Text, Button, Modal, Input, ActivityIndicator, Toast } from 'antd-mobile'
+import { useParams } from 'react-router-dom'
+import { Card, Tag, Button, Modal, TextArea, SpinLoading, Toast } from 'antd-mobile'
 import dayjs from 'dayjs'
-import { workorderApi, WorkOrderDetail } from '../api/workorder'
+import { workorderApi } from '../api/workorder'
+import type { WorkOrderDetail } from '../api/workorder'
 import { useAuthStore } from '../store/useAuthStore'
-import { getStatusConfig, canPerformAction, getAvailableActions } from '../config/status'
+import { getStatusConfig, canPerformAction, getAvailableActions, WorkOrderStatus } from '../config/status'
 
 function WorkOrderDetail() {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
-  const { userInfo, isImpersonated } = useAuthStore()
+    const { userInfo, isImpersonated } = useAuthStore()
   const [order, setOrder] = useState<WorkOrderDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
@@ -68,7 +68,7 @@ function WorkOrderDetail() {
     try {
       const response = await workorderApi.reserve(id, new Date(reserveTime).toISOString())
       if (response.code === 200) {
-        Toast.success('预约成功')
+        Toast.show('预约成功')
         setReserveModalVisible(false)
         fetchOrderDetail()
       }
@@ -86,11 +86,11 @@ function WorkOrderDetail() {
       const position = await getCurrentPosition()
       const response = await workorderApi.arrive(id, position.latitude, position.longitude)
       if (response.code === 200) {
-        Toast.success('签到成功')
+        Toast.show('签到成功')
         fetchOrderDetail()
       }
     } catch (error) {
-      Toast.fail('获取定位失败，请检查权限')
+      Toast.show('获取定位失败，请检查权限')
       console.error('Arrive failed:', error)
     } finally {
       setActionLoading(false)
@@ -110,7 +110,7 @@ function WorkOrderDetail() {
         order?.other_fee || 0
       )
       if (response.code === 200) {
-        Toast.success('完工提交成功')
+        Toast.show('完工提交成功')
         setFinishModalVisible(false)
         fetchOrderDetail()
       }
@@ -132,7 +132,7 @@ function WorkOrderDetail() {
   const getActionButtons = () => {
     if (!order || isImpersonated) return null
 
-    const actions = getAvailableActions(order.status)
+    getAvailableActions(order.status)
     const buttons: React.ReactNode[] = []
     
     if (canPerformAction(order.status, 'reserve')) {
@@ -164,17 +164,17 @@ function WorkOrderDetail() {
 
   if (loading) {
     return (
-      <Flex justify="center" align="center" style={{ padding: 40 }}>
-        <ActivityIndicator size="large" />
-      </Flex>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: 40 }}>
+        <SpinLoading style={{ "--size": "32px" } as any} />
+      </div>
     )
   }
 
   if (!order) {
     return (
-      <Flex justify="center" align="center" style={{ padding: 40 }}>
-        <Text>工单不存在</Text>
-      </Flex>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: 40 }}>
+        <span>工单不存在</span>
+      </div>
     )
   }
 
@@ -183,58 +183,58 @@ function WorkOrderDetail() {
   return (
     <div style={{ padding: 12, paddingBottom: 80 }}>
       <Card style={{ marginBottom: 12 }}>
-        <Flex justify="between" align="center" style={{ marginBottom: 12 }}>
-          <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{order.order_no}</Text>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <span style={{ fontSize: 18, fontWeight: 'bold' }}>{order.order_no}</span>
           <Tag color={getStatusColor(order.status)}>{getStatusText(order.status)}</Tag>
-        </Flex>
+        </div>
 
         {order.category_path && (
-          <Text style={{ display: 'block', marginBottom: 8 }}>分类: {order.category_path}</Text>
+          <span style={{ display: 'block', marginBottom: 8 }}>分类: {order.category_path}</span>
         )}
         {order.brand_name && (
-          <Text style={{ display: 'block', marginBottom: 8 }}>品牌: {order.brand_name}</Text>
+          <span style={{ display: 'block', marginBottom: 8 }}>品牌: {order.brand_name}</span>
         )}
         {order.description && (
-          <Text style={{ display: 'block', marginBottom: 8 }}>故障描述: {order.description}</Text>
+          <span style={{ display: 'block', marginBottom: 8 }}>故障描述: {order.description}</span>
         )}
 
         {order.address_detail && (
-          <Text style={{ display: 'block', marginBottom: 8 }}>地址: {order.address_detail}</Text>
+          <span style={{ display: 'block', marginBottom: 8 }}>地址: {order.address_detail}</span>
         )}
 
         {userInfo?.role !== 'STORE' && (
-          <Flex style={{ marginTop: 12 }}>
-            <Text style={{ color: '#666' }}>费用合计: </Text>
-            <Text style={{ fontWeight: 'bold' }}>CNY {totalFee.toFixed(2)}</Text>
-          </Flex>
+          <div style={{ display: "flex", marginTop: 12 }}>
+            <span style={{ color: '#666' }}>费用合计: </span>
+            <span style={{ fontWeight: 'bold' }}>CNY {totalFee.toFixed(2)}</span>
+          </div>
         )}
 
         {order.is_urgent && <Tag color="red" style={{ marginTop: 8 }}>加急</Tag>}
       </Card>
 
       <Card title="时间轴" style={{ marginBottom: 12 }}>
-        <Timeline>
+        <div className="timeline">
           {order.logs?.map((log, index) => (
-            <Timeline.Item
+            <div className="timeline-item"
               key={index}
-              dot={index === 0 ? undefined : undefined}
+              
             >
-              <Text style={{ fontWeight: 'bold' }}>{log.action}</Text>
+              <span style={{ fontWeight: 'bold' }}>{log.action}</span>
               <br />
-              <Text style={{ fontSize: 12, color: '#666' }}>{log.user_name}</Text>
+              <span style={{ fontSize: 12, color: '#666' }}>{log.user_name}</span>
               <br />
-              <Text style={{ fontSize: 12, color: '#999' }}>
+              <span style={{ fontSize: 12, color: '#999' }}>
                 {dayjs(log.created_at).format('YYYY-MM-DD HH:mm')}
-              </Text>
+              </span>
               {log.details && <div style={{ marginTop: 4 }}>{log.details}</div>}
-            </Timeline.Item>
+            </div>
           ))}
-        </Timeline>
+        </div>
       </Card>
 
-      <Flex justify="center" style={{ gap: 12 }}>
+      <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
         {getActionButtons()}
-      </Flex>
+      </div>
 
       <Modal
         visible={reserveModalVisible}
@@ -244,14 +244,14 @@ function WorkOrderDetail() {
           { key: 'cancel', text: '取消', onClick: () => setReserveModalVisible(false) },
           { key: 'confirm', text: '确认', onClick: handleReserve },
         ]}
-      >
-        <Input
-          type="datetime-local"
-          value={reserveTime}
-          onChange={setReserveTime}
-          placeholder="选择预约时间"
-        />
-      </Modal>
+        content={
+          <input type="datetime-local"
+            value={reserveTime}
+            onChange={(e: any) => setReserveTime(e.target.value)}
+            placeholder="选择预约时间"
+          />
+        }
+      />
 
       <Modal
         visible={finishModalVisible}
@@ -261,14 +261,15 @@ function WorkOrderDetail() {
           { key: 'cancel', text: '取消', onClick: () => setFinishModalVisible(false) },
           { key: 'confirm', text: '确认', onClick: handleFinish },
         ]}
-      >
-        <Input
-          value={finishDescription}
-          onChange={setFinishDescription}
-          placeholder="输入施工总结"
-          rows={4}
-        />
-      </Modal>
+        content={
+          <TextArea
+            value={finishDescription}
+            onChange={setFinishDescription}
+            placeholder="输入施工总结"
+            rows={4}
+          />
+        }
+      />
     </div>
   )
 }

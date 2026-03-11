@@ -1,4 +1,4 @@
-import { Layout, Menu, Button, Avatar, Dropdown } from 'antd'
+import { Layout, Menu, Avatar, Dropdown } from 'antd'
 import {
   HomeOutlined,
   FileTextOutlined,

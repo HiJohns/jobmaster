@@ -9,8 +9,7 @@
  * - Status badge with appropriate color
  */
 
-import React from 'react'
-import { Card, Tag, Flex } from 'antd-mobile'
+import { Card, Tag } from 'antd-mobile'
 import { FireFill } from 'antd-mobile-icons'
 import { WorkOrder } from '../api/workorder'
 import { getStatusConfig } from '../config/status'
@@ -54,7 +53,7 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
       bodyStyle={{ padding: 16 }}
     >
       {/* Header: Order number and Status */}
-      <Flex justify="between" align="center" style={{ marginBottom: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <span
           style={{
             fontSize: 16,
@@ -73,13 +72,14 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
         >
           {statusConfig.text}
         </Tag>
-      </Flex>
+      </div>
 
       {/* Urgent badge */}
       {order.is_urgent && (
-        <Flex
-          align="center"
+        <div
           style={{
+            display: "flex",
+            alignItems: "center",
             marginBottom: 12,
             padding: '6px 12px',
             backgroundColor: '#fff2f0',
@@ -91,7 +91,7 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
           <span style={{ color: '#ff4d4f', fontSize: 13, fontWeight: 'bold' }}>
             加急工单
           </span>
-        </Flex>
+        </div>
       )}
 
       {/* Content */}
@@ -143,7 +143,7 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
 
       {/* Photo thumbnails */}
       {order.photo_urls && order.photo_urls.length > 0 && (
-        <Flex style={{ marginTop: 12 }}>
+        <div style={{ display: "flex", marginTop: 12 }}>
           {order.photo_urls.slice(0, 3).map((url, idx) => (
             <div
               key={idx}
@@ -184,7 +184,7 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
               +{order.photo_urls.length - 3}
             </div>
           )}
-        </Flex>
+        </div>
       )}
     </Card>
   )

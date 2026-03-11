@@ -10,15 +10,15 @@
  * - Pull to refresh and infinite scroll
  */
 
-import React, { useState, useEffect, useCallback } from 'react'
-import { Tabs, SearchBar, PullRefresh, InfiniteScroll, FloatingBubble } from 'antd-mobile'
+import { useState, useEffect, useCallback } from 'react'
+import { Tabs, SearchBar, PullToRefresh, InfiniteScroll, FloatingBubble } from 'antd-mobile'
 import { AddOutline } from 'antd-mobile-icons'
 import { useNavigate } from 'react-router-dom'
 import dayjs, { Dayjs } from 'dayjs'
 import WeekCalendar from '../components/WeekCalendar'
 import WorkOrderCard from '../components/WorkOrderCard'
 import { workorderApi, WorkOrder } from '../api/workorder'
-import { STATUS_GROUPS, WorkOrderStatus } from '../config/status'
+import { STATUS_GROUPS } from '../config/status'
 import { useAuthStore } from '../store/useAuthStore'
 
 /**
@@ -44,7 +44,7 @@ function Home() {
   const [searchText, setSearchText] = useState('')
   const [orders, setOrders] = useState<WorkOrder[]>([])
   const [loading, setLoading] = useState(false)
-  const [refreshing, setRefreshing] = useState(false)
+  const [, setRefreshing] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 10
@@ -167,7 +167,7 @@ function Home() {
 
       {/* Order List */}
       <div style={{ flex: 1, overflow: 'auto', background: '#f5f5f5' }}>
-        <PullRefresh onRefresh={handleRefresh} refreshing={refreshing}>
+        <PullToRefresh onRefresh={handleRefresh} >
           <div style={{ padding: 12 }}>
             {orders.length === 0 && !loading ? (
               <div
@@ -200,7 +200,7 @@ function Home() {
               </>
             )}
           </div>
-        </PullRefresh>
+        </PullToRefresh>
       </div>
 
       {/* Create Order Button (for STORE role) */}

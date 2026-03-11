@@ -9,8 +9,8 @@
  * - Responsive horizontal scroll
  */
 
-import React, { useState, useEffect, useCallback } from 'react'
-import { Flex } from 'antd-mobile'
+import { useState, useEffect, useCallback } from 'react'
+
 import dayjs, { Dayjs } from 'dayjs'
 import 'dayjs/locale/zh-cn'
 
@@ -54,8 +54,9 @@ function WeekCalendar({ onDateChange, selectedDate: initialDate }: WeekCalendarP
   const isSelected = (date: Dayjs) => date.isSame(selectedDate, 'day')
 
   return (
-    <Flex
+    <div
       style={{
+        display: 'flex',
         padding: '12px 8px',
         backgroundColor: '#fff',
         overflowX: 'auto',
@@ -63,7 +64,7 @@ function WeekCalendar({ onDateChange, selectedDate: initialDate }: WeekCalendarP
       }}
     >
       {currentWeek.map((date, index) => (
-        <Flex.Item
+        <div
           key={index}
           onClick={() => handleDateSelect(date)}
           style={{
@@ -114,9 +115,9 @@ function WeekCalendar({ onDateChange, selectedDate: initialDate }: WeekCalendarP
               />
             )}
           </div>
-        </Flex.Item>
+        </div>
       ))}
-    </Flex>
+    </div>
   )
 }
 
