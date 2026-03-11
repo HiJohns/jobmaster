@@ -14,6 +14,13 @@ func SetupRouter() *gin.Engine {
 	r.Use(gin.Recovery())
 	r.Use(gin.Logger())
 
+	// Root endpoint
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "JobMaster API is running",
+		})
+	})
+
 	// Health check endpoint (no auth required)
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
