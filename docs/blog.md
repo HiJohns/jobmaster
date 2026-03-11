@@ -444,46 +444,31 @@ CLOSED (已关闭)
 
 ---
 
-## [2026-03-10] | Raw | 前端项目初始化与状态管理
+## [2026-03-10] | Summary
 
-- 使用 Vite 初始化 React + TypeScript 项目
-- 配置 Tailwind CSS 与 PostCSS
-- 集成 Ant Design 5.x 组件库
-- 封装 Axios 请求层（自动注入 Token、401 拦截）
-- 实现 Zustand 状态管理（useAuthStore、useGlobalStore）
-- 配置 React Router 路由结构
-- 实现 Login 和 Dashboard 基础页面
+### 前端基础架构搭建
+- 使用 Vite 初始化 React + TypeScript 项目，配置 Tailwind CSS、Ant Design 5.x 组件库
+- 封装 Axios 请求层，实现 Token 自动注入与 401 拦截跳转
+- 实现 Zustand 状态管理（useAuthStore、useGlobalStore），支持 Token 持久化
+- 配置 React Router 路由结构，实现登录页与权限路由保护
+- 基础布局组件：顶栏显示租户名称、只读模式水印、响应式 TabBar 导航
 
-Commit: f3cdbbbc
-
----
-
-## [2026-03-10] | Raw | 登录页、基础布局与权限路由
-
-- 登录页面：集成后端 /auth/login 接口，实现"记住账号"功能（localStorage）
-- 基础布局组件 (AppLayout)：顶栏显示租户名称、只读模式水印、响应式 TabBar
-- 移动端 TabBar：勘查、资料、派工、服务、费用五个导航项
-- 权限路由集成：ProtectedRoute 使用 AppLayout 包裹受保护页面
-
----
-
-## [2026-03-10] | Raw | 前端工单管理模块实现
-
-- 工单 API 层：封装 workorderApi，支持列表、详情、创建、派工、预约、签到、完工等操作
-- 工单列表页：状态分组标签（待服务/服务中/待修正/已完成）、日历筛选、搜索、下拉刷新
-- 工单详情页：状态展示、时间轴记录、施工动作（预约/签到/完工）、GPS 定位获取
+### 前端工单管理模块
+- 工单 API 层：封装 workorderApi，支持列表、详情、创建、派工、预约、签到、完工等全流程操作
+- 工单列表页：状态分组标签（待服务/服务中/待修正/已完成）、日历筛选、模糊搜索、下拉刷新
+- 工单详情页：状态展示、时间轴记录、施工动作按钮、GPS 定位获取
 - 周历组件：横向滑动日历，支持日期选择与高亮
-- 路由集成：/workorders 列表页、/workorder/:id 详情页
+- Bug 修复：Home.tsx 分页逻辑、Layout.tsx Outlet 嵌套路由支持、状态映射表完善
 
 ---
 
-## [2026-03-10] | Raw | 前端工单管理模块修复
+## [2026-03-11] | Raw | 前端组件状态同步与权限校验修复
 
-- 修复 Home.tsx 分页逻辑：使用 currentCount = (currentPage - 1) * PAGE_SIZE + list.length 替代陈旧状态引用
-- 修复 Layout.tsx 组件：添加 Outlet 组件支持 react-router 嵌套路由
-- 完善状态映射表：统一 8 个工单状态的文字、颜色、图标和操作权限管理
+- Calendar.tsx: 添加 useEffect 处理 initialDate 外部传入值变化，确保日历组件响应日期选择器更新
+- WorkOrderList.tsx: 修复 useEffect 依赖项，使用 selectedDate.format('YYYY-MM-DD') 替代 dayjs 对象引用，避免无限循环渲染
+- organization.go: 修复组织创建权限校验，添加 UserStatusActive 状态检查
 
----
+Commit: ac61bd39
 
 ---
 
