@@ -255,6 +255,8 @@ const OrderContainer: React.FC = () => {
 - [x] Upgrade global theme and style system: colors, card layout, sidebar dark mode.
 - [x] Refactor login page: 400px width, glassmorphism, loading animation, breath border.
 - [x] Optimize WeekCalendar and WorkOrderCard: scale animation, thumbnail preview, left status bar.
+- [x] Unify global AppLayout architecture: merge top bar, breadcrumbs, nested routes.
+- [x] Fix color contrast and UUID display: semantic tenant name, hide raw IDs.
 
 
 ### [WIP]
