@@ -58,7 +58,7 @@ function AppLayout() {
       logout()
       navigate('/login')
     } else if (key === 'profile') {
-      console.log('Navigate to profile')
+      // TODO: Navigate to profile page when implemented
     } else {
       navigate(key)
     }

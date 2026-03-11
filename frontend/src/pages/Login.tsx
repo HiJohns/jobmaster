@@ -53,6 +53,7 @@ function Login() {
       }
     } catch (error) {
       // Error is already handled and displayed by axios interceptor
+      console.error('Login failed:', error)
     } finally {
       setLoading(false)
     }
@@ -104,7 +105,7 @@ function Login() {
               htmlType="submit"
               loading={loading}
               className="w-full h-10 text-lg rounded-md transition-all hover:scale-[1.02]"
-              style={{ backgroundColor: '#0033FF' }}
+              style={{ backgroundColor: 'var(--primary-blue)' }}
             >
               登录
             </Button>
