@@ -307,6 +307,9 @@ const OrderContainer: React.FC = () => {
 ---
 
 ### [READY]
+- [x] 升级全局主题与样式系统：引入色彩规范、卡片化布局、侧边栏微调。
+- [x] 重构登录页面：400px、磨砂玻璃、Loading动画、呼吸边框。
+- [x] 优化 WeekCalendar 与工单卡片：缩放动画、缩略图、左侧色条。
 
 ### 22. [Investigation] 2026-03-10 全量任务执行报告
 **Role:** Full Stack Developer / Architect  

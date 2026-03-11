@@ -252,7 +252,10 @@ const OrderContainer: React.FC = () => {
     - make check: Run all tests
 
 ### [READY]
-*None*
+- [x] Upgrade global theme and style system: colors, card layout, sidebar dark mode.
+- [x] Refactor login page: 400px width, glassmorphism, loading animation, breath border.
+- [x] Optimize WeekCalendar and WorkOrderCard: scale animation, thumbnail preview, left status bar.
+
 
 ### [WIP]
 *None*
