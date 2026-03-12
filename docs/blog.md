@@ -494,8 +494,37 @@ Commit: ac61bd39
 - 修复 `vite build` 报错问题：补充缺失的 `tsconfig.json` 和 `tsconfig.node.json`，并将 TailwindCSS 的 PostCSS 插件更新为 `@tailwindcss/postcss` 兼容最新版 V4。
 - 修复 `npm run build` TypeScript 编译错误：移除代码引用的 `antd-mobile` 中已被弃用的组件（如 `Flex`, `Text`, `Timeline`, `ActivityIndicator`），替换为标准 `div`/`span` 和 `SpinLoading`；修复 `PullToRefresh` 与 `Modal` 在 V5 版本的 API 调用规则；修正 `useAuthStore` 解构中的状态字段和 React Hook 未使用警告。目前前端已完全通过 TS 检查并可成功编译生产环境静态文件。
 
-Commit: 67054567
-
 ---
 
-*Last Updated: 2026-03-11*
+## [2026-03-11] | Raw | UI/UX 样式升级优化批次
+
+### 全局主题与布局系统
+- 升级 `tailwind.config.js`：引入完整色彩规范（success-green, warning-orange, danger-red, background），添加 card shadow 和 breath-blue 动画关键帧
+- 优化 `index.css`：定义 CSS 变量（--primary-blue, --success-green 等），实现卡片化布局基类 `.card-layout` 和侧边栏呼吸灯效果
+- Dashboard 整合：应用深色主题侧边栏，图标升级为双色模式（TwoTone），激活项带蓝色呼吸灯效
+
+### 登录页重构
+- 视觉聚焦：登录框宽度限制为 400px，居中显示
+- 磨砂玻璃：增加 `backdrop-filter: blur(10px)` 效果，背景使用渐变色调
+- 交互优化：加载状态动画、输入框聚焦时边框呈现呼吸态蓝色（breath-blue 2s infinite）
+
+### 组件优化
+- WeekCalendar：选中日期增加缩放动画（scale 1.08）和过渡效果（cubic-bezier）
+- WorkOrderCard：左侧新增状态色条，右侧缩略图区域，移除底部冗余图片列表，整体升级为卡片流布局
+- WorkOrderList：重构为复用 WorkOrderCard 组件，删除重复的状态渲染逻辑
+
+### Layout 架构统一
+- 合并顶栏：取消原 Dashboard 嵌套的子 Layout，提取侧边栏和 Header 到全局 AppLayout
+- 面包屑导航：Header 左侧增加动态面包屑，根据路由自动显示层级（首页 / 工单管理 / 详情）
+- UUID 业务化：根据用户角色显示语义化名称（超级管理员→系统管理后台，分店→分店名称），隐藏原始 UUID
+- 用户信息：Header 右侧整合用户信息下拉菜单（包含退出登录），文本颜色优化为灰色系确保对比度
+
+### 代码质量
+- 修复：移除所有 `console.log` 调试代码，替换为 TODO 注释
+- 修复：统一使用 CSS 变量替代硬编码色值
+- 修复：添加明确的错误日志记录（console.error）
+
+**验证结果**：TypeScript 编译通过，npm run build 成功，生成生产环境静态资源
+
+Commit: c09bd2d5
+
