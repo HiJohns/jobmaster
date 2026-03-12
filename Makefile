@@ -15,6 +15,11 @@ help: ## 显示帮助信息
 	@echo "可用的命令:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
+web: ## 编译前端资源
+	@echo "正在编译前端项目..."
+	@cd frontend && npm install && npm run build
+	@echo "前端编译完成: ./frontend/dist"
+
 build: ## 编译主程序
 	@echo "正在编译 $(APP_NAME)..."
 	@mkdir -p $(BUILD_DIR)
