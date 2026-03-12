@@ -1,5 +1,5 @@
 
-import { Layout as AntLayout, Menu, Avatar, Dropdown, Breadcrumb, Tag } from 'antd'
+import { Layout as AntLayout, Menu, Avatar, Dropdown, Breadcrumb } from 'antd'
 import {
   HomeTwoTone,
   FileTextTwoTone,
@@ -11,6 +11,7 @@ import type { MenuProps } from 'antd'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useMediaQuery } from 'react-responsive'
 import { useAuthStore } from '../store/useAuthStore'
+import Logo from './Logo'
 import TabBar from './TabBar'
 
 const { Header, Sider, Content } = AntLayout
@@ -18,7 +19,7 @@ const { Header, Sider, Content } = AntLayout
 function AppLayout() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { userInfo, isImpersonated, logout } = useAuthStore()
+  const { userInfo, logout } = useAuthStore()
   const isMobile = useMediaQuery({ query: '(max-width: 768px)' })
 
   const menuItems: MenuProps['items'] = [
@@ -82,13 +83,6 @@ function AppLayout() {
   }
 
   // Semantic tenant name
-  const getTenantName = () => {
-    if (userInfo?.role === 'SYSTEM_ADMIN' || userInfo?.role === 'Brand HQ' || userInfo?.role === 'BRAND_HQ') {
-      return '系统管理后台'
-    }
-    return userInfo?.displayName || '分店控制台'
-  }
-
   return (
     <AntLayout className="min-h-screen">
       {!isMobile && (
@@ -98,8 +92,8 @@ function AppLayout() {
           breakpoint="lg"
           collapsedWidth="0"
         >
-          <div className="h-16 flex items-center justify-center border-b border-gray-800">
-            <h1 className="text-xl font-bold text-primary">JobMaster</h1>
+          <div className="h-20 flex items-center justify-center border-b border-gray-800">
+            <Logo size={32} theme="light" showText={false} />
           </div>
           <Menu
             theme="dark"
@@ -108,34 +102,58 @@ function AppLayout() {
             items={menuItems}
             onClick={handleMenuClick}
             className="border-r-0"
+            style={{
+              backgroundColor: '#000c17',
+              borderRight: 'none',
+              padding: '12px 0',
+            }}
           />
         </Sider>
       )}
       
       <AntLayout>
-        <Header 
-          className="bg-white shadow-sm flex items-center justify-between px-6"
-          style={{ padding: '0 24px', background: '#fff', borderBottom: '1px solid #f0f0f0', position: 'sticky', top: 0, zIndex: 100 }}
+                <Header
+          className="bg-white shadow-md flex items-center justify-between px-8"
+          style={{
+            padding: '0 32px',
+            background: '#ffffff',
+            boxShadow: '0 2px 8px rgba(0, 0, 33, 0.08)',
+            borderBottom: '1px solid #f0f0f0',
+            position: 'sticky',
+            top: 0,
+            zIndex: 100,
+            height: '64px',
+          }}
         >
           <div className="flex items-center gap-4">
             <Breadcrumb items={getBreadcrumbItems()} />
-            {isImpersonated && (
-              <Tag color="warning" className="ml-2">只读模式</Tag>
-            )}
+            {/* Removed read-only tag from header */}
           </div>
           
-          <div className="flex items-center gap-6">
-            <span className="text-gray-600 font-medium">
-              {getTenantName()}
+          <div className="flex items-center gap-6 ml-auto">
+            <span className="text-gray-600 font-medium text-sm mr-2">
+              {userInfo?.displayName || userInfo?.username || '管理员'}
             </span>
             <Dropdown
               menu={{ items: userMenuItems, onClick: handleMenuClick }}
               placement="bottomRight"
+              trigger={['click']}
             >
-              <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-3 py-1 rounded transition-colors">
-                <Avatar icon={<UserOutlined />} size="small" />
-                <span className="text-gray-600 text-sm">
-                  {userInfo?.username || 'User'}
+              <div 
+                className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors"
+                onClick={(e) => e.preventDefault()}
+                style={{ userSelect: 'none' }}
+              >
+                <Avatar 
+                  icon={<UserOutlined />} 
+                  size="default"
+                  style={{ 
+                    backgroundColor: '#f0f0f0',
+                    color: '#666'
+                  }}
+                />
+                <span className="text-gray-600 text-sm font-medium">
+                  {userInfo?.role || 'User'}
                 </span>
               </div>
             </Dropdown>

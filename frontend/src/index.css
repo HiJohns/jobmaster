@@ -59,3 +59,20 @@ body {
   animation: breath-blue 2s ease-in-out infinite !important;
   border-color: var(--primary-blue) !important;
 }
+
+/* Sidebar Menu Item Active State */
+.ant-menu-dark .ant-menu-item-selected {
+  background-color: rgba(0, 51, 255, 0.2) !important;
+  border-left: 3px solid #0033FF !important;
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+.ant-menu-dark .ant-menu-item-selected::after {
+  border-bottom: none !important;
+}
+
+.ant-menu-dark .ant-menu-item:hover {
+  background-color: rgba(0, 51, 255, 0.1) !important;
+  color: #ffffff !important;
+}

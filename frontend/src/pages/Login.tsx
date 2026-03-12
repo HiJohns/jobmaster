@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Form, Input, Button, Card, Typography, message, Checkbox } from 'antd'
+import { Form, Input, Button, Card, message, Checkbox } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { authApi } from '../api/auth'
 import { useAuthStore } from '../store/useAuthStore'
+import Logo from '../components/Logo'
 
-const { Title } = Typography
 const REMEMBER_USERNAME_KEY = 'remember_username'
 
 function Login() {
@@ -60,64 +60,74 @@ function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-gray-100 to-indigo-100">
-      <Card className="w-full shadow-card border border-white/50" style={{ maxWidth: 400, background: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(10px)', borderRadius: 16 }}>
-        <div className="text-center mb-8">
-          <Title level={3} className="!text-primary !mb-2">
-            JobMaster
-          </Title>
-          <p className="text-gray-500">智能工单管理系统</p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100">
+      <div className="flex flex-col items-center">
+        <div className="mb-8">
+          <Logo size={60} theme="dark" showText={true} />
         </div>
-
-        <Form
-          form={form}
-          name="login"
-          onFinish={handleSubmit}
-          autoComplete="off"
-          size="large"
+        
+        <Card 
+          className="w-full shadow-card border border-white/60 transition-all hover:shadow-lg"
+          style={{ 
+            maxWidth: 400, 
+            background: 'rgba(255, 255, 255, 0.7)', 
+            backdropFilter: 'blur(12px)',
+            borderRadius: '16px',
+            boxShadow: '0 8px 24px rgba(0, 0, 33, 0.15)',
+          }}
         >
-          <Form.Item
-            name="username"
-            rules={[{ required: true, message: '请输入用户名' }]}
+          <div style={{ marginBottom: '24px' }} />
+          
+          <Form
+            form={form}
+            name="login"
+            onFinish={handleSubmit}
+            autoComplete="off"
+            size="large"
           >
-            <Input
-              className="breath-input"
-              prefix={<UserOutlined />}
-              placeholder="用户名"
-              autoFocus
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="password"
-            rules={[{ required: true, message: '请输入密码' }]}
-          >
-            <Input.Password
-              className="breath-input"
-              prefix={<LockOutlined />}
-              placeholder="密码"
-            />
-          </Form.Item>
-
-          <Form.Item>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={loading}
-              className="w-full h-10 text-lg rounded-md transition-all hover:scale-[1.02]"
-              style={{ backgroundColor: 'var(--primary-blue)' }}
+            <Form.Item
+              name="username"
+              rules={[{ required: true, message: '请输入用户名' }]}
             >
-              登录
-            </Button>
-          </Form.Item>
+              <Input
+                className="breath-input"
+                prefix={<UserOutlined />}
+                placeholder="用户名"
+                autoFocus
+              />
+            </Form.Item>
 
-          <Form.Item name="remember" valuePropName="checked">
-            <Checkbox checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)}>
-              记住账号
-            </Checkbox>
-          </Form.Item>
-        </Form>
-      </Card>
+            <Form.Item
+              name="password"
+              rules={[{ required: true, message: '请输入密码' }]}
+            >
+              <Input.Password
+                className="breath-input"
+                prefix={<LockOutlined />}
+                placeholder="密码"
+              />
+            </Form.Item>
+
+            <Form.Item>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={loading}
+                className="w-full h-10 text-lg rounded-md transition-all hover:scale-[1.02]"
+                style={{ backgroundColor: 'var(--primary-blue)' }}
+              >
+                登录
+              </Button>
+            </Form.Item>
+
+            <Form.Item name="remember" valuePropName="checked">
+              <Checkbox checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)}>
+                记住账号
+              </Checkbox>
+            </Form.Item>
+          </Form>
+        </Card>
+      </div>
     </div>
   )
 }
