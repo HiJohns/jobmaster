@@ -7,12 +7,14 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"jobmaster/internal/api/admin"
 	"jobmaster/internal/middleware"
+	"jobmaster/internal/repository"
 )
 
 // SetupRouter configures the API routes with middleware pipeline
 // Middleware execution order: Recovery -> Logger -> Auth -> Impersonation -> Tenant
-func SetupRouter() *gin.Engine {
+func SetupRouter(tenantRepo repository.TenantRepository) *gin.Engine {
 	r := gin.New()
 
 	// Global middleware - system level
@@ -66,6 +68,11 @@ func SetupRouter() *gin.Engine {
 			protected.POST("/workorders/:id/reserve", ReserveWorkOrder)
 			protected.POST("/workorders/:id/arrive", ArriveWorkOrder)
 			protected.POST("/workorders/:id/finish", FinishWorkOrder)
+
+			// Admin routes (require authentication)
+			if tenantRepo != nil {
+				admin.RegisterRoutes(protected, tenantRepo)
+			}
 		}
 	}
 

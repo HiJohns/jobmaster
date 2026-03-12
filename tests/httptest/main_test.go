@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"jobmaster/internal/api"
+	"jobmaster/internal/repository"
 	"jobmaster/pkg/database"
 )
 
@@ -27,8 +28,9 @@ func TestMain(m *testing.M) {
 	// Setup database connection for tests
 	setupTestDB()
 
-	// Create test router
-	testRouter = api.SetupRouter()
+	// Create test router with tenant repository
+	tenantRepo := repository.NewTenantRepository(testDB)
+	testRouter = api.SetupRouter(tenantRepo)
 
 	// Run tests
 	code := m.Run()

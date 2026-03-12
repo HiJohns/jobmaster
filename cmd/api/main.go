@@ -17,6 +17,7 @@ import (
 	"jobmaster/internal/api"
 	dbseeder "jobmaster/internal/db"
 	"jobmaster/internal/model"
+	"jobmaster/internal/repository"
 	"jobmaster/pkg/database"
 )
 
@@ -249,7 +250,16 @@ func runSeeder() error {
 
 // setupRouter configures the Gin router
 func setupRouter(config *Config) *gin.Engine {
+	// Get database connection for repository initialization
+	db, err := database.GetDB()
+	if err != nil {
+		log.Fatalf("Failed to get database instance: %v", err)
+	}
+
+	// Initialize tenant repository
+	tenantRepo := repository.NewTenantRepository(db)
+
 	// Use the centralized router setup from internal/api package
-	router := api.SetupRouter()
+	router := api.SetupRouter(tenantRepo)
 	return router
 }
