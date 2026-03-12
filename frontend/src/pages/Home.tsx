@@ -11,7 +11,7 @@
  * - Persistent table header for empty state
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, CSSProperties } from 'react'
 import { SearchBar, PullToRefresh, InfiniteScroll, FloatingBubble, Toast, Badge } from 'antd-mobile'
 import { AddOutline, FilterOutline } from 'antd-mobile-icons'
 import { useNavigate } from 'react-router-dom'
@@ -67,6 +67,12 @@ function Home() {
     completed: 0,
   })
   const PAGE_SIZE = 10
+
+  const badgeStyle = {
+    fontSize: '11px',
+    padding: '2px 8px',
+    borderRadius: '10px',
+  } as const
 
   /**
    * Fetch orders from API
@@ -269,10 +275,8 @@ function Home() {
                 style={{
                   '--color': isActive ? tab.color : '#999',
                   '--background-color': isActive ? `${tab.color}20` : '#e8e8e8',
-                  fontSize: '11px',
-                  padding: '2px 8px',
-                  borderRadius: '10px',
-                }}
+                  ...badgeStyle,
+                } as CSSProperties}
               />
             </div>
           )

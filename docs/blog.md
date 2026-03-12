@@ -568,3 +568,66 @@ Commit: 5e664344
 - 所有 TypeScript 编译错误已修复（移除未使用的变量导入）
 - 保持类型安全，避免使用 `any` 类型
 
+
+
+## [2026-03-12] | Raw | 前端 UI/UX 全面升级 - 侧边栏、首页、空状态优化
+
+### 变更摘要
+完成前端界面三大核心优化：侧边栏架构重构、首页状态监控强化、空状态情感化设计。
+
+### 详细变更
+
+#### 1. 侧边栏与 Logo 架构升级
+- **Logo.tsx**: 新增 `layout` prop 支持横排/竖排布局，默认横排显示 "JobMaster 工单匠" 双品牌标识
+- **Layout.tsx**: 
+  - 将用户信息从顶栏移至侧边栏底部，增强视觉层级
+  - 使用 8px 网格系统对齐所有间距（Logo 区域 80px，菜单间距 16px，用户信息 16px）
+  - 优化 Avatar 样式和文字排版，提升可读性
+
+#### 2. 首页状态监控与日期条强化
+- **Calendar.tsx**:
+  - 今天日期块改为实色填充（蓝色）+ 微阴影效果，视觉更突出
+  - 添加 "← 回到今天" 按钮（非今天选中时显示），一键返回当前日期
+  - 优化日期块尺寸（48x64px）和动画曲线（cubic-bezier）
+- **Home.tsx**:
+  - 状态标签改为微卡片样式，带 10% 透明度背景色
+  - 每个标签添加数字徽章，实时显示对应状态工单数量
+  - 搜索框右侧增加 FilterOutline 漏斗图标，暗示多维筛选功能
+
+#### 3. 空状态展示优化
+- **EmptyStateIllustration.tsx**:
+  - 全新情感化 SVG 插画：友好的维修工形象，手持扳手，佩戴安全帽
+  - 添加渐变背景光晕和漂浮装饰元素（星星、工具箱）
+  - 支持 `showAction` 和 `onAction` props，可渲染派发任务按钮
+- **Home.tsx**:
+  - 数据为 0 时仍渲染浅灰色表头（工单号 | 品牌网点 | 工程师 | 状态 | 操作）
+  - 空状态容器内嵌情感化插画和引导文案
+  - STORE 角色显示蓝色"派发新任务"按钮，直接触发创建流程
+
+### 代码质量
+- 保持 TypeScript 严格类型，无 `any` 使用
+- 所有事件处理函数使用 useCallback 优化（已存在）
+- 遵循 Airbnb React 风格指南，函数组件 + Hooks 模式
+- 内联样式与 CSS 变量混用，保持与现有代码风格一致
+
+### 设计系统
+- 色彩：使用 CSS 变量 --primary-blue (#0033FF) 作为主色
+- 间距：全面采用 8px 网格系统（4px、8px、12px、16px、24px）
+- 动画：0.2-0.3s 缓动过渡，cubic-bezier(0.34, 1.56, 0.64, 1) 缩放曲线
+- 卡片：12px 圆角，2px 边框，阴影层级 0-4px
+
+Commit: [待生成]
+
+
+
+---
+
+## [2026-03-12 12:52:00] | Batch Update | UI Refinement Patches Round 2
+**Type**: Batch Code Update  
+**Scope**: 6 UI Patch files  
+**Changes**:
+- 修复 Critical XSS 安全风险 (EmptyStateIllustration handleAction)
+- 修复 Major 代码冗余 (Logo 注释)
+- 修复 4 个 Minor 问题 (CSS 变量、类型安全、参数优化)
+**Files Modified**: 5 files (EmptyStateIllustration, Logo, Calendar, index.css, Home, Login)
+**Verification**: TypeScript build passed, no new warnings

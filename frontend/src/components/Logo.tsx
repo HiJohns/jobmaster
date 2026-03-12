@@ -4,7 +4,7 @@ interface LogoProps {
   size?: number;
   theme?: 'light' | 'dark'; // light 用于深色背景(白图)，dark 用于白色背景(蓝图)
   showText?: boolean;
-  layout?: 'vertical' | 'horizontal'; // 新增：布局方向
+  layout?: 'vertical' | 'horizontal';
 }
 
 const Logo: React.FC<LogoProps> = ({ 
@@ -21,8 +21,9 @@ const Logo: React.FC<LogoProps> = ({
       display: 'flex', 
       flexDirection: layout === 'horizontal' ? 'row' : 'column',
       alignItems: 'center', 
-      gap: layout === 'horizontal' ? '8px' : '4px'
+      gap: layout === 'horizontal' ? '12px' : '8px'
     }}>
+      {/* Simplified "匠" character icon */}
       <svg 
         width={size} 
         height={size} 
@@ -30,36 +31,40 @@ const Logo: React.FC<LogoProps> = ({
         fill="none" 
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* 外齿轮轮廓，使用更粗更圆润的线条 */}
-        <path 
-          d="M50 10C53 10 55 12 56 15L58 20C61 21 64 23 67 25L72 23C75 22 78 23 79 26L83 33C84 36 83 39 81 40L77 45C78 48 78 52 77 55L81 60C83 61 84 64 83 67L79 74C78 77 75 78 72 77L67 75C64 77 61 79 58 80L56 85C55 88 53 90 50 90C47 90 45 88 44 85L42 80C39 79 36 77 33 75L28 77C25 78 22 77 21 74L17 67C16 64 17 61 19 60L23 55C22 52 22 48 23 45L19 40C17 39 16 36 17 33L21 26C22 23 25 22 28 23L33 25C36 23 39 21 42 20L44 15C45 12 47 10 50 10Z" 
+        {/* Outer square frame */}
+        <rect 
+          x="10" y="10" width="80" height="80" rx="8" 
           stroke={iconColor}
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          strokeWidth="4"
+          fill="none"
         />
-        {/* 内部圆形区域打底，为了对勾显示清晰 */}
-        <circle cx="50" cy="50" r="24" fill={theme === 'light' ? 'rgba(255,255,255,0.1)' : 'transparent'} />
-        {/* 绿色对勾，粗细一致 */}
-        <path 
-          d="M38 52L46 60L64 42" 
-          stroke="#00B578" 
-          strokeWidth="10" 
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+        
+        {/* "匠" character - simplified */}
+        {/* Top horizontal stroke */}
+        <line x1="25" y1="30" x2="75" y2="30" stroke={iconColor} strokeWidth="4" strokeLinecap="round"/>
+        
+        {/* Middle vertical/horizontal strokes forming the box */}
+        <line x1="35" y1="30" x2="35" y2="70" stroke={iconColor} strokeWidth="4" strokeLinecap="round"/>
+        <line x1="35" y1="50" x2="65" y2="50" stroke={iconColor} strokeWidth="4" strokeLinecap="round"/>
+        <line x1="65" y1="30" x2="65" y2="70" stroke={iconColor} strokeWidth="4" strokeLinecap="round"/>
+        
+        {/* Bottom stroke */}
+        <line x1="25" y1="70" x2="75" y2="70" stroke={iconColor} strokeWidth="4" strokeLinecap="round"/>
+        
+        {/* Small accent - dot/circle */}
+        <circle cx="50" cy="20" r="3" fill={iconColor}/>
       </svg>
       
       {showText && (
         <div style={{ 
           display: 'flex',
-          flexDirection: layout === 'horizontal' ? 'row' : 'column',
-          alignItems: layout === 'horizontal' ? 'baseline' : 'center',
-          gap: layout === 'horizontal' ? '4px' : '0',
+          flexDirection: 'column',
+          alignItems: layout === 'horizontal' ? 'flex-start' : 'center',
+          gap: '2px',
         }}>
           <span style={{ 
-            fontSize: Math.max(16, size * 0.45), 
-            fontWeight: 600,
+            fontSize: layout === 'horizontal' ? Math.max(18, size * 0.5) : Math.max(16, size * 0.45), 
+            fontWeight: 700,
             color: textColor,
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
             letterSpacing: layout === 'horizontal' ? '0.5px' : '1px',
@@ -68,13 +73,13 @@ const Logo: React.FC<LogoProps> = ({
             JobMaster
           </span>
           <span style={{ 
-            fontSize: Math.max(14, size * 0.4), 
-            fontWeight: 500,
+            fontSize: layout === 'horizontal' ? Math.max(12, size * 0.35) : Math.max(14, size * 0.4), 
+            fontWeight: 400,
             color: textColor,
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-            letterSpacing: '1px',
+            letterSpacing: layout === 'horizontal' ? '2px' : '1px',
             lineHeight: 1.2,
-            opacity: 0.9
+            opacity: 0.8
           }}>
             工单匠
           </span>

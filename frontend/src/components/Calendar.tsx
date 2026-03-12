@@ -147,15 +147,16 @@ function WeekCalendar({ onDateChange, selectedDate: initialDate }: WeekCalendarP
                 {formatDate(date)}
               </span>
               
-              {/* Today indicator dot */}
+              {/* Today indicator dot with breathing animation */}
               {today && (
                 <div style={{
                   position: 'absolute',
                   bottom: 6,
-                  width: 4,
-                  height: 4,
+                  width: 6,
+                  height: 6,
                   borderRadius: '50%',
-                  backgroundColor: selected ? 'var(--primary-blue)' : '#ffffff',
+                  backgroundColor: selected ? 'var(--primary-blue)' : 'var(--dot-color-today)',
+                  animation: 'breathing-dot var(--animation-breathing-duration, 2s) ease-in-out infinite',
                 }} />
               )}
             </div>

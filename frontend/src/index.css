@@ -21,6 +21,10 @@ body {
   --warning-orange: #FF8F1F;
   --danger-red: #FF3141;
   --bg-color: #F5F7FA;
+  
+  /* Component Colors */
+  --dot-color-today: #ffffff;
+  --animation-breathing-duration: 2s;
 }
 
 body {
@@ -55,6 +59,18 @@ body {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
+}
+
+/* Breathing dot animation */
+@keyframes breathing-dot {
+  0%, 100% { 
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.6;
+    transform: scale(1.2);
+  }
 }
 
 /* Breathing Input */
