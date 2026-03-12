@@ -9,7 +9,7 @@
  * - Status badge with appropriate color
  */
 
-import { Card, Tag } from 'antd-mobile'
+import { Card } from 'antd-mobile'
 import { FireFill } from 'antd-mobile-icons'
 import { WorkOrder } from '../api/workorder'
 import { getStatusConfig } from '../config/status'
@@ -71,15 +71,19 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
         >
           {order.order_no}
         </span>
-        <Tag
-          color={statusConfig.color}
+        <div
           style={{
-            borderRadius: 4,
-            fontSize: 12,
+            padding: '2px 8px',
+            borderRadius: '4px',
+            fontSize: '12px',
+            backgroundColor: `${statusConfig.color}15`, // Light background (approx 8-10% opacity)
+            color: statusConfig.color,
+            border: `1px solid ${statusConfig.color}40`,
+            fontWeight: 500,
           }}
         >
           {statusConfig.text}
-        </Tag>
+        </div>
       </div>
 
       {/* Urgent badge */}

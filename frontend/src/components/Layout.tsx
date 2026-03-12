@@ -83,6 +83,15 @@ function AppLayout() {
   }
 
   // Semantic tenant name
+
+  // Determine tenant display name
+  const getTenantDisplayName = () => {
+    if (userInfo?.role === 'SYSTEM_ADMIN' || userInfo?.role === 'Brand HQ' || userInfo?.role === 'BRAND_HQ') {
+      return '当前租户：系统管理后台'
+    }
+    return `当前租户：${userInfo?.displayName || '分店'}`
+  }
+
   return (
     <AntLayout className="min-h-screen">
       {!isMobile && (
@@ -131,8 +140,8 @@ function AppLayout() {
           </div>
           
           <div className="flex items-center gap-6 ml-auto">
-            <span className="text-gray-600 font-medium text-sm mr-2">
-              {userInfo?.displayName || userInfo?.username || '管理员'}
+            <span className="text-gray-600 font-medium text-sm mr-2 hidden sm:inline-block">
+              {getTenantDisplayName()}
             </span>
             <Dropdown
               menu={{ items: userMenuItems, onClick: handleMenuClick }}

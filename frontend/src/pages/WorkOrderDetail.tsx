@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { Card, Tag, Button, Modal, TextArea, SpinLoading, Toast } from 'antd-mobile'
+import { Card, Button, Modal, TextArea, SpinLoading, Toast } from 'antd-mobile'
 import dayjs from 'dayjs'
 import { workorderApi } from '../api/workorder'
 import type { WorkOrderDetail } from '../api/workorder'
 import { useAuthStore } from '../store/useAuthStore'
-import { getStatusConfig, canPerformAction, getAvailableActions, WorkOrderStatus } from '../config/status'
+import { getStatusConfig, canPerformAction, WorkOrderStatus } from '../config/status'
 
 function WorkOrderDetail() {
   const { id } = useParams<{ id: string }>()
@@ -28,6 +28,7 @@ function WorkOrderDetail() {
       }
     } catch (error) {
       console.error('Failed to fetch order detail:', error)
+      Toast.show('获取工单详情失败')
     } finally {
       setLoading(false)
     }
@@ -74,6 +75,7 @@ function WorkOrderDetail() {
       }
     } catch (error) {
       console.error('Reserve failed:', error)
+      Toast.show('预约失败')
     } finally {
       setActionLoading(false)
     }
@@ -90,7 +92,6 @@ function WorkOrderDetail() {
         fetchOrderDetail()
       }
     } catch (error) {
-      Toast.show('获取定位失败，请检查权限')
       console.error('Arrive failed:', error)
     } finally {
       setActionLoading(false)
@@ -116,6 +117,7 @@ function WorkOrderDetail() {
       }
     } catch (error) {
       console.error('Finish failed:', error)
+      Toast.show('完工提交失败')
     } finally {
       setActionLoading(false)
     }
@@ -132,8 +134,10 @@ function WorkOrderDetail() {
   const getActionButtons = () => {
     if (!order || isImpersonated) return null
 
-    getAvailableActions(order.status)
     const buttons: React.ReactNode[] = []
+    
+    // The line below was removed as its return value was not being used.
+    // getAvailableActions(order.status)
     
     if (canPerformAction(order.status, 'reserve')) {
       buttons.push(
@@ -165,7 +169,7 @@ function WorkOrderDetail() {
   if (loading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: 40 }}>
-        <SpinLoading style={{ "--size": "32px" } as any} />
+        <SpinLoading style={{ "--size": "32px" } as React.CSSProperties} />
       </div>
     )
   }
@@ -185,7 +189,17 @@ function WorkOrderDetail() {
       <Card style={{ marginBottom: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <span style={{ fontSize: 18, fontWeight: 'bold' }}>{order.order_no}</span>
-          <Tag color={getStatusColor(order.status)}>{getStatusText(order.status)}</Tag>
+          <div style={{
+            padding: '4px 10px',
+            borderRadius: '4px',
+            fontSize: '14px',
+            backgroundColor: `${getStatusColor(order.status)}15`,
+            color: getStatusColor(order.status),
+            border: `1px solid ${getStatusColor(order.status)}40`,
+            fontWeight: 500,
+          }}>
+            {getStatusText(order.status)}
+          </div>
         </div>
 
         {order.category_path && (
@@ -209,7 +223,21 @@ function WorkOrderDetail() {
           </div>
         )}
 
-        {order.is_urgent && <Tag color="red" style={{ marginTop: 8 }}>加急</Tag>}
+        {order.is_urgent && (
+          <div style={{
+            marginTop: 8,
+            display: 'inline-block',
+            padding: '2px 8px',
+            borderRadius: '4px',
+            fontSize: '12px',
+            backgroundColor: '#ff4d4f15',
+            color: '#ff4d4f',
+            border: '1px solid #ff4d4f40',
+            fontWeight: 500,
+          }}>
+            加急
+          </div>
+        )}
       </Card>
 
       <Card title="时间轴" style={{ marginBottom: 12 }}>

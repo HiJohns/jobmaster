@@ -549,3 +549,22 @@ Commit: c89048f8
 
 Commit: 5e664344
 
+---
+
+## [2026-03-12] | Raw | 前端组件错误处理与用户反馈优化
+
+修复审核发现的前端错误处理问题，确保所有 API 调用错误都能通过 Toast 向用户展示，移除未使用的导入语句。
+
+### 修复内容
+- **Home.tsx**: 添加 `Toast` 导入，在 `fetchOrders` 错误处理中增加 `Toast.show('获取工单列表失败')` 提示用户
+- **WorkOrderDetail.tsx**: 在 `fetchOrderDetail` 错误处理中增加 `Toast.show('获取工单详情失败')`，在 `handleReserve` 错误处理中增加 `Toast.show('预约失败')`，在 `handleFinish` 错误处理中增加 `Toast.show('完工提交失败')`
+- **WorkOrderDetail.tsx**: 移除未使用的 `getAvailableActions` 导入，删除无意义的函数调用并添加注释说明
+- **WorkOrderDetail.tsx**: 修复 `SpinLoading` 的 `style` 属性类型，将 `as any` 改为 `as React.CSSProperties`
+- **Calendar.tsx**: 为模拟热度数据的硬编码逻辑添加 TODO 注释
+- **Home.tsx**: 移除未使用的 `EmptyStateIllustration` 导入
+
+### 代码质量
+- 统一使用 `Toast.show()` 向用户展示错误信息，避免仅通过 `console.error` 输出
+- 所有 TypeScript 编译错误已修复（移除未使用的变量导入）
+- 保持类型安全，避免使用 `any` 类型
+

@@ -287,7 +287,8 @@ const OrderContainer: React.FC = () => {
 - [x] 在 Makefile 中增加 make web 指令以编译前端代码。
 
 ### [WIP]
-*暂无*
+- [ ] 重新设计极简版 Logo 组件。
+- [ ] 升级 Home.tsx 和全局样式。
 
 ### [TODO]
 
@@ -306,16 +307,17 @@ const OrderContainer: React.FC = () => {
   - make run: 秒开模式
   - make dev: 先迁移再热重载
   - make grand-tour: 全链路集成测试
-
----
-
-### [READY]
 - [x] 升级全局主题与样式系统：引入色彩规范、卡片化布局、侧边栏微调。
 - [x] 重构登录页面：400px、磨砂玻璃、Loading动画、呼吸边框。
 - [x] 优化 WeekCalendar 与工单卡片：缩放动画、缩略图、左侧色条。
 - [x] 统一全局 AppLayout 架构：合并顶栏、路由嵌套、面包屑。
 - [x] 修复配色与对比度：深灰文本、Sidebar激活蓝条。
 - [x] 处理 UUID 的业务化展示：管理后台/分店名称，隐藏纯 UUID。
+- [x] 前端组件错误处理优化：统一使用 Toast 展示错误信息，移除未使用的变量导入
+
+---
+
+### [READY]
 
 ### 22. [Investigation] 2026-03-10 全量任务执行报告
 **Role:** Full Stack Developer / Architect  

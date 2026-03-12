@@ -11,7 +11,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { Tabs, SearchBar, PullToRefresh, InfiniteScroll, FloatingBubble } from 'antd-mobile'
+import { Tabs, SearchBar, PullToRefresh, InfiniteScroll, FloatingBubble, Toast } from 'antd-mobile'
 import { AddOutline } from 'antd-mobile-icons'
 import { useNavigate } from 'react-router-dom'
 import dayjs, { Dayjs } from 'dayjs'
@@ -84,6 +84,7 @@ function Home() {
       }
     } catch (error) {
       console.error('Failed to fetch orders:', error)
+      Toast.show('获取工单列表失败')
     }
   }, [activeTab, searchText, selectedDate])
 
