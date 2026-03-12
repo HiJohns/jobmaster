@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Table, Button, Tag, Space, message, Drawer, Form, Input, Select } from 'antd'
-import { PlusOutlined } from '@ant-design/icons'
+import { Table, Button, Tag, Space, message, Drawer, Form, Result } from 'antd'
+import { PlusOutlined, LockOutlined } from '@ant-design/icons'
 import { tenantApi, Tenant, CreateTenantRequest } from '../../api/tenant'
+import { useAuthStore } from '../../store/useAuthStore'
+import TenantForm from './TenantForm'
 
-const { Option } = Select
+// Roles that can access tenant management
+const ALLOWED_ROLES = ['ADMIN', 'BRAND_HQ']
 
 const TenantList = () => {
   const [data, setData] = useState<Tenant[]>([])
@@ -13,6 +16,13 @@ const TenantList = () => {
   const [pageSize] = useState(10)
   const [drawerVisible, setDrawerVisible] = useState(false)
   const [form] = Form.useForm()
+  
+  // Get user role from auth store
+  const userInfo = useAuthStore((state) => state.userInfo)
+  const userRole = userInfo?.role
+  
+  // Check if user has permission to access tenant management
+  const hasPermission = userRole && ALLOWED_ROLES.includes(userRole)
 
   const fetchData = async (currentPage: number) => {
     setLoading(true)
@@ -33,8 +43,23 @@ const TenantList = () => {
   }
 
   useEffect(() => {
-    fetchData(1)
-  }, [])
+    // Only fetch data if user has permission
+    if (hasPermission) {
+      fetchData(1)
+    }
+  }, [hasPermission])
+  
+  // Show permission denied page if user doesn't have access
+  if (!hasPermission) {
+    return (
+      <Result
+        status="403"
+        title="无权限访问"
+        icon={<LockOutlined />}
+        subTitle="您没有权限访问租户管理页面。此功能仅对系统管理员和品牌总部开放。"
+      />
+    )
+  }
 
   const handleCreate = () => {
     form.resetFields()
@@ -140,48 +165,8 @@ const TenantList = () => {
           </div>
         }
       >
-        <Form form={form} onFinish={handleSubmit} layout="vertical">
-          <Form.Item
-            name="name"
-            label="租户名称"
-            rules={[{ required: true, message: '请输入租户名称' }]}
-          >
-            <Input placeholder="如：优衣库中国" />
-          </Form.Item>
-
-          <Form.Item
-            name="code"
-            label="唯一代码"
-            rules={[{ required: true, message: '请输入唯一代码' }]}
-            extra="用于子域名或特定逻辑，创建后不可修改"
-          >
-            <Input placeholder="如：uniqlo_cn" />
-          </Form.Item>
-
-          <Form.Item
-            name="contact_person"
-            label="联系人"
-          >
-            <Input placeholder="请输入联系人姓名" />
-          </Form.Item>
-
-          <Form.Item
-            name="status"
-            label="状态"
-            initialValue={1}
-          >
-            <Select>
-              <Option value={1}>启用</Option>
-              <Option value={0}>禁用</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="config"
-            label="配置 (JSON)"
-          >
-            <Input.TextArea rows={4} placeholder='{"logo": "url", "sla_threshold": 99.5}' />
-          </Form.Item>
+        <Form form={form} onFinish={handleSubmit}>
+          <TenantForm form={form} />
         </Form>
       </Drawer>
     </div>

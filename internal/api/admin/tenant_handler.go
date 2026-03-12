@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"jobmaster/internal/model"
 	"jobmaster/internal/repository"
+	"jobmaster/pkg/utils"
 )
 
 // TenantHandler handles tenant management APIs
@@ -25,7 +25,7 @@ func NewTenantHandler(repo repository.TenantRepository) *TenantHandler {
 // CreateTenantRequest represents the request payload for creating a tenant
 type CreateTenantRequest struct {
 	Name          string                 `json:"name" binding:"required"`
-	Code          string                 `json:"code" binding:"required"`
+	Code          string                 `json:"code"` // 系统自动生成，无需用户输入
 	ContactPerson string                 `json:"contact_person"`
 	Status        int8                   `json:"status"`
 	Config        map[string]interface{} `json:"config"`
@@ -33,14 +33,14 @@ type CreateTenantRequest struct {
 
 // Create handles POST /api/v1/admin/tenants
 func (h *TenantHandler) Create(c *gin.Context) {
-	// Permission check - only SYSTEM_ADMIN can access
-	user, exists := c.Get("user")
+	// Permission check - only SYSTEM_ADMIN or BRAND_HQ can access
+	roleVal, exists := c.Get("role")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
-	currentUser, ok := user.(*model.User)
-	if !ok || currentUser.Role != model.UserRoleAdmin {
+	role, ok := roleVal.(string)
+	if !ok || (role != string(model.UserRoleAdmin) && role != string(model.UserRoleBrandHQ)) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied"})
 		return
 	}
@@ -51,20 +51,19 @@ func (h *TenantHandler) Create(c *gin.Context) {
 		return
 	}
 
-	// Validate code uniqueness
-	existing, err := h.repo.GetByCode(req.Code)
+	// 自动生成租户唯一标识码（防腐层）
+	code, err := utils.GenerateUniqueTenantCode(req.Name, func(code string) bool {
+		existing, _ := h.repo.GetByCode(code)
+		return existing != nil
+	})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error occurred"})
-		return
-	}
-	if existing != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "Tenant code already exists"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tenant code: " + err.Error()})
 		return
 	}
 
 	tenant := &model.Tenant{
 		Name:          req.Name,
-		Code:          req.Code,
+		Code:          code,
 		ContactPerson: req.ContactPerson,
 		Status:        req.Status,
 		Config:        model.JSONBMap(req.Config),
@@ -77,8 +76,12 @@ func (h *TenantHandler) Create(c *gin.Context) {
 
 	// Audit log
 	logDetails := fmt.Sprintf("Created tenant: %s (code: %s)", tenant.Name, tenant.Code)
-	if currentUser.ID != uuid.Nil {
-		_ = h.repo.AddAuditLog(currentUser.ID, currentUser.DisplayName, "create_tenant", logDetails, tenant.ID)
+	userIDVal, userIDExists := c.Get("userId")
+	if userIDExists {
+		userID, userIDOk := userIDVal.(uuid.UUID)
+		if userIDOk && userID != uuid.Nil {
+			_ = h.repo.AddAuditLog(userID, "", "create_tenant", logDetails, tenant.ID)
+		}
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
@@ -102,14 +105,14 @@ type ListTenantData struct {
 }
 
 func (h *TenantHandler) List(c *gin.Context) {
-	// Permission check - only SYSTEM_ADMIN can access
-	user, exists := c.Get("user")
+	// Permission check - only SYSTEM_ADMIN or BRAND_HQ can access
+	roleVal, exists := c.Get("role")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
-	currentUser, ok := user.(*model.User)
-	if !ok || currentUser.Role != model.UserRoleAdmin {
+	role, ok := roleVal.(string)
+	if !ok || (role != string(model.UserRoleAdmin) && role != string(model.UserRoleBrandHQ)) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied"})
 		return
 	}
