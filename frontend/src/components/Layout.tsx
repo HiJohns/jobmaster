@@ -1,4 +1,3 @@
-
 import { Layout as AntLayout, Menu, Avatar, Dropdown, Breadcrumb } from 'antd'
 import {
   HomeTwoTone,
@@ -83,14 +82,68 @@ function AppLayout() {
   }
 
   // Semantic tenant name
-
-  // Determine tenant display name
   const getTenantDisplayName = () => {
     if (userInfo?.role === 'SYSTEM_ADMIN' || userInfo?.role === 'Brand HQ' || userInfo?.role === 'BRAND_HQ') {
-      return '当前租户：系统管理后台'
+      return '系统管理后台'
     }
-    return `当前租户：${userInfo?.displayName || '分店'}`
+    return userInfo?.displayName || '分店'
   }
+
+  // Sidebar footer user info component
+  const SidebarUserInfo = () => (
+    <Dropdown
+      menu={{ items: userMenuItems, onClick: handleMenuClick }}
+      placement="topRight"
+      trigger={['click']}
+    >
+      <div
+        style={{
+          padding: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          cursor: 'pointer',
+          borderTop: '1px solid rgba(255,255,255,0.1)',
+          transition: 'background-color 0.2s',
+        }}
+        className="hover:bg-white/5"
+        onClick={(e) => e.preventDefault()}
+      >
+        <Avatar
+          icon={<UserOutlined />}
+          size="large"
+          style={{
+            backgroundColor: 'rgba(255,255,255,0.15)',
+            color: '#fff',
+            flexShrink: 0,
+          }}
+        />
+        <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+          <div style={{
+            color: '#fff',
+            fontSize: '14px',
+            fontWeight: 500,
+            lineHeight: '20px',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}>
+            {getTenantDisplayName()}
+          </div>
+          <div style={{
+            color: 'rgba(255,255,255,0.5)',
+            fontSize: '12px',
+            lineHeight: '18px',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}>
+            {userInfo?.role || 'User'}
+          </div>
+        </div>
+      </div>
+    </Dropdown>
+  )
 
   return (
     <AntLayout className="min-h-screen">
@@ -100,31 +153,49 @@ function AppLayout() {
           className="shadow-md"
           breakpoint="lg"
           collapsedWidth="0"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+          }}
         >
-          <div className="h-20 flex items-center justify-center border-b border-gray-800">
-            <Logo size={32} theme="light" showText={false} />
+          {/* Logo Section - 80px height (8px * 10) */}
+          <div style={{
+            height: '80px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderBottom: '1px solid rgba(255,255,255,0.1)',
+            padding: '0 16px',
+          }}>
+            <Logo size={36} theme="light" showText={true} layout="horizontal" />
           </div>
-          <Menu
-            theme="dark"
-            mode="inline"
-            selectedKeys={['/' + location.pathname.split('/')[1]]}
-            items={menuItems}
-            onClick={handleMenuClick}
-            className="border-r-0"
-            style={{
-              backgroundColor: '#000c17',
-              borderRight: 'none',
-              padding: '12px 0',
-            }}
-          />
+
+          {/* Menu Section - flex: 1 to take remaining space */}
+          <div style={{ flex: 1, overflow: 'auto' }}>
+            <Menu
+              theme="dark"
+              mode="inline"
+              selectedKeys={['/' + location.pathname.split('/')[1]]}
+              items={menuItems}
+              onClick={handleMenuClick}
+              style={{
+                backgroundColor: 'transparent',
+                borderRight: 'none',
+                padding: '16px 0',
+              }}
+            />
+          </div>
+
+          {/* User Info at Sidebar Bottom */}
+          <SidebarUserInfo />
         </Sider>
       )}
       
       <AntLayout>
-                <Header
-          className="bg-white shadow-md flex items-center justify-between px-8"
+        {/* Header - 64px height */}
+        <Header
           style={{
-            padding: '0 32px',
+            padding: '0 24px',
             background: '#ffffff',
             boxShadow: '0 2px 8px rgba(0, 0, 33, 0.08)',
             borderBottom: '1px solid #f0f0f0',
@@ -132,49 +203,25 @@ function AppLayout() {
             top: 0,
             zIndex: 100,
             height: '64px',
+            display: 'flex',
+            alignItems: 'center',
           }}
         >
-          <div className="flex items-center gap-4">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <Breadcrumb items={getBreadcrumbItems()} />
-            {/* Removed read-only tag from header */}
           </div>
           
-          <div className="flex items-center gap-6 ml-auto">
-            <span className="text-gray-600 font-medium text-sm mr-2 hidden sm:inline-block">
-              {getTenantDisplayName()}
-            </span>
-            <Dropdown
-              menu={{ items: userMenuItems, onClick: handleMenuClick }}
-              placement="bottomRight"
-              trigger={['click']}
-            >
-              <div 
-                className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors"
-                onClick={(e) => e.preventDefault()}
-                style={{ userSelect: 'none' }}
-              >
-                <Avatar 
-                  icon={<UserOutlined />} 
-                  size="default"
-                  style={{ 
-                    backgroundColor: '#f0f0f0',
-                    color: '#666'
-                  }}
-                />
-                <span className="text-gray-600 text-sm font-medium">
-                  {userInfo?.role || 'User'}
-                </span>
-              </div>
-            </Dropdown>
+          {/* Right side - simplified, user info moved to sidebar */}
+          <div style={{ marginLeft: 'auto' }}>
+            {/* User info moved to sidebar bottom */}
           </div>
         </Header>
         
-        <Content style={{ background: 'var(--bg-color)', overflow: 'auto' }}>
+        <Content style={{ background: 'var(--bg-color)', overflow: 'auto', padding: '24px' }}>
           <Outlet />
         </Content>
-        {isMobile && (
-          <TabBar />
-        )}
+        
+        {isMobile && <TabBar />}
       </AntLayout>
     </AntLayout>
   )

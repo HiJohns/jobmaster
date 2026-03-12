@@ -4,14 +4,25 @@ interface LogoProps {
   size?: number;
   theme?: 'light' | 'dark'; // light 用于深色背景(白图)，dark 用于白色背景(蓝图)
   showText?: boolean;
+  layout?: 'vertical' | 'horizontal'; // 新增：布局方向
 }
 
-const Logo: React.FC<LogoProps> = ({ size = 40, theme = 'dark', showText = true }) => {
+const Logo: React.FC<LogoProps> = ({ 
+  size = 40, 
+  theme = 'dark', 
+  showText = true,
+  layout = 'horizontal' // 默认横排
+}) => {
   const iconColor = theme === 'light' ? '#ffffff' : '#0033FF';
   const textColor = theme === 'light' ? '#ffffff' : '#001529';
   
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: layout === 'horizontal' ? 'row' : 'column',
+      alignItems: 'center', 
+      gap: layout === 'horizontal' ? '8px' : '4px'
+    }}>
       <svg 
         width={size} 
         height={size} 
@@ -40,16 +51,34 @@ const Logo: React.FC<LogoProps> = ({ size = 40, theme = 'dark', showText = true 
       </svg>
       
       {showText && (
-        <span style={{ 
-          fontSize: Math.max(16, size * 0.45), 
-          fontWeight: 500, // font-medium
-          color: textColor,
-          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-          letterSpacing: '1px',
-          lineHeight: 1
+        <div style={{ 
+          display: 'flex',
+          flexDirection: layout === 'horizontal' ? 'row' : 'column',
+          alignItems: layout === 'horizontal' ? 'baseline' : 'center',
+          gap: layout === 'horizontal' ? '4px' : '0',
         }}>
-          工单匠
-        </span>
+          <span style={{ 
+            fontSize: Math.max(16, size * 0.45), 
+            fontWeight: 600,
+            color: textColor,
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+            letterSpacing: layout === 'horizontal' ? '0.5px' : '1px',
+            lineHeight: 1.2
+          }}>
+            JobMaster
+          </span>
+          <span style={{ 
+            fontSize: Math.max(14, size * 0.4), 
+            fontWeight: 500,
+            color: textColor,
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+            letterSpacing: '1px',
+            lineHeight: 1.2,
+            opacity: 0.9
+          }}>
+            工单匠
+          </span>
+        </div>
       )}
     </div>
   );

@@ -1,11 +1,17 @@
 import React from 'react';
+import { Button } from 'antd-mobile';
+import { AddOutline } from 'antd-mobile-icons';
 
 interface EmptyStateIllustrationProps {
   message?: string;
+  showAction?: boolean;
+  onAction?: () => void;
 }
 
 const EmptyStateIllustration: React.FC<EmptyStateIllustrationProps> = ({ 
-  message = '当前节点暂无工单，点击右侧按钮发起新任务'
+  message = '暂无待处理工单，去派发新任务吧',
+  showAction = true,
+  onAction
 }) => {
   return (
     <div style={{
@@ -13,44 +19,86 @@ const EmptyStateIllustration: React.FC<EmptyStateIllustrationProps> = ({
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '60px 20px',
+      padding: '60px 24px',
     }}>
-      <svg width="200" height="150" viewBox="0 0 200 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-        {/* 维修清单背景 */}
-        <rect x="40" y="20" width="120" height="100" rx="8" fill="#f5f5f5" stroke="#d9d9d9" strokeWidth="2"/>
+      {/* Maintenance themed SVG illustration */}
+      <svg width="200" height="160" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+        {/* Background soft glow */}
+        <circle cx="100" cy="80" r="60" fill="url(#bgGradient)" opacity="0.6"/>
         
-        {/* 清单线条 */}
-        <line x1="60" y1="45" x2="140" y2="45" stroke="#bfbfbf" strokeWidth="2" strokeLinecap="round"/>
-        <line x1="60" y1="60" x2="140" y2="60" stroke="#bfbfbf" strokeWidth="2" strokeLinecap="round"/>
-        <line x1="60" y1="75" x2="140" y2="75" stroke="#bfbfbf" strokeWidth="2" strokeLinecap="round"/>
-        <line x1="60" y1="90" x2="110" y2="90" stroke="#bfbfbf" strokeWidth="2" strokeLinecap="round"/>
+        {/* Main character - friendly maintenance worker */}
+        <g transform="translate(60, 40)">
+          {/* Body/overall */}
+          <rect x="25" y="50" width="30" height="40" rx="6" fill="#3B82F6"/>
+          <rect x="30" y="55" width="20" height="30" rx="2" fill="#60A5FA"/>
+          
+          {/* Head */}
+          <circle cx="40" cy="35" r="18" fill="#FED7AA"/>
+          
+          {/* Hard hat */}
+          <path d="M20 30C20 20 28 12 40 12C52 12 60 20 60 30L65 32L15 32L20 30Z" fill="#F59E0B"/>
+          <rect x="18" y="30" width="44" height="6" rx="2" fill="#FBBF24"/>
+          
+          {/* Face - friendly expression */}
+          <circle cx="34" cy="36" r="2" fill="#374151"/>
+          <circle cx="46" cy="36" r="2" fill="#374151"/>
+          <path d="M35 44C35 44 38 47 40 47C42 47 45 44 45 44" stroke="#374151" strokeWidth="2" strokeLinecap="round"/>
+          
+          {/* Arms holding tools */}
+          <rect x="10" y="55" width="12" height="25" rx="6" fill="#FED7AA"/>
+          <rect x="58" y="55" width="12" height="25" rx="6" fill="#FED7AA"/>
+          
+          {/* Wrench in right hand */}
+          <g transform="translate(5, 75) rotate(-30)">
+            <rect x="0" y="0" width="8" height="20" rx="2" fill="#9CA3AF"/>
+            <path d="M-4 20C-4 16 -2 14 0 14H8C10 14 12 16 12 20V22C12 26 8 28 4 28C0 28 -4 26 -4 22V20Z" fill="#6B7280"/>
+          </g>
+          
+          {/* Toolbox on ground */}
+          <rect x="55" y="95" width="35" height="25" rx="4" fill="#DC2626"/>
+          <rect x="58" y="98" width="29" height="19" rx="2" fill="#EF4444"/>
+          <rect x="65" y="90" width="15" height="8" rx="2" fill="#991B1B"/>
+          
+          {/* Floating sparkles */}
+          <path d="M10 20L11 23L14 24L11 25L10 28L9 25L6 24L9 23L10 20Z" fill="#FCD34D"/>
+          <path d="M75 25L76 28L79 29L76 30L75 33L74 30L71 29L74 28L75 25Z" fill="#60A5FA"/>
+        </g>
         
-        {/* 对勾图标 */}
-        <circle cx="70" cy="45" r="6" fill="#52c41a"/>
-        <path d="M67 45L69 47L73 42" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        
-        {/* 工具图标 - 扳手 */}
-        <path d="M150 100L160 90L165 95L155 105L150 100Z" fill="#0033FF"/>
-        <circle cx="160" cy="90" r="4" fill="#0033FF"/>
-        
-        {/* 工具图标 - 螺丝刀 */}
-        <rect x="175" y="85" width="15" height="3" rx="1.5" fill="#8c8c8c" transform="rotate(-45 175 85)"/>
-        <rect x="180" y="80" width="3" height="15" rx="1.5" fill="#8c8c8c"/>
-        
-        {/* 星号装饰 */}
-        <path d="M30 30L32 34L36 34L33 37L34 41L30 38L26 41L27 37L24 34L28 34L30 30Z" fill="#FFD700" opacity="0.7"/>
+        <defs>
+          <radialGradient id="bgGradient" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(100 80) rotate(90) scale(60)">
+            <stop stopColor="#DBEAFE"/>
+            <stop offset="1" stopColor="white" stopOpacity="0"/>
+          </radialGradient>
+        </defs>
       </svg>
       
       <div style={{
-        color: '#666',
-        fontSize: '14px',
-        marginTop: '20px',
+        color: '#64748B',
+        fontSize: '15px',
+        marginTop: '24px',
         textAlign: 'center',
         lineHeight: '1.6',
-        maxWidth: '300px',
+        maxWidth: '280px',
       }}>
         {message}
       </div>
+      
+      {showAction && onAction && (
+        <Button
+          color="primary"
+          fill="solid"
+          size="middle"
+          onClick={onAction}
+          style={{
+            marginTop: '20px',
+            '--background-color': '#0033FF',
+            borderRadius: '8px',
+          }}
+        >
+          <AddOutline style={{ marginRight: '4px' }} />
+          派发新任务
+        </Button>
+      )}
     </div>
   );
 };

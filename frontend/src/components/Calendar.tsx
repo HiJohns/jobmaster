@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 
 import dayjs, { Dayjs } from 'dayjs'
+import { Button } from 'antd-mobile'
+import { LeftOutline } from 'antd-mobile-icons'
 
 interface WeekCalendarProps {
   onDateChange: (date: Dayjs) => void
@@ -10,6 +12,7 @@ interface WeekCalendarProps {
 function WeekCalendar({ onDateChange, selectedDate: initialDate }: WeekCalendarProps) {
   const [currentWeek, setCurrentWeek] = useState<Dayjs[]>([])
   const [selectedDate, setSelectedDate] = useState<Dayjs>(initialDate || dayjs())
+  const [showBackToToday, setShowBackToToday] = useState(false)
 
   useEffect(() => {
     generateWeekDays(dayjs())
@@ -18,6 +21,9 @@ function WeekCalendar({ onDateChange, selectedDate: initialDate }: WeekCalendarP
   useEffect(() => {
     if (initialDate) {
       setSelectedDate(initialDate)
+      // Check if we need to show "back to today" button
+      const isTodaySelected = initialDate.isSame(dayjs(), 'day')
+      setShowBackToToday(!isTodaySelected)
     }
   }, [initialDate])
 
@@ -33,6 +39,15 @@ function WeekCalendar({ onDateChange, selectedDate: initialDate }: WeekCalendarP
   const handleDateSelect = (date: Dayjs) => {
     setSelectedDate(date)
     onDateChange(date)
+    setShowBackToToday(!date.isSame(dayjs(), 'day'))
+  }
+
+  const handleBackToToday = () => {
+    const today = dayjs()
+    setSelectedDate(today)
+    onDateChange(today)
+    generateWeekDays(today)
+    setShowBackToToday(false)
   }
 
   const formatDate = (date: Dayjs) => {
@@ -52,69 +67,101 @@ function WeekCalendar({ onDateChange, selectedDate: initialDate }: WeekCalendarP
   }
 
   return (
-    <div style={{ display: 'flex', padding: '16px 12px', backgroundColor: 'var(--bg-color)', overflowX: 'auto', gap: '8px' }}>
-      {currentWeek.map((date, index) => {
-        const selected = isSelected(date);
-        const today = isToday(date);
-        
-        return (
-          <div
-            key={index}
-            onClick={() => handleDateSelect(date)}
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: 'column',
+      padding: '16px', 
+      backgroundColor: 'var(--bg-color)', 
+      gap: '12px'
+    }}>
+      {/* Back to Today Button */}
+      {showBackToToday && (
+        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+          <Button
+            size="small"
+            onClick={handleBackToToday}
             style={{
-              flex: '1 0 44px',
-              height: 56,
-              borderRadius: 8,
-              backgroundColor: selected ? '#ffffff' : today ? 'var(--primary-blue)' : 'transparent',
-              border: selected ? '2px solid var(--primary-blue)' : '2px solid transparent',
-              boxShadow: selected ? '0 4px 12px rgba(0, 51, 255, 0.15)' : 'none',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-              transform: selected ? 'scale(1.05)' : 'scale(1)',
-              opacity: selected || today ? 1 : 0.6,
-              position: 'relative'
+              '--background-color': 'var(--primary-blue)',
+              '--text-color': '#ffffff',
+              '--border-radius': '16px',
+              padding: '4px 12px',
+              fontSize: '12px',
             }}
           >
-            <span
+            <LeftOutline style={{ fontSize: '12px', marginRight: '4px' }} />
+            回到今天
+          </Button>
+        </div>
+      )}
+      
+      {/* Week Days */}
+      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto' }}>
+        {currentWeek.map((date, index) => {
+          const selected = isSelected(date);
+          const today = isToday(date);
+          
+          return (
+            <div
+              key={index}
+              onClick={() => handleDateSelect(date)}
               style={{
-                fontSize: 12,
-                color: today && !selected ? 'rgba(255,255,255,0.8)' : selected ? 'var(--primary-blue)' : '#666',
-                fontWeight: selected ? 600 : 'normal',
-                lineHeight: 1.2,
-                marginBottom: 2
+                flex: '1 0 48px',
+                height: 64,
+                borderRadius: 12,
+                backgroundColor: selected ? '#ffffff' : today ? 'var(--primary-blue)' : '#ffffff',
+                border: selected ? '2px solid var(--primary-blue)' : today ? 'none' : '1px solid #e8e8e8',
+                boxShadow: selected 
+                  ? '0 4px 16px rgba(0, 51, 255, 0.2)' 
+                  : today 
+                    ? '0 4px 12px rgba(0, 51, 255, 0.3)' 
+                    : '0 2px 8px rgba(0,0,0,0.04)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                transform: selected ? 'scale(1.08)' : 'scale(1)',
+                position: 'relative'
               }}
             >
-              {formatDay(date)}
-            </span>
-            <span
-              style={{
-                fontSize: 16,
-                fontWeight: 'bold',
-                color: today && !selected ? '#ffffff' : selected ? 'var(--primary-blue)' : '#333',
-                lineHeight: 1.2
-              }}
-            >
-              {formatDate(date)}
-            </span>
-            
-            {/* 底部热度圆点 */}
-            <div style={{
-              position: 'absolute',
-              bottom: 4,
-              width: 4,
-              height: 4,
-              borderRadius: '50%',
-               // TODO: Replace with actual data-driven heat indicator
-               backgroundColor: today && !selected ? '#ffffff' : 'var(--primary-blue)',
-               opacity: index % 3 === 0 ? 0.8 : 0 
-             }} />
-          </div>
-        );
-      })}
+              <span
+                style={{
+                  fontSize: 11,
+                  color: today && !selected ? 'rgba(255,255,255,0.9)' : selected ? 'var(--primary-blue)' : '#888',
+                  fontWeight: selected || today ? 600 : 400,
+                  lineHeight: 1.2,
+                  marginBottom: 4
+                }}
+              >
+                {formatDay(date)}
+              </span>
+              <span
+                style={{
+                  fontSize: 18,
+                  fontWeight: 'bold',
+                  color: today && !selected ? '#ffffff' : selected ? 'var(--primary-blue)' : '#333',
+                  lineHeight: 1.2
+                }}
+              >
+                {formatDate(date)}
+              </span>
+              
+              {/* Today indicator dot */}
+              {today && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: 6,
+                  width: 4,
+                  height: 4,
+                  borderRadius: '50%',
+                  backgroundColor: selected ? 'var(--primary-blue)' : '#ffffff',
+                }} />
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   )
 }
