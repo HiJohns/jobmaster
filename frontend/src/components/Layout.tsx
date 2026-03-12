@@ -4,6 +4,7 @@ import {
   FileTextTwoTone,
   SettingTwoTone,
   UserOutlined,
+  BankOutlined,
   LogoutOutlined,
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
@@ -36,6 +37,13 @@ function AppLayout() {
       key: '/settings',
       icon: <SettingTwoTone twoToneColor="#0033FF" />,
       label: '系统设置',
+      children: [
+        {
+          key: '/admin/tenants',
+          label: '租户管理',
+          icon: <BankOutlined />,
+        },
+      ],
     },
   ]
 
@@ -59,6 +67,8 @@ function AppLayout() {
       navigate('/login')
     } else if (key === 'profile') {
       // TODO: Navigate to profile page when implemented
+    } else if (key === '/admin/tenants') {
+      navigate(key)
     } else {
       navigate(key)
     }

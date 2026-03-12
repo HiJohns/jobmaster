@@ -285,13 +285,25 @@ const OrderContainer: React.FC = () => {
 
 ### [READY]
 ### [EMPTY]
-- [x] 在 Makefile 中增加 make web 指令以编译前端代码。
+
+### [DONE]
+- [x] 在侧边栏添加租户管理菜单项
+- [x] 创建租户数据库迁移文件 migrations/003_create_tenants.sql
+- [x] 在 Go 后端实现租户核心层（Model、Repository、API Handler）
+- [x] 实现租户管理前端页面（TenantList.tsx、创建模态框、侧边栏导航）
 
 ### [WIP]
 - [ ] 重新设计极简版 Logo 组件。
 - [ ] 升级 Home.tsx 和全局样式。
 
-### [TODO]
+
+
+
+---
+
+### [DONE]
+
+### [DONE]
 
 ---
 

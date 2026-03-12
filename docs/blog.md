@@ -650,3 +650,24 @@ Commit: [待生成]
   - frontend/scripts/generate-favicon.js (新增)
   - frontend/src/components/Calendar.tsx
 **Verification**: favicon.ico 格式正确 (MS Windows icon resource, 15KB)
+
+---
+
+## [2026-03-12 17:15:00] | Batch Update | 租户管理功能完整实现
+**Type**: Batch Code Update  
+**Scope**: Tenant Management System  
+**Changes**:
+- 数据库迁移: 创建 tenants 表 (BIGSERIAL 主键, JSONB config)
+- 后端 API: CRUD 接口 (Create, List)、SYSTEM_ADMIN 权限校验、审计日志
+- 前端页面: TenantList 表格、创建抽屉表单、侧边栏导航
+- 响应结构: 嵌套 ListTenantsResponse 兼容标准 ApiResponse<T> 格式
+- 安全修复: 泛化错误消息、权限校验、审计日志记录
+**Files Modified**:
+  - migrations/003_create_tenants.sql
+  - internal/model/tenant.go
+  - internal/repository/tenant_repository.go
+  - internal/api/admin/tenant_handler.go
+  - frontend/src/api/tenant.ts
+  - frontend/src/pages/admin/TenantList.tsx
+  - frontend/src/components/Layout.tsx
+**Verification**: TypeScript build passed, Go build passed, all review issues fixed
