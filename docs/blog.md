@@ -540,3 +540,12 @@ Commit: c09bd2d5
 - 引入 `EmptyStateIllustration` SVG 插画组件，在空数据时提供引导提示；并将搜索增强。
 
 Commit: c89048f8
+
+---
+
+## [2026-03-12] | Raw | 补充前端编译命令
+
+在 Makefile 中增加 `make web` 指令，用于一键编译前端静态资源。执行流程：`cd frontend && npm install && npm run build`，产物输出到 `./frontend/dist` 目录。与后端路由配置一致，执行 `make web` 后执行 `make run` 即可在 8080 端口看到最新前端页面。
+
+Commit: 5e664344
+
