@@ -631,3 +631,22 @@ Commit: [待生成]
 - 修复 4 个 Minor 问题 (CSS 变量、类型安全、参数优化)
 **Files Modified**: 5 files (EmptyStateIllustration, Logo, Calendar, index.css, Home, Login)
 **Verification**: TypeScript build passed, no new warnings
+
+
+---
+
+## [2026-03-12 13:45:00] | Batch Update | Favicon Generation & Calendar Scroll Fix
+**Type**: Batch Code Update  
+**Scope**: Frontend  
+**Changes**:
+- 根据 Logo 生成 favicon.ico (16x16, 32x32, 48x48 多尺寸)
+- 创建 favicon.svg 源文件和 generate-favicon.js 生成脚本
+- 修复 Calendar 组件边框裁切和垂直滚动条问题
+  - 添加 overflowY: hidden 消除垂直滚动
+  - 添加 py-2 (8px) 内边距修复边框裁切
+**Files Modified**: 
+  - frontend/public/favicon.ico (新增)
+  - frontend/public/favicon.svg (新增)
+  - frontend/scripts/generate-favicon.js (新增)
+  - frontend/src/components/Calendar.tsx
+**Verification**: favicon.ico 格式正确 (MS Windows icon resource, 15KB)

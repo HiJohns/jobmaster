@@ -95,7 +95,7 @@ function WeekCalendar({ onDateChange, selectedDate: initialDate }: WeekCalendarP
       )}
       
       {/* Week Days */}
-      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto' }}>
+      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', overflowY: 'hidden', paddingTop: '8px', paddingBottom: '8px' }}>
         {currentWeek.map((date, index) => {
           const selected = isSelected(date);
           const today = isToday(date);
