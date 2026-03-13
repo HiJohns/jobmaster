@@ -212,6 +212,7 @@ func autoMigrate() error {
 		&model.Organization{},
 		&model.Order{},
 		&model.WorkOrder{},
+		&model.Tenant{},
 	}
 
 	for _, m := range models {

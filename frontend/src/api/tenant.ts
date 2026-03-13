@@ -39,7 +39,7 @@ export interface CreateTenantResponse {
 }
 
 class TenantApi {
-  private prefix = '/api/v1/admin/tenants'
+  private prefix = '/admin/tenants'
 
   async list(page = 1, size = 20): Promise<TenantListResponse> {
     return request.get<TenantListData>(`${this.prefix}?page=${page}&size=${size}`)

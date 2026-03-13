@@ -7,7 +7,10 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"jobmaster/internal/api/admin"
 	"jobmaster/internal/middleware"
+	"jobmaster/internal/repository"
+	"jobmaster/pkg/database"
 )
 
 // SetupRouter configures the API routes with middleware pipeline
@@ -66,6 +69,14 @@ func SetupRouter() *gin.Engine {
 			protected.POST("/workorders/:id/reserve", ReserveWorkOrder)
 			protected.POST("/workorders/:id/arrive", ArriveWorkOrder)
 			protected.POST("/workorders/:id/finish", FinishWorkOrder)
+
+			// Admin routes (require SYSTEM_ADMIN role)
+			db, err := database.GetDB()
+			if err != nil {
+				panic("failed to get database connection: " + err.Error())
+			}
+			tenantRepo := repository.NewTenantRepository(db)
+			admin.RegisterRoutes(protected, tenantRepo)
 		}
 	}
 

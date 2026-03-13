@@ -11,15 +11,15 @@ import (
 
 // Tenant represents a multi-tenant organization in the system
 type Tenant struct {
-	ID            uint         `gorm:"primaryKey;autoIncrement"`
-	Name          string         `gorm:"size:255;not null;comment:租户全称"`
-	Code          string         `gorm:"size:100;uniqueIndex;not null;comment:唯一标识码"`
-	ContactPerson string         `gorm:"size:255;comment:联系人"`
-	Status        int8           `gorm:"default:1;comment:租户状态 (0:禁用, 1:启用)"`
-	Config        JSONBMap       `gorm:"type:jsonb;default:'{}';comment:租户专属配置"`
-	CreatedAt     time.Time      `gorm:"autoCreateTime"`
-	UpdatedAt     time.Time      `gorm:"autoUpdateTime"`
-	DeletedAt     gorm.DeletedAt `gorm:"index"`
+	ID            uint           `gorm:"primaryKey;autoIncrement" json:"id"`
+	Name          string         `gorm:"size:255;not null;comment:租户全称" json:"name"`
+	Code          string         `gorm:"size:100;uniqueIndex;not null;comment:唯一标识码" json:"code"`
+	ContactPerson string         `gorm:"size:255;comment:联系人" json:"contact_person"`
+	Status        int8           `gorm:"default:1;comment:租户状态 (0:禁用, 1:启用)" json:"status"`
+	Config        JSONBMap       `gorm:"type:jsonb;default:'{}';comment:租户专属配置" json:"config"`
+	CreatedAt     time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt     time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+	DeletedAt     gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 }
 
 // TableName returns the table name for Tenant model
@@ -44,16 +44,21 @@ func (j *JSONBMap) Scan(src interface{}) error {
 		*j = make(JSONBMap)
 		return nil
 	}
-	
-	data, ok := src.([]byte)
-	if !ok {
-		return fmt.Errorf("type assertion to []byte failed")
+
+	var data []byte
+	switch v := src.(type) {
+	case []byte:
+		data = v
+	case string:
+		data = []byte(v)
+	default:
+		return fmt.Errorf("cannot scan %T into JSONBMap", src)
 	}
-	
+
 	if len(data) == 0 || string(data) == "{}" {
 		*j = make(JSONBMap)
 		return nil
 	}
-	
+
 	return json.Unmarshal(data, j)
 }

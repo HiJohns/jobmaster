@@ -671,3 +671,19 @@ Commit: [待生成]
   - frontend/src/pages/admin/TenantList.tsx
   - frontend/src/components/Layout.tsx
 **Verification**: TypeScript build passed, Go build passed, all review issues fixed
+
+## [2026-03-13] 实现租户代码生成的防腐层与创建表单优化
+**Issue**: #7
+
+### 功能实现
+1. **后端防腐层 (`pkg/utils/tenant_gen.go`)**:
+   - 实现了基于 `github.com/mozillazg/go-pinyin` 的中文转拼音逻辑。
+   - 包含完整的正则清洗、黑名单过滤（如 `admin`, `api`, `system` 等保留词）。
+   - 实现带重试机制的防碰撞发号逻辑。
+2. **API 适配 (`internal/api/admin/tenant_handler.go`)**:
+   - `CreateTenantRequest` 中去除了 `Code` 的必填校验，由后端强制分配。
+   - 集成了生成器，正确向外抛出数据库错误，并对审计日志错误提供警告。
+3. **前端表单优化 (`frontend/src/pages/admin/TenantForm.tsx`)**:
+   - 新增独立的表单组件。
+   - 实现边输入租户名、边生成“标识码预览”的安全动态交互。
+   - 禁用并灰置 `code` 字段框，增加防篡改提示。
