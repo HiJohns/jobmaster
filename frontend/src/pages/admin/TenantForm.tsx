@@ -38,9 +38,10 @@ const toPinyin = (str: string): string => {
 
 interface TenantFormProps {
   form: FormInstance
+  onFinish?: (values: any) => void
 }
 
-const TenantForm: React.FC<TenantFormProps> = ({ form }) => {
+const TenantForm: React.FC<TenantFormProps> = ({ form, onFinish }) => {
   const [codePreview, setCodePreview] = useState<string>('')
 
   // 监听表单值变化
@@ -61,6 +62,7 @@ const TenantForm: React.FC<TenantFormProps> = ({ form }) => {
       form={form} 
       layout="vertical"
       onValuesChange={handleValuesChange}
+      onFinish={onFinish}
     >
       {/* 重要提示 */}
       <Alert

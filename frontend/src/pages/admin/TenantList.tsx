@@ -165,9 +165,7 @@ const TenantList = () => {
           </div>
         }
       >
-        <Form form={form} onFinish={handleSubmit}>
-          <TenantForm form={form} />
-        </Form>
+        <TenantForm form={form} onFinish={handleSubmit} />
       </Drawer>
     </div>
   )
