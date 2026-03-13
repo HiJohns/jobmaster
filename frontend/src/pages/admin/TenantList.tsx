@@ -312,9 +312,6 @@ const TenantList = () => {
         scroll={{ x: 768 }}
       />
 
-      
-      const [submitLoading, setSubmitLoading] = useState(false)
-      
       <Drawer
         title={drawerMode === 'create' ? '创建租户' : '编辑租户'}
         placement="right"
