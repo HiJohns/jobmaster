@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -122,5 +123,85 @@ func RefreshToken(c *gin.Context) {
 
 	response.Success(c, gin.H{
 		"token": token,
+	})
+}
+
+// ChangePasswordRequest represents the password change request
+// For initial password change, old_password can be empty
+// For normal password change, old_password is required
+type ChangePasswordRequest struct {
+	OldPassword string `json:"old_password" binding:"max=128"`
+	NewPassword string `json:"new_password" binding:"required,min=8,max=128"`
+}
+
+// ChangePassword handles password change for authenticated users
+// Special handling for users with must_change_password=true (old_password can be empty)
+func ChangePassword(c *gin.Context) {
+	// Get user from context (set by auth middleware)
+	userVal, exists := c.Get("user")
+	if !exists {
+		response.Unauthorized(c, "user not authenticated")
+		return
+	}
+
+	user, ok := userVal.(*model.User)
+	if !ok {
+		response.InternalServerError(c, "invalid user format")
+		return
+	}
+
+	var req ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid request: "+err.Error())
+		return
+	}
+
+	// Validate new password strength
+	if !utils.IsStrongPassword(req.NewPassword) {
+		isValid, feedback := utils.ValidatePassword(req.NewPassword)
+		if !isValid {
+			response.BadRequest(c, "密码不符合安全要求: "+strings.Join(feedback, ", "))
+			return
+		}
+	}
+
+	db, err := database.GetDB()
+	if err != nil {
+		response.InternalServerError(c, "database connection failed")
+		return
+	}
+
+	// If user is not forced to change password, verify old password
+	if !user.MustChangePassword {
+		if req.OldPassword == "" {
+			response.BadRequest(c, "旧密码不能为空")
+			return
+		}
+
+		if !user.CheckPassword(req.OldPassword) {
+			response.Unauthorized(c, "旧密码不正确")
+			return
+		}
+	}
+
+	// Hash new password
+	hashedPassword, err := utils.HashPassword(req.NewPassword)
+	if err != nil {
+		response.InternalServerError(c, "failed to hash password")
+		return
+	}
+
+	// Update password and reset must_change_password flag
+	user.PasswordHash = hashedPassword
+	user.MustChangePassword = false
+
+	if err := db.Save(&user).Error; err != nil {
+		response.InternalServerError(c, "failed to update password")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"message":              "密码修改成功",
+		"must_change_password": false,
 	})
 }

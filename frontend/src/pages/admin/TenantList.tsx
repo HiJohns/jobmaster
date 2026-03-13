@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Table, Button, Tag, Space, message, Drawer, Form, Result } from 'antd'
-import { PlusOutlined, LockOutlined } from '@ant-design/icons'
+import { Table, Button, Space, message, Drawer, Form, Result, Input, Select, Modal } from 'antd'
+import { PlusOutlined, LockOutlined, UserSwitchOutlined } from '@ant-design/icons'
+import dayjs from 'dayjs'
+import { useNavigate } from 'react-router-dom'
 import { tenantApi, Tenant, CreateTenantRequest } from '../../api/tenant'
 import { useAuthStore } from '../../store/useAuthStore'
 import TenantForm from './TenantForm'
@@ -9,6 +11,7 @@ import TenantForm from './TenantForm'
 const ALLOWED_ROLES = ['ADMIN', 'BRAND_HQ']
 
 const TenantList = () => {
+  const navigate = useNavigate()
   const [data, setData] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)
@@ -16,6 +19,12 @@ const TenantList = () => {
   const [pageSize] = useState(10)
   const [drawerVisible, setDrawerVisible] = useState(false)
   const [form] = Form.useForm()
+  const [searchKeyword, setSearchKeyword] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('全部')
+  const [drawerMode, setDrawerMode] = useState<'create' | 'edit'>('create')
+  const [editingTenant, setEditingTenant] = useState<Tenant | null>(null)
+  const [statusLoading, setStatusLoading] = useState<number | null>(null)
+  const [impersonating, setImpersonating] = useState<number | null>(null)
   
   // Get user role from auth store
   const userInfo = useAuthStore((state) => state.userInfo)
@@ -24,10 +33,10 @@ const TenantList = () => {
   // Check if user has permission to access tenant management
   const hasPermission = userRole && ALLOWED_ROLES.includes(userRole)
 
-  const fetchData = async (currentPage: number) => {
+  const fetchData = async (currentPage: number, search = '', status = '全部') => {
     setLoading(true)
     try {
-      const response = await tenantApi.list(currentPage, pageSize)
+      const response = await tenantApi.list(currentPage, pageSize, search, status)
       if (response.code === 200) {
         setData(response.data.tenants)
         setTotal(response.data.total)
@@ -45,9 +54,21 @@ const TenantList = () => {
   useEffect(() => {
     // Only fetch data if user has permission
     if (hasPermission) {
-      fetchData(1)
+      fetchData(1, searchKeyword, statusFilter)
     }
   }, [hasPermission])
+
+  const handleSearch = (value: string) => {
+    setSearchKeyword(value)
+    setPage(1)
+    fetchData(1, value, statusFilter)
+  }
+
+  const handleStatusFilter = (value: string) => {
+    setStatusFilter(value)
+    setPage(1)
+    fetchData(1, searchKeyword, value)
+  }
   
   // Show permission denied page if user doesn't have access
   if (!hasPermission) {
@@ -63,21 +84,110 @@ const TenantList = () => {
 
   const handleCreate = () => {
     form.resetFields()
+    setDrawerMode('create')
+    setEditingTenant(null)
     setDrawerVisible(true)
   }
 
-  const handleSubmit = async (values: CreateTenantRequest) => {
+  const handleEdit = (record: Tenant) => {
+    setDrawerMode('edit')
+    setEditingTenant(record)
+    setDrawerVisible(true)
+  }
+
+  const handleStatusToggle = (record: Tenant) => {
+    const isDisable = record.status === 1
+    const action = isDisable ? '禁用' : '启用'
+
+    Modal.confirm({
+      title: isDisable ? '停用租户？' : '启用租户？',
+      content: isDisable 
+        ? '该操作将导致该租户下所有员工立即无法访问系统，请确认。'
+        : '确定要启用该租户吗？',
+      okText: '确认',
+      cancelText: '取消',
+      okButtonProps: { danger: isDisable },
+      onOk: async () => {
+        const tenantId = Number(record.id)
+        setStatusLoading(tenantId)
+        try {
+          const response = await tenantApi.updateStatus(tenantId, isDisable ? 0 : 1)
+          if (response.code === 200) {
+            message.success(`${action}成功`)
+            fetchData(page, searchKeyword, statusFilter)
+          } else {
+            message.error(`${action}失败: ` + (response.message || '未知错误'))
+          }
+        } catch (error: any) {
+          message.error(`${action}失败: ` + (error.message || '未知错误'))
+        } finally {
+          setStatusLoading(null)
+        }
+      },
+    })
+  }
+
+  const handleImpersonate = async (record: Tenant) => {
+    if (record.status !== 1) {
+      message.warning('无法代入已禁用的租户')
+      return
+    }
+
+    setImpersonating(Number(record.id))
     try {
-      const response = await tenantApi.create(values)
-      if (response.code === 201) {
-        message.success('创建租户成功')
-        setDrawerVisible(false)
-        fetchData(1)
+      const response = await tenantApi.impersonate(Number(record.id))
+      if (response.code === 200) {
+        const { token } = response.data
+        
+        // Use impersonate from auth store
+        useAuthStore.getState().impersonate(token, {
+          userId: record.id,
+          username: 'admin',
+          displayName: record.name,
+          role: 'ADMIN',
+          orgId: '',
+          tenantId: record.id,
+        })
+        
+        message.success(`已代入租户: ${record.name}`)
+        navigate('/')
       } else {
-        message.error('创建失败: ' + (response.message || '未知错误'))
+        message.error(response.message || '代入失败')
       }
     } catch (error: any) {
-      message.error('创建失败: ' + (error.message || '未知错误'))
+      message.error('代入失败: ' + (error.message || '未知错误'))
+    } finally {
+      setImpersonating(null)
+    }
+  }
+
+  const handleSubmit = async (values: CreateTenantRequest) => {
+    if (drawerMode === 'create') {
+      try {
+        const response = await tenantApi.create(values)
+        if (response.code === 201) {
+          message.success('创建租户成功')
+          setDrawerVisible(false)
+          fetchData(1)
+        } else {
+          message.error('创建失败: ' + (response.message || '未知错误'))
+        }
+      } catch (error: any) {
+        message.error('创建失败: ' + (error.message || '未知错误'))
+      }
+    } else {
+      try {
+        const response = await tenantApi.update(Number(editingTenant!.id), values)
+        if (response.code === 200) {
+          message.success('更新成功')
+          setDrawerVisible(false)
+          fetchData(page, searchKeyword, statusFilter)
+        } else {
+          message.error('更新失败: ' + (response.message || '未知错误'))
+        }
+      } catch (error: any) {
+        message.error('更新失败: ' + (error.message || '未知错误'))
+      }
     }
   }
 
@@ -86,7 +196,7 @@ const TenantList = () => {
       title: '租户名称',
       dataIndex: 'name',
       key: 'name',
-      width: '25%',
+      width: '30%',
     },
     {
       title: '唯一代码',
@@ -99,38 +209,82 @@ const TenantList = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status: number) => (
-        <Tag color={status === 1 ? 'green' : 'default'}>
+        <div className={status === 1 ? 'bg-green-50 text-green-600 border-0 px-3 py-1 rounded-md' : 'bg-gray-50 text-gray-400 border-0 px-3 py-1 rounded-md'}>
           {status === 1 ? '启用' : '禁用'}
-        </Tag>
+        </div>
       ),
-      width: '15%',
+      width: '12%',
     },
     {
       title: '创建时间',
       dataIndex: 'created_at',
       key: 'created_at',
-      render: (text: string) => new Date(text).toLocaleString(),
-      width: '25%',
+      render: (text: string) => dayjs(text).format('YYYY-MM-DD HH:mm'),
+      width: '20%',
     },
     {
       title: '操作',
       key: 'action',
-      render: () => (
+      align: 'right' as const,
+      render: (_: any, record: Tenant) => (
         <Space size="middle">
-          <Button type="link" size="small">编辑</Button>
+          <Button 
+            type="link" 
+            size="small"
+            onClick={() => handleEdit(record)}
+          >
+            编辑
+          </Button>
+          <Button 
+            type="link" 
+            size="small" 
+            icon={<UserSwitchOutlined />}
+            loading={impersonating === Number(record.id)}
+            onClick={() => handleImpersonate(record)}
+          >
+            代入
+          </Button>
+          <Button 
+            type="link" 
+            size="small" 
+            danger={record.status === 1}
+            loading={statusLoading === Number(record.id)}
+            onClick={() => handleStatusToggle(record)}
+          >
+            {record.status === 1 ? '禁用' : '启用'}
+          </Button>
         </Space>
       ),
-      width: '15%',
+      width: '18%',
     },
   ]
 
   return (
     <div style={{ padding: '24px', background: '#fff' }}>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
-        <h2>租户管理</h2>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-          创建租户
-        </Button>
+      <div className="mb-4 p-4 bg-white rounded-lg shadow-sm">
+        <div className="flex items-center gap-3">
+          <Input.Search
+            placeholder="搜索租户名称..."
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            onSearch={handleSearch}
+            style={{ width: 300 }}
+          />
+          <Select
+            value={statusFilter}
+            onChange={handleStatusFilter}
+            style={{ width: 120 }}
+          >
+            <Select.Option value="全部">全部</Select.Option>
+            <Select.Option value="启用">启用</Select.Option>
+            <Select.Option value="禁用">禁用</Select.Option>
+          </Select>
+          <div className="ml-auto">
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+              创建租户
+            </Button>
+          </div>
+        </div>
       </div>
 
       <Table
@@ -142,14 +296,14 @@ const TenantList = () => {
           current: page,
           pageSize: pageSize,
           total: total,
-          onChange: (page) => fetchData(page),
+          onChange: (newPage) => fetchData(newPage, searchKeyword, statusFilter),
           showSizeChanger: false,
         }}
         scroll={{ x: 768 }}
       />
 
       <Drawer
-        title="创建租户"
+        title={drawerMode === 'create' ? '创建租户' : '编辑租户'}
         placement="right"
         onClose={() => setDrawerVisible(false)}
         open={drawerVisible}
@@ -164,10 +318,16 @@ const TenantList = () => {
             </Button>
           </div>
         }
-      >
-        <Form form={form} onFinish={handleSubmit}>
-          <TenantForm form={form} />
-        </Form>
+          >
+        <TenantForm 
+          form={form} 
+          onFinish={handleSubmit} 
+          isEditMode={drawerMode === 'edit'}
+          initialValues={editingTenant ? {
+            ...editingTenant,
+            config: editingTenant.config ? JSON.stringify(editingTenant.config, null, 2) : undefined,
+          } : undefined}
+        />
       </Drawer>
     </div>
   )

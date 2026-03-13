@@ -5,14 +5,17 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"jobmaster/internal/model"
 	"gorm.io/gorm"
+	"jobmaster/internal/model"
 )
 
 // TenantRepository defines the interface for tenant data operations
 type TenantRepository interface {
 	Create(tenant *model.Tenant) error
 	GetByCode(code string) (*model.Tenant, error)
+	GetByID(id uint) (*model.Tenant, error)
+	GetByUUID(uuid uuid.UUID) (*model.Tenant, error)
+	Update(tenant *model.Tenant) error
 	List(offset, limit int) ([]model.Tenant, int64, error)
 	AddAuditLog(userID uuid.UUID, userName, action, details string, targetID uint) error
 }
@@ -44,6 +47,38 @@ func (r *tenantRepository) GetByCode(code string) (*model.Tenant, error) {
 		return nil, fmt.Errorf("failed to get tenant by code %s: %w", code, err)
 	}
 	return &tenant, nil
+}
+
+// GetByID retrieves a tenant by its primary key ID
+func (r *tenantRepository) GetByID(id uint) (*model.Tenant, error) {
+	var tenant model.Tenant
+	if err := r.db.First(&tenant, id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get tenant by id %d: %w", id, err)
+	}
+	return &tenant, nil
+}
+
+// GetByUUID retrieves a tenant by its UUID
+func (r *tenantRepository) GetByUUID(uuid uuid.UUID) (*model.Tenant, error) {
+	var tenant model.Tenant
+	if err := r.db.Where("uuid = ?", uuid).First(&tenant).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get tenant by uuid %s: %w", uuid.String(), err)
+	}
+	return &tenant, nil
+}
+
+// Update updates an existing tenant record
+func (r *tenantRepository) Update(tenant *model.Tenant) error {
+	if err := r.db.Save(tenant).Error; err != nil {
+		return fmt.Errorf("failed to update tenant: %w", err)
+	}
+	return nil
 }
 
 // List retrieves paginated list of tenants with total count
@@ -89,7 +124,7 @@ func (r *tenantRepository) AddAuditLog(userID uuid.UUID, userName, action, detai
 		Details:  details,
 		TargetID: targetID,
 	}
-	
+
 	if err := r.db.Create(log).Error; err != nil {
 		return fmt.Errorf("failed to create audit log: %w", err)
 	}

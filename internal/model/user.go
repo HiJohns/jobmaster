@@ -10,22 +10,23 @@ import (
 
 // User represents a system user with role-based access
 type User struct {
-	ID             uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
-	TenantID       uuid.UUID      `gorm:"type:uuid;not null;index:idx_user_tenant" json:"tenant_id"`
-	OrganizationID uuid.UUID      `gorm:"type:uuid;not null;index" json:"organization_id"`
-	Username       string         `gorm:"size:100;uniqueIndex:idx_user_username_tenant;not null" json:"username"`
-	Email          string         `gorm:"size:255;uniqueIndex:idx_user_email_tenant" json:"email"`
-	Phone          string         `gorm:"size:20" json:"phone"`
-	PasswordHash   string         `gorm:"size:255;not null" json:"-"`
-	Role           UserRole       `gorm:"type:varchar(20);not null" json:"role"`
-	Status         UserStatus     `gorm:"type:varchar(20);default:'active'" json:"status"`
-	DisplayName    string         `gorm:"size:100" json:"display_name"`
-	AvatarURL      string         `gorm:"size:500" json:"avatar_url"`
-	LastLoginAt    *time.Time     `json:"last_login_at,omitempty"`
-	Organization   Organization   `gorm:"foreignKey:OrganizationID" json:"organization,omitempty"`
-	CreatedAt      time.Time      `json:"created_at"`
-	UpdatedAt      time.Time      `json:"updated_at"`
-	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
+	ID                 uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
+	TenantID           uuid.UUID      `gorm:"type:uuid;not null;index:idx_user_tenant" json:"tenant_id"`
+	OrganizationID     uuid.UUID      `gorm:"type:uuid;not null;index" json:"organization_id"`
+	Username           string         `gorman:"size:100;uniqueIndex:idx_user_username_tenant;not null" json:"username"`
+	Email              string         `gorm:"size:255;uniqueIndex:idx_user_email_tenant" json:"email"`
+	Phone              string         `gorm:"size:20" json:"phone"`
+	PasswordHash       string         `gorm:"size:255;not null" json:"-"`
+	MustChangePassword bool           `gorm:"default:false;not null" json:"must_change_password"`
+	Role               UserRole       `gorm:"type:varchar(20);not null" json:"role"`
+	Status             UserStatus     `gorm:"type:varchar(20);default:'active'" json:"status"`
+	DisplayName        string         `gorm:"size:100" json:"display_name"`
+	AvatarURL          string         `gorm:"size:500" json:"avatar_url"`
+	LastLoginAt        *time.Time     `json:"last_login_at,omitempty"`
+	Organization       Organization   `gorm:"foreignKey:OrganizationID" json:"organization,omitempty"`
+	CreatedAt          time.Time      `json:"created_at"`
+	UpdatedAt          time.Time      `json:"updated_at"`
+	DeletedAt          gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 // UserRole defines user roles in the system

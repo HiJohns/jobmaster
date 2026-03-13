@@ -128,6 +128,105 @@ func generateRandomSuffix(length int) (string, error) {
 	return fmt.Sprintf(format, n.Int64()), nil
 }
 
+// GenerateTenantSlug 生成租户 Slug（全拼，无下划线）
+// 用于 URL、子域名等场景
+func GenerateTenantSlug(name string) (string, error) {
+	if name == "" {
+		return "", fmt.Errorf("tenant name cannot be empty")
+	}
+
+	// 转换为拼音（全小写，不带声调）
+	pinyinArgs := pinyin.NewArgs()
+	pinyinArgs.Style = pinyin.NORMAL
+	pinyinArgs.Heteronym = false
+
+	pySlice := pinyin.Pinyin(name, pinyinArgs)
+
+	// 将拼音切片拼接为字符串，直接连接（无下划线）
+	var pinyinParts []string
+	for _, part := range pySlice {
+		if len(part) > 0 {
+			pinyinParts = append(pinyinParts, strings.ToLower(part[0]))
+		}
+	}
+
+	if len(pinyinParts) == 0 {
+		// 如果名称不包含中文字符，直接使用原名称
+		pinyinParts = append(pinyinParts, strings.ToLower(name))
+	}
+
+	slug := strings.Join(pinyinParts, "")
+
+	// 清洗：移除非字母数字字符
+	slug = sanitizeSlug(slug)
+
+	// 检查黑名单
+	if IsBlacklistedCode(slug) {
+		// 强制追加随机后缀
+		suffix, err := generateRandomSuffix(4)
+		if err != nil {
+			return "", fmt.Errorf("failed to generate random suffix: %w", err)
+		}
+		slug = fmt.Sprintf("%s%s", slug, suffix)
+	}
+
+	// 限制最大长度
+	if len(slug) > 100 {
+		slug = slug[:100]
+	}
+
+	return slug, nil
+}
+
+// sanitizeSlug 清洗 Slug：仅保留字母数字
+func sanitizeSlug(slug string) string {
+	// 替换非字母数字字符为空字符串
+	re := regexp.MustCompile(`[^a-zA-Z0-9]+`)
+	slug = re.ReplaceAllString(slug, "")
+	return slug
+}
+
+// GenerateUniqueTenantSlug 生成唯一的租户 Slug（带防碰撞）
+func GenerateUniqueTenantSlug(name string, slugExists func(string) (bool, error)) (string, error) {
+	baseSlug, err := GenerateTenantSlug(name)
+	if err != nil {
+		return "", err
+	}
+
+	slug := baseSlug
+	attempts := 0
+	maxAttempts := 100
+
+	// 防碰撞循环
+	for attempts < maxAttempts {
+		exists, err := slugExists(slug)
+		if err != nil {
+			return "", fmt.Errorf("failed to check slug existence: %w", err)
+		}
+		if !exists {
+			break
+		}
+
+		attempts++
+		suffix, err := generateRandomSuffix(4)
+		if err != nil {
+			return "", fmt.Errorf("failed to generate random suffix: %w", err)
+		}
+		slug = fmt.Sprintf("%s%s", baseSlug, suffix)
+
+		// 限制最大长度
+		if len(slug) > 100 {
+			slug = slug[:96] + suffix
+		}
+	}
+
+	if attempts >= maxAttempts {
+		return "", fmt.Errorf("unable to generate unique slug after %d attempts", maxAttempts)
+	}
+
+	return slug, nil
+}
+
 // GenerateUniqueTenantCode 生成唯一的租户代码（带防碰撞）
 // codeExists 是一个检查代码是否已存在的函数
 func GenerateUniqueTenantCode(name string, codeExists func(string) (bool, error)) (string, error) {
