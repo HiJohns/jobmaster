@@ -41,8 +41,14 @@ export interface CreateTenantResponse {
 class TenantApi {
   private prefix = '/admin/tenants'
 
-  async list(page = 1, size = 20): Promise<TenantListResponse> {
-    return request.get<TenantListData>(`${this.prefix}?page=${page}&size=${size}`)
+  async list(page = 1, size = 20, search = '', status = '全部'): Promise<TenantListResponse> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+      ...(search && { search }),
+      ...(status !== '全部' && { status }),
+    })
+    return request.get<TenantListData>(`${this.prefix}?${params.toString()}`)
   }
 
   async create(data: CreateTenantRequest): Promise<CreateTenantResponse> {

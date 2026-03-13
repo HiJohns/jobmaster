@@ -13,6 +13,7 @@ import { useMediaQuery } from 'react-responsive'
 import { useAuthStore } from '../store/useAuthStore'
 import Logo from './Logo'
 import TabBar from './TabBar'
+import '../styles/sidebar.css'
 
 const { Header, Sider, Content } = AntLayout
 
@@ -188,6 +189,7 @@ function AppLayout() {
               selectedKeys={['/' + location.pathname.split('/')[1]]}
               items={menuItems}
               onClick={handleMenuClick}
+              className="tenant-admin-sidebar"
               style={{
                 backgroundColor: 'transparent',
                 borderRight: 'none',
