@@ -1,4 +1,4 @@
-import { Layout as AntLayout, Menu, Avatar, Dropdown, Breadcrumb } from 'antd'
+import { Layout as AntLayout, Menu, Avatar, Dropdown, Breadcrumb, Button, message } from 'antd'
 import {
   HomeTwoTone,
   FileTextTwoTone,
@@ -6,6 +6,7 @@ import {
   UserOutlined,
   BankOutlined,
   LogoutOutlined,
+  CloseOutlined,
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
@@ -20,8 +21,45 @@ const { Header, Sider, Content } = AntLayout
 function AppLayout() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { userInfo, logout } = useAuthStore()
+  const { userInfo, logout, isImpersonated, exitImpersonation } = useAuthStore()
   const isMobile = useMediaQuery({ query: '(max-width: 768px)' })
+
+  const handleExitImpersonation = () => {
+    exitImpersonation()
+    message.success('已退出代入模式')
+    window.location.reload()
+  }
+
+  const ImpersonationBanner = () => {
+    if (!isImpersonated) return null
+    
+    return (
+      <div style={{
+        background: 'linear-gradient(90deg, #0033FF 0%, #0055FF 100%)',
+        color: '#fff',
+        padding: '8px 24px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        fontSize: '14px',
+      }}>
+        <div>
+          <span>当前身份：代入租户 </span>
+          <strong>{userInfo?.displayName || userInfo?.tenantId}</strong>
+          <span> | 正在以管理员视角操作</span>
+        </div>
+        <Button 
+          type="text" 
+          size="small" 
+          icon={<CloseOutlined />}
+          onClick={handleExitImpersonation}
+          style={{ color: '#fff' }}
+        >
+          退出代入
+        </Button>
+      </div>
+    )
+  }
 
   const menuItems: MenuProps['items'] = [
     {
@@ -161,6 +199,7 @@ function AppLayout() {
 
   return (
     <AntLayout className="min-h-screen">
+      <ImpersonationBanner />
       {!isMobile && (
         <Sider
           theme="dark"

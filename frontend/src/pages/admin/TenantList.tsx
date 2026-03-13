@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Table, Button, Space, message, Drawer, Form, Result, Input, Select, Modal } from 'antd'
-import { PlusOutlined, LockOutlined } from '@ant-design/icons'
+import { PlusOutlined, LockOutlined, UserSwitchOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import { useNavigate } from 'react-router-dom'
 import { tenantApi, Tenant, CreateTenantRequest } from '../../api/tenant'
 import { useAuthStore } from '../../store/useAuthStore'
 import TenantForm from './TenantForm'
@@ -10,6 +11,7 @@ import TenantForm from './TenantForm'
 const ALLOWED_ROLES = ['ADMIN', 'BRAND_HQ']
 
 const TenantList = () => {
+  const navigate = useNavigate()
   const [data, setData] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)
@@ -22,6 +24,7 @@ const TenantList = () => {
   const [drawerMode, setDrawerMode] = useState<'create' | 'edit'>('create')
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null)
   const [statusLoading, setStatusLoading] = useState<number | null>(null)
+  const [impersonating, setImpersonating] = useState<number | null>(null)
   
   // Get user role from auth store
   const userInfo = useAuthStore((state) => state.userInfo)
@@ -124,6 +127,40 @@ const TenantList = () => {
     })
   }
 
+  const handleImpersonate = async (record: Tenant) => {
+    if (record.status !== 1) {
+      message.warning('无法代入已禁用的租户')
+      return
+    }
+
+    setImpersonating(Number(record.id))
+    try {
+      const response = await tenantApi.impersonate(Number(record.id))
+      if (response.code === 200) {
+        const { token } = response.data
+        
+        // Use impersonate from auth store
+        useAuthStore.getState().impersonate(token, {
+          userId: record.id,
+          username: 'admin',
+          displayName: record.name,
+          role: 'ADMIN',
+          orgId: '',
+          tenantId: record.id,
+        })
+        
+        message.success(`已代入租户: ${record.name}`)
+        navigate('/')
+      } else {
+        message.error(response.message || '代入失败')
+      }
+    } catch (error: any) {
+      message.error('代入失败: ' + (error.message || '未知错误'))
+    } finally {
+      setImpersonating(null)
+    }
+  }
+
   const handleSubmit = async (values: CreateTenantRequest) => {
     if (drawerMode === 'create') {
       try {
@@ -197,6 +234,15 @@ const TenantList = () => {
             onClick={() => handleEdit(record)}
           >
             编辑
+          </Button>
+          <Button 
+            type="link" 
+            size="small" 
+            icon={<UserSwitchOutlined />}
+            loading={impersonating === Number(record.id)}
+            onClick={() => handleImpersonate(record)}
+          >
+            代入
           </Button>
           <Button 
             type="link" 

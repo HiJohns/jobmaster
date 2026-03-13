@@ -44,6 +44,15 @@ export interface UpdateTenantRequest {
   config?: Record<string, any>
 }
 
+export interface ImpersonateResponse {
+  code: number
+  message?: string
+  data: {
+    token: string
+    expires_at: number
+  }
+}
+
 class TenantApi {
   private prefix = '/admin/tenants'
 
@@ -67,6 +76,10 @@ class TenantApi {
 
   async updateStatus(id: number, status: 0 | 1): Promise<CreateTenantResponse> {
     return request.put<Tenant>(`${this.prefix}/${id}/status`, { status })
+  }
+
+  async impersonate(id: number): Promise<ImpersonateResponse> {
+    return request.post<ImpersonateResponse['data']>(`${this.prefix}/${id}/impersonate`, {})
   }
 
   async getByCode(code: string): Promise<Tenant | null> {
