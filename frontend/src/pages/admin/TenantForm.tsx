@@ -1,36 +1,14 @@
 import { useState } from 'react'
-import { Form, Input, Select, Alert, Typography } from 'antd'
-import { InfoCircleOutlined, LockOutlined } from '@ant-design/icons'
+import { Form, Input, Select, Alert, Typography, Button } from 'antd'
+import { InfoCircleOutlined, LockOutlined, UpOutlined, DownOutlined } from '@ant-design/icons'
 import type { FormInstance } from 'antd'
+import { pinyin } from 'pinyin-pro'
 
 const { Option } = Select
 const { Text } = Typography
 
-// 拼音转换函数（简单实现）
-// 注：实际项目中可以使用 pinyin 库
-const pinyinMap: Record<string, string> = {
-  '优': 'you', '衣': 'yi', '库': 'ku',
-  '阿': 'a', '里': 'li', '巴': 'ba', '斯': 'si',
-  '腾': 'teng', '讯': 'xun',
-  '华': 'hua', '为': 'wei',
-  '百': 'bai', '度': 'du',
-  '京': 'jing', '东': 'dong',
-  '美': 'mei', '团': 'tuan',
-  '字': 'zi', '节': 'jie', '跳': 'tiao', '动': 'dong',
-  '小': 'xiao', '米': 'mi',
-  '网': 'wang', '易': 'yi',
-  '新': 'xin', '浪': 'lang',
-  '搜': 'sou', '狐': 'hu',
-  '奇': 'qi', '虎': 'hu',
-  '凤': 'feng', '凰': 'huang',
-}
-
-// 简易拼音转换（仅支持常见字）
 const toPinyin = (str: string): string => {
-  return str
-    .split('')
-    .map(char => pinyinMap[char] || char.toLowerCase())
-    .join('_')
+  return pinyin(str, { separator: '_', toneType: 'none' })
     .replace(/[^a-z0-9_]+/g, '_')
     .replace(/_+/g, '_')
     .replace(/^_|_$/g, '')
@@ -51,6 +29,7 @@ interface TenantFormProps {
 
 const TenantForm: React.FC<TenantFormProps> = ({ form, onFinish, isEditMode = false, initialValues }) => {
   const [codePreview, setCodePreview] = useState<string>('')
+  const [configExpanded, setConfigExpanded] = useState(false)
 
   // Set initial values for edit mode
   useState(() => {
@@ -136,13 +115,33 @@ const TenantForm: React.FC<TenantFormProps> = ({ form, onFinish, isEditMode = fa
         label="唯一代码"
         extra={isEditMode ? "唯一代码不可修改" : "该字段由系统自动生成，无需手动输入"}
       >
-        <Input 
-          placeholder="系统将自动生成" 
+        <Input
+          placeholder="系统将自动生成"
           disabled
           suffix={isEditMode ? <LockOutlined /> : null}
           style={{ backgroundColor: '#f5f5f5' }}
         />
       </Form.Item>
+
+      {!isEditMode && (
+        <Form.Item
+          name="initial_password"
+          label="初始密码"
+          rules={[
+            { required: true, message: '请输入初始密码' },
+            { min: 8, message: '密码至少8位' },
+            {
+              pattern: /^(?=.*[A-Za-z])(?=.*\d)/,
+              message: '密码需包含字母和数字'
+            }
+          ]}
+        >
+          <Input.Password
+            placeholder="请设置租户管理员初始密码"
+            size="large"
+          />
+        </Form.Item>
+      )}
 
       <Form.Item
         name="contact_person"
@@ -162,14 +161,38 @@ const TenantForm: React.FC<TenantFormProps> = ({ form, onFinish, isEditMode = fa
         </Select>
       </Form.Item>
 
-      <Form.Item
-        name="config"
-        label="配置 (JSON)"
-      >
-        <Input.TextArea 
-          rows={4} 
-          placeholder='{"logo": "url", "sla_threshold": 99.5}' 
-        />
+      <Form.Item label="配置 (JSON)">
+        <Button
+          type="link"
+          onClick={() => setConfigExpanded(!configExpanded)}
+          style={{ padding: 0, height: 'auto' }}
+        >
+          {configExpanded ? '收起配置' : '展开配置'}
+          {configExpanded ? <UpOutlined /> : <DownOutlined />}
+        </Button>
+        {configExpanded && (
+          <Input.TextArea
+            name="config"
+            rows={3}
+            placeholder='{"logo": "url", "theme": "default"}'
+            style={{ marginTop: 8 }}
+          />
+        )}
+      </Form.Item>
+
+      <Form.Item name="must_change_password" initialValue={true} hidden>
+        <input type="checkbox" checked readOnly />
+      </Form.Item>
+
+      <Form.Item style={{ marginTop: 24 }}>
+        <Button
+          type="primary"
+          htmlType="submit"
+          size="large"
+          block
+        >
+          {isEditMode ? '保存修改' : '创建租户'}
+        </Button>
       </Form.Item>
     </Form>
   )

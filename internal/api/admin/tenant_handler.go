@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -31,11 +32,12 @@ func NewTenantHandler(repo repository.TenantRepository, db *gorm.DB, redisClient
 
 // CreateTenantRequest represents the request payload for creating a tenant
 type CreateTenantRequest struct {
-	Name          string                 `json:"name" binding:"required"`
-	Code          string                 `json:"code"`
-	ContactPerson string                 `json:"contact_person"`
-	Status        int8                   `json:"status"`
-	Config        map[string]interface{} `json:"config"`
+	Name            string                 `json:"name" binding:"required"`
+	Code            string                 `json:"code"`
+	ContactPerson   string                 `json:"contact_person"`
+	Status          int8                   `json:"status"`
+	Config          map[string]interface{} `json:"config"`
+	InitialPassword string                 `json:"initial_password" binding:"required,min=8"`
 }
 
 // UpdateTenantRequest represents the request payload for updating a tenant
@@ -68,6 +70,19 @@ func (h *TenantHandler) Create(c *gin.Context) {
 	var req CreateTenantRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		return
+	}
+
+	// 密码复杂度校验
+	if len(req.InitialPassword) < 8 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "密码至少8位"})
+		return
+	}
+
+	hasLetter := regexp.MustCompile(`[A-Za-z]`).MatchString(req.InitialPassword)
+	hasDigit := regexp.MustCompile(`\d`).MatchString(req.InitialPassword)
+	if !hasLetter || !hasDigit {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "密码需包含字母和数字"})
 		return
 	}
 
@@ -147,7 +162,7 @@ func (h *TenantHandler) Create(c *gin.Context) {
 	}
 
 	// 生成密码哈希
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("ChangeMe123!"), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.InitialPassword), bcrypt.DefaultCost)
 	if err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to hash password: %v", err)})
