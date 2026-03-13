@@ -85,6 +85,9 @@ function AppLayout() {
     } else if (path.startsWith('/workorder/')) {
       items.push({ title: '工单管理' })
       items.push({ title: '工单详情' })
+    } else if (path.startsWith('/admin/tenants')) {
+      items.push({ title: '系统设置' })
+      items.push({ title: '租户管理' })
     } else if (path.startsWith('/settings')) {
       items.push({ title: '系统设置' })
     }

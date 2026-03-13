@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Form, Input, Select, Alert, Typography } from 'antd'
-import { InfoCircleOutlined } from '@ant-design/icons'
+import { InfoCircleOutlined, LockOutlined } from '@ant-design/icons'
 import type { FormInstance } from 'antd'
 
 const { Option } = Select
@@ -39,10 +39,34 @@ const toPinyin = (str: string): string => {
 interface TenantFormProps {
   form: FormInstance
   onFinish?: (values: any) => void
+  isEditMode?: boolean
+  initialValues?: {
+    name?: string
+    code?: string
+    contact_person?: string
+    status?: number
+    config?: string
+  }
 }
 
-const TenantForm: React.FC<TenantFormProps> = ({ form, onFinish }) => {
+const TenantForm: React.FC<TenantFormProps> = ({ form, onFinish, isEditMode = false, initialValues }) => {
   const [codePreview, setCodePreview] = useState<string>('')
+
+  // Set initial values for edit mode
+  useState(() => {
+    if (isEditMode && initialValues) {
+      form.setFieldsValue({
+        name: initialValues.name,
+        code: initialValues.code,
+        contact_person: initialValues.contact_person,
+        status: initialValues.status,
+        config: initialValues.config ? JSON.stringify(initialValues.config, null, 2) : undefined,
+      })
+      if (initialValues.code) {
+        setCodePreview(initialValues.code)
+      }
+    }
+  })
 
   // 监听表单值变化
   const handleValuesChange = (changedValues: any) => {
@@ -64,15 +88,17 @@ const TenantForm: React.FC<TenantFormProps> = ({ form, onFinish }) => {
       onValuesChange={handleValuesChange}
       onFinish={onFinish}
     >
-      {/* 重要提示 */}
-      <Alert
-        message="重要提示"
-        description="租户唯一标识码一旦生成将与数据存储挂钩，不可更改。系统会根据您输入的租户名称自动生成合适的标识码。"
-        type="info"
-        showIcon
-        icon={<InfoCircleOutlined />}
-        style={{ marginBottom: 24 }}
-      />
+      {/* 重要提示 - 仅在创建模式显示 */}
+      {!isEditMode && (
+        <Alert
+          message="重要提示"
+          description="租户唯一标识码一旦生成将与数据存储挂钩，不可更改。系统会根据您输入的租户名称自动生成合适的标识码。"
+          type="info"
+          showIcon
+          icon={<InfoCircleOutlined />}
+          style={{ marginBottom: 24 }}
+        />
+      )}
 
       <Form.Item
         name="name"
@@ -82,11 +108,12 @@ const TenantForm: React.FC<TenantFormProps> = ({ form, onFinish }) => {
         <Input 
           placeholder="如：优衣库中国" 
           size="large"
+          disabled={isEditMode}
         />
       </Form.Item>
 
-      {/* 动态代码预览 */}
-      {codePreview && (
+      {/* 动态代码预览 - 仅在创建模式显示 */}
+      {!isEditMode && codePreview && (
         <Form.Item style={{ marginBottom: 8 }}>
           <div style={{ 
             padding: '8px 12px', 
@@ -107,11 +134,12 @@ const TenantForm: React.FC<TenantFormProps> = ({ form, onFinish }) => {
       <Form.Item
         name="code"
         label="唯一代码"
-        extra="该字段由系统自动生成，无需手动输入"
+        extra={isEditMode ? "唯一代码不可修改" : "该字段由系统自动生成，无需手动输入"}
       >
         <Input 
           placeholder="系统将自动生成" 
           disabled
+          suffix={isEditMode ? <LockOutlined /> : null}
           style={{ backgroundColor: '#f5f5f5' }}
         />
       </Form.Item>

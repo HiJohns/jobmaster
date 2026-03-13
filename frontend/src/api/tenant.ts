@@ -38,6 +38,12 @@ export interface CreateTenantResponse {
   data: Tenant
 }
 
+export interface UpdateTenantRequest {
+  name?: string
+  contact_person?: string
+  config?: Record<string, any>
+}
+
 class TenantApi {
   private prefix = '/admin/tenants'
 
@@ -53,6 +59,14 @@ class TenantApi {
 
   async create(data: CreateTenantRequest): Promise<CreateTenantResponse> {
     return request.post<Tenant>(this.prefix, data)
+  }
+
+  async update(id: number, data: UpdateTenantRequest): Promise<CreateTenantResponse> {
+    return request.patch<Tenant>(`${this.prefix}/${id}`, data)
+  }
+
+  async updateStatus(id: number, status: 0 | 1): Promise<CreateTenantResponse> {
+    return request.put<Tenant>(`${this.prefix}/${id}/status`, { status })
   }
 
   async getByCode(code: string): Promise<Tenant | null> {

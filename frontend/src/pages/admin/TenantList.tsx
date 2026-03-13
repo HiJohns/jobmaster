@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Table, Button, Tag, Space, message, Drawer, Form, Result, Input, Select } from 'antd'
+import { Table, Button, Space, message, Drawer, Form, Result, Input, Select, Modal } from 'antd'
 import { PlusOutlined, LockOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { tenantApi, Tenant, CreateTenantRequest } from '../../api/tenant'
@@ -19,6 +19,9 @@ const TenantList = () => {
   const [form] = Form.useForm()
   const [searchKeyword, setSearchKeyword] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('全部')
+  const [drawerMode, setDrawerMode] = useState<'create' | 'edit'>('create')
+  const [editingTenant, setEditingTenant] = useState<Tenant | null>(null)
+  const [statusLoading, setStatusLoading] = useState<number | null>(null)
   
   // Get user role from auth store
   const userInfo = useAuthStore((state) => state.userInfo)
@@ -78,21 +81,76 @@ const TenantList = () => {
 
   const handleCreate = () => {
     form.resetFields()
+    setDrawerMode('create')
+    setEditingTenant(null)
     setDrawerVisible(true)
   }
 
+  const handleEdit = (record: Tenant) => {
+    setDrawerMode('edit')
+    setEditingTenant(record)
+    setDrawerVisible(true)
+  }
+
+  const handleStatusToggle = (record: Tenant) => {
+    const isDisable = record.status === 1
+    const action = isDisable ? '禁用' : '启用'
+
+    Modal.confirm({
+      title: isDisable ? '停用租户？' : '启用租户？',
+      content: isDisable 
+        ? '该操作将导致该租户下所有员工立即无法访问系统，请确认。'
+        : '确定要启用该租户吗？',
+      okText: '确认',
+      cancelText: '取消',
+      okButtonProps: { danger: isDisable },
+      onOk: async () => {
+        const tenantId = Number(record.id)
+        setStatusLoading(tenantId)
+        try {
+          const response = await tenantApi.updateStatus(tenantId, isDisable ? 0 : 1)
+          if (response.code === 200) {
+            message.success(`${action}成功`)
+            fetchData(page, searchKeyword, statusFilter)
+          } else {
+            message.error(`${action}失败: ` + (response.message || '未知错误'))
+          }
+        } catch (error: any) {
+          message.error(`${action}失败: ` + (error.message || '未知错误'))
+        } finally {
+          setStatusLoading(null)
+        }
+      },
+    })
+  }
+
   const handleSubmit = async (values: CreateTenantRequest) => {
-    try {
-      const response = await tenantApi.create(values)
-      if (response.code === 201) {
-        message.success('创建租户成功')
-        setDrawerVisible(false)
-        fetchData(1)
-      } else {
-        message.error('创建失败: ' + (response.message || '未知错误'))
+    if (drawerMode === 'create') {
+      try {
+        const response = await tenantApi.create(values)
+        if (response.code === 201) {
+          message.success('创建租户成功')
+          setDrawerVisible(false)
+          fetchData(1)
+        } else {
+          message.error('创建失败: ' + (response.message || '未知错误'))
+        }
+      } catch (error: any) {
+        message.error('创建失败: ' + (error.message || '未知错误'))
       }
-    } catch (error: any) {
-      message.error('创建失败: ' + (error.message || '未知错误'))
+    } else {
+      try {
+        const response = await tenantApi.update(Number(editingTenant!.id), values)
+        if (response.code === 200) {
+          message.success('更新成功')
+          setDrawerVisible(false)
+          fetchData(page, searchKeyword, statusFilter)
+        } else {
+          message.error('更新失败: ' + (response.message || '未知错误'))
+        }
+      } catch (error: any) {
+        message.error('更新失败: ' + (error.message || '未知错误'))
+      }
     }
   }
 
@@ -131,10 +189,24 @@ const TenantList = () => {
       title: '操作',
       key: 'action',
       align: 'right' as const,
-      render: () => (
+      render: (_: any, record: Tenant) => (
         <Space size="middle">
-          <Button type="link" size="small">编辑</Button>
-          <Button type="link" size="small" danger>禁用</Button>
+          <Button 
+            type="link" 
+            size="small"
+            onClick={() => handleEdit(record)}
+          >
+            编辑
+          </Button>
+          <Button 
+            type="link" 
+            size="small" 
+            danger={record.status === 1}
+            loading={statusLoading === Number(record.id)}
+            onClick={() => handleStatusToggle(record)}
+          >
+            {record.status === 1 ? '禁用' : '启用'}
+          </Button>
         </Space>
       ),
       width: '18%',
@@ -185,7 +257,7 @@ const TenantList = () => {
       />
 
       <Drawer
-        title="创建租户"
+        title={drawerMode === 'create' ? '创建租户' : '编辑租户'}
         placement="right"
         onClose={() => setDrawerVisible(false)}
         open={drawerVisible}
@@ -200,8 +272,16 @@ const TenantList = () => {
             </Button>
           </div>
         }
-      >
-        <TenantForm form={form} onFinish={handleSubmit} />
+          >
+        <TenantForm 
+          form={form} 
+          onFinish={handleSubmit} 
+          isEditMode={drawerMode === 'edit'}
+          initialValues={editingTenant ? {
+            ...editingTenant,
+            config: editingTenant.config ? JSON.stringify(editingTenant.config, null, 2) : undefined,
+          } : undefined}
+        />
       </Drawer>
     </div>
   )
