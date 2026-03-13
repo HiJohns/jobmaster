@@ -7,6 +7,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 	"jobmaster/internal/model"
 	"jobmaster/internal/repository"
 	"jobmaster/pkg/utils"
@@ -15,11 +17,12 @@ import (
 // TenantHandler handles tenant management APIs
 type TenantHandler struct {
 	repo repository.TenantRepository
+	db   *gorm.DB
 }
 
 // NewTenantHandler creates a new tenant handler
-func NewTenantHandler(repo repository.TenantRepository) *TenantHandler {
-	return &TenantHandler{repo: repo}
+func NewTenantHandler(repo repository.TenantRepository, db *gorm.DB) *TenantHandler {
+	return &TenantHandler{repo: repo, db: db}
 }
 
 // CreateTenantRequest represents the request payload for creating a tenant
@@ -64,21 +67,91 @@ func (h *TenantHandler) Create(c *gin.Context) {
 		return
 	}
 
+	// 自动生成租户slug（处理冲突）
+	slug, err := utils.GenerateUniqueTenantSlug(req.Name, func(slug string) (bool, error) {
+		var count int64
+		if err := h.db.Model(&model.Tenant{}).Where("slug = ?", slug).Count(&count).Error; err != nil {
+			return false, fmt.Errorf("failed to check slug existence: %w", err)
+		}
+		return count > 0, nil
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tenant slug: " + err.Error()})
+		return
+	}
+
+	// 开始事务
+	tx := h.db.Begin()
+	if tx.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transaction: " + tx.Error.Error()})
+		return
+	}
+
+	// 创建租户
 	tenant := &model.Tenant{
 		Name:          req.Name,
 		Code:          code,
+		Slug:          slug,
 		ContactPerson: req.ContactPerson,
 		Status:        req.Status,
 		Config:        model.JSONBMap(req.Config),
 	}
 
-	if err := h.repo.Create(tenant); err != nil {
+	if err := tx.Create(tenant).Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to create tenant: %v", err)})
 		return
 	}
 
+	// 创建默认组织
+	org := &model.Organization{
+		TenantID: tenant.UUID,
+		Name:     req.Name + "总部",
+		Type:     model.OrgTypeHQ,
+		Code:     slug,
+	}
+
+	if err := tx.Create(org).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to create organization: %v", err)})
+		return
+	}
+
+	// 创建管理员用户
+	adminUser := &model.User{
+		TenantID:           tenant.UUID,
+		OrganizationID:     org.ID,
+		Username:           "admin",
+		Email:              "admin@" + slug + ".com",
+		MustChangePassword: true,
+		Role:               model.UserRoleAdmin,
+		Status:             model.UserStatusActive,
+		DisplayName:        "租户管理员",
+	}
+
+	// 生成密码哈希
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("ChangeMe123!"), bcrypt.DefaultCost)
+	if err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to hash password: %v", err)})
+		return
+	}
+	adminUser.PasswordHash = string(hashedPassword)
+
+	if err := tx.Create(adminUser).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to create admin user: %v", err)})
+		return
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to commit transaction: %v", err)})
+		return
+	}
+
 	// Audit log
-	logDetails := fmt.Sprintf("Created tenant: %s (code: %s)", tenant.Name, tenant.Code)
+	logDetails := fmt.Sprintf("Created tenant: %s (code: %s, slug: %s)", tenant.Name, tenant.Code, tenant.Slug)
 	userIDVal, userIDExists := c.Get("userId")
 	if userIDExists {
 		userID, userIDOk := userIDVal.(uuid.UUID)
@@ -156,8 +229,8 @@ func (h *TenantHandler) List(c *gin.Context) {
 }
 
 // RegisterRoutes registers tenant admin routes
-func RegisterRoutes(router *gin.RouterGroup, repo repository.TenantRepository) {
-	handler := NewTenantHandler(repo)
+func RegisterRoutes(router *gin.RouterGroup, repo repository.TenantRepository, db *gorm.DB) {
+	handler := NewTenantHandler(repo, db)
 	router.POST("/admin/tenants", handler.Create)
 	router.GET("/admin/tenants", handler.List)
 }

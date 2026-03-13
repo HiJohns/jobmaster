@@ -43,9 +43,11 @@ func SetupRouter() *gin.Engine {
 		protected.Use(middleware.AuthMiddleware())
 		protected.Use(middleware.ImpersonationMiddleware())
 		protected.Use(middleware.TenantMiddleware())
+		protected.Use(middleware.MustChangePasswordInterceptor())
 		{
 			// Auth routes (require authentication)
 			protected.POST("/auth/refresh", RefreshToken)
+			protected.POST("/auth/change-password", ChangePassword)
 
 			// Organization routes (require authentication)
 			protected.GET("/organizations", ListOrganizations)
@@ -76,7 +78,7 @@ func SetupRouter() *gin.Engine {
 				panic("failed to get database connection: " + err.Error())
 			}
 			tenantRepo := repository.NewTenantRepository(db)
-			admin.RegisterRoutes(protected, tenantRepo)
+			admin.RegisterRoutes(protected, tenantRepo, db)
 		}
 	}
 
