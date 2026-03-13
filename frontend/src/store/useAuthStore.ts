@@ -18,6 +18,8 @@ interface AuthState {
   userInfo: UserInfo | null
   isImpersonated: boolean
   isAuthenticated: boolean
+  adminToken: string | null
+  adminUserInfo: UserInfo | null
   
   // Actions
   setToken: (token: string) => void
@@ -26,6 +28,8 @@ interface AuthState {
   login: (token: string, userInfo: UserInfo, isImpersonated?: boolean) => void
   logout: () => void
   updateUserInfo: (partialInfo: Partial<UserInfo>) => void
+  impersonate: (token: string, userInfo: UserInfo) => void
+  exitImpersonation: () => void
 }
 
 // Create auth store with persistence
@@ -37,6 +41,8 @@ export const useAuthStore = create<AuthState>()(
       userInfo: null,
       isImpersonated: false,
       isAuthenticated: false,
+      adminToken: null,
+      adminUserInfo: null,
       
       // Set token
       setToken: (token) => {
@@ -56,6 +62,10 @@ export const useAuthStore = create<AuthState>()(
       // Login - set both token and user info
       // isImpersonated indicates if the user is viewing data as another role (e.g., admin viewing as store)
       login: (token, userInfo, isImpersonated = false) => {
+        // If not impersonating, save user info for potential admin recovery
+        if (!isImpersonated) {
+          localStorage.setItem('admin_user_info', JSON.stringify(userInfo))
+        }
         set({
           token,
           userInfo,
@@ -71,9 +81,13 @@ export const useAuthStore = create<AuthState>()(
           userInfo: null,
           isAuthenticated: false,
           isImpersonated: false,
+          adminToken: null,
+          adminUserInfo: null,
         })
         // Clear local storage
         localStorage.removeItem('auth-storage')
+        localStorage.removeItem('admin_token')
+        localStorage.removeItem('admin_user_info')
       },
       
       // Update partial user info
@@ -83,6 +97,46 @@ export const useAuthStore = create<AuthState>()(
           set({
             userInfo: { ...currentInfo, ...partialInfo },
           })
+        }
+      },
+
+      // Impersonate - switch to tenant user
+      impersonate: (token, userInfo) => {
+        const currentToken = get().token
+        const currentUserInfo = get().userInfo
+        
+        // Save current admin token
+        if (currentToken && currentUserInfo) {
+          localStorage.setItem('admin_token', currentToken)
+          set({
+            adminToken: currentToken,
+            adminUserInfo: currentUserInfo,
+          })
+        }
+        
+        set({
+          token,
+          userInfo,
+          isAuthenticated: true,
+          isImpersonated: true,
+        })
+      },
+
+      // Exit impersonation - switch back to admin
+      exitImpersonation: () => {
+        const adminToken = get().adminToken
+        const adminUserInfo = get().adminUserInfo
+        
+        if (adminToken && adminUserInfo) {
+          set({
+            token: adminToken,
+            userInfo: adminUserInfo,
+            isAuthenticated: true,
+            isImpersonated: false,
+            adminToken: null,
+            adminUserInfo: null,
+          })
+          localStorage.removeItem('admin_token')
         }
       },
     }),
