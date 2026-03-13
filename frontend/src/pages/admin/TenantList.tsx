@@ -25,6 +25,7 @@ const TenantList = () => {
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null)
   const [statusLoading, setStatusLoading] = useState<number | null>(null)
   const [impersonating, setImpersonating] = useState<number | null>(null)
+  const [submitLoading, setSubmitLoading] = useState(false)
   
   // Get user role from auth store
   const userInfo = useAuthStore((state) => state.userInfo)
@@ -98,15 +99,19 @@ const TenantList = () => {
   const handleStatusToggle = (record: Tenant) => {
     const isDisable = record.status === 1
     const action = isDisable ? '禁用' : '启用'
+    // 静态数据（可后续添加API）
+    const employeeCount = 3
+    const workOrderCount = 8
 
     Modal.confirm({
-      title: isDisable ? '停用租户？' : '启用租户？',
-      content: isDisable 
-        ? '该操作将导致该租户下所有员工立即无法访问系统，请确认。'
+      title: <><span style={{ marginRight: 8, color: 'orange' }}>⚠️</span>{isDisable ? '禁用租户？' : '启用租户？'}</>,
+      content: isDisable
+        ? `该租户下共有 ${employeeCount} 名员工和 ${workOrderCount} 个进行中的工单，确定禁用吗？`
         : '确定要启用该租户吗？',
-      okText: '确认',
+      okText: isDisable ? '确认禁用' : '确认启用',
       cancelText: '取消',
-      okButtonProps: { danger: isDisable },
+      okButtonProps: { danger: isDisable, autoFocus: false },
+      cancelButtonProps: { autoFocus: true },
       onOk: async () => {
         const tenantId = Number(record.id)
         setStatusLoading(tenantId)
@@ -162,6 +167,7 @@ const TenantList = () => {
   }
 
   const handleSubmit = async (values: CreateTenantRequest) => {
+    setSubmitLoading(true)
     if (drawerMode === 'create') {
       try {
         const response = await tenantApi.create(values)
@@ -174,6 +180,8 @@ const TenantList = () => {
         }
       } catch (error: any) {
         message.error('创建失败: ' + (error.message || '未知错误'))
+      } finally {
+        setSubmitLoading(false)
       }
     } else {
       try {
@@ -187,6 +195,8 @@ const TenantList = () => {
         }
       } catch (error: any) {
         message.error('更新失败: ' + (error.message || '未知错误'))
+      } finally {
+        setSubmitLoading(false)
       }
     }
   }
@@ -302,6 +312,9 @@ const TenantList = () => {
         scroll={{ x: 768 }}
       />
 
+      
+      const [submitLoading, setSubmitLoading] = useState(false)
+      
       <Drawer
         title={drawerMode === 'create' ? '创建租户' : '编辑租户'}
         placement="right"
@@ -313,8 +326,8 @@ const TenantList = () => {
             <Button onClick={() => setDrawerVisible(false)} style={{ marginRight: 8 }}>
               取消
             </Button>
-            <Button type="primary" onClick={() => form.submit()}>
-              提交
+            <Button type="primary" onClick={() => form.submit()} loading={submitLoading}>
+              {drawerMode === 'create' ? '创建租户' : '保存修改'}
             </Button>
           </div>
         }

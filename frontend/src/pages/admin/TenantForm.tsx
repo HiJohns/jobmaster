@@ -28,7 +28,6 @@ interface TenantFormProps {
 }
 
 const TenantForm: React.FC<TenantFormProps> = ({ form, onFinish, isEditMode = false, initialValues }) => {
-  const [codePreview, setCodePreview] = useState<string>('')
   const [configExpanded, setConfigExpanded] = useState(false)
 
   // Set initial values for edit mode
@@ -41,9 +40,6 @@ const TenantForm: React.FC<TenantFormProps> = ({ form, onFinish, isEditMode = fa
         status: initialValues.status,
         config: initialValues.config ? JSON.stringify(initialValues.config, null, 2) : undefined,
       })
-      if (initialValues.code) {
-        setCodePreview(initialValues.code)
-      }
     }
   })
 
@@ -52,10 +48,10 @@ const TenantForm: React.FC<TenantFormProps> = ({ form, onFinish, isEditMode = fa
     if ('name' in changedValues) {
       const name = changedValues.name || ''
       if (name) {
-        const pinyin = toPinyin(name)
-        setCodePreview(pinyin)
+        const code = toPinyin(name)
+        form.setFieldsValue({ code })
       } else {
-        setCodePreview('')
+        form.setFieldsValue({ code: '' })
       }
     }
   }
@@ -81,34 +77,15 @@ const TenantForm: React.FC<TenantFormProps> = ({ form, onFinish, isEditMode = fa
 
       <Form.Item
         name="name"
-        label="租户名称"
+        label={<><span style={{ color: 'red' }}>*</span> 租户名称</>}
         rules={[{ required: true, message: '请输入租户名称' }]}
       >
-        <Input 
-          placeholder="如：优衣库中国" 
+        <Input
+          placeholder="如：优衣库中国"
           size="large"
           disabled={isEditMode}
         />
       </Form.Item>
-
-      {/* 动态代码预览 - 仅在创建模式显示 */}
-      {!isEditMode && codePreview && (
-        <Form.Item style={{ marginBottom: 8 }}>
-          <div style={{ 
-            padding: '8px 12px', 
-            background: '#f6ffed', 
-            border: '1px solid #b7eb8f',
-            borderRadius: '4px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <Text type="secondary">标识码预览：</Text>
-            <Text strong style={{ color: '#52c41a' }}>{codePreview}</Text>
-            <Text type="secondary" style={{ fontSize: '12px' }}>(系统自动生成)</Text>
-          </div>
-        </Form.Item>
-      )}
 
       <Form.Item
         name="code"
@@ -126,7 +103,7 @@ const TenantForm: React.FC<TenantFormProps> = ({ form, onFinish, isEditMode = fa
       {!isEditMode && (
         <Form.Item
           name="initial_password"
-          label="初始密码"
+          label={<><span style={{ color: 'red' }}>*</span> 初始密码</>}
           rules={[
             { required: true, message: '请输入初始密码' },
             { min: 8, message: '密码至少8位' },
@@ -135,6 +112,7 @@ const TenantForm: React.FC<TenantFormProps> = ({ form, onFinish, isEditMode = fa
               message: '密码需包含字母和数字'
             }
           ]}
+          extra="至少8位，包含字母和数字"
         >
           <Input.Password
             placeholder="请设置租户管理员初始密码"
@@ -182,17 +160,6 @@ const TenantForm: React.FC<TenantFormProps> = ({ form, onFinish, isEditMode = fa
 
       <Form.Item name="must_change_password" initialValue={true} hidden>
         <input type="checkbox" checked readOnly />
-      </Form.Item>
-
-      <Form.Item style={{ marginTop: 24 }}>
-        <Button
-          type="primary"
-          htmlType="submit"
-          size="large"
-          block
-        >
-          {isEditMode ? '保存修改' : '创建租户'}
-        </Button>
       </Form.Item>
     </Form>
   )
