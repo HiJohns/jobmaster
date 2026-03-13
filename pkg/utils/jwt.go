@@ -15,6 +15,7 @@ const (
 	ContextKeyTenantID       = "tenant_id"
 	ContextKeyRole           = "role"
 	ContextKeyIsImpersonated = "is_impersonated"
+	ContextKeyAdminID        = "admin_id"
 )
 
 // JWTClaims represents the JWT claims structure
@@ -24,6 +25,7 @@ type JWTClaims struct {
 	TenantID       uuid.UUID `json:"tenant_id"`
 	Role           string    `json:"role"`
 	IsImpersonated bool      `json:"is_impersonated"`
+	AdminID        uuid.UUID `json:"admin_id,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -103,4 +105,37 @@ func ParseToken(tokenString string, config *JWTConfig) (*JWTClaims, error) {
 	}
 
 	return nil, fmt.Errorf("invalid token claims")
+}
+
+// GenerateImpersonatedToken creates a JWT token for admin impersonating a tenant
+func GenerateImpersonatedToken(adminID, adminOrgID, tenantID, tenantOrgID uuid.UUID, config *JWTConfig) (string, error) {
+	if config == nil {
+		var err error
+		config, err = DefaultJWTConfig()
+		if err != nil {
+			return "", fmt.Errorf("failed to load JWT config: %w", err)
+		}
+	}
+
+	claims := JWTClaims{
+		UserID:         adminID,
+		OrgID:          uuid.UUID{},
+		TenantID:       tenantID,
+		Role:           "ADMIN",
+		IsImpersonated: true,
+		AdminID:        adminID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(config.Expiration)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			NotBefore: jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(config.Secret))
+	if err != nil {
+		return "", fmt.Errorf("failed to sign token: %w", err)
+	}
+
+	return tokenString, nil
 }

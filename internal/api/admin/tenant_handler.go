@@ -382,6 +382,94 @@ func (h *TenantHandler) UpdateStatus(c *gin.Context) {
 	})
 }
 
+type ImpersonateResponse struct {
+	Code int       `json:"code"`
+	Data TokenData `json:"data"`
+}
+
+type TokenData struct {
+	Token     string `json:"token"`
+	ExpiresAt int64  `json:"expires_at"`
+}
+
+// Impersonate handles POST /api/v1/admin/tenants/:id/impersonate
+func (h *TenantHandler) Impersonate(c *gin.Context) {
+	roleVal, exists := c.Get("role")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+	role, ok := roleVal.(string)
+	if !ok || role != string(model.UserRoleAdmin) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied: admin only"})
+		return
+	}
+
+	tenantIDStr := c.Param("id")
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid tenant ID"})
+		return
+	}
+
+	tenant, err := h.repo.GetByUUID(tenantID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get tenant"})
+		return
+	}
+	if tenant == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Tenant not found"})
+		return
+	}
+
+	if tenant.Status == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot impersonate disabled tenant"})
+		return
+	}
+
+	adminIDVal, ok := c.Get("userId")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+	adminID := adminIDVal.(uuid.UUID)
+
+	var org model.Organization
+	if err := h.db.Where("tenant_id = ? AND type = ?", tenant.UUID, model.OrgTypeHQ).First(&org).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to find tenant HQ"})
+		return
+	}
+
+	jwtConfig, err := utils.DefaultJWTConfig()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get JWT config"})
+		return
+	}
+
+	impersonatedToken, err := utils.GenerateImpersonatedToken(
+		adminID,
+		uuid.Nil,
+		tenant.UUID,
+		org.ID,
+		jwtConfig,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
+	logDetails := fmt.Sprintf("管理员 %s 开启了对租户 %s (%s) 的代入模式", adminID.String(), tenant.Name, tenant.Code)
+	h.repo.AddAuditLog(adminID, "admin", "impersonate_start", logDetails, tenant.ID)
+
+	c.JSON(http.StatusOK, ImpersonateResponse{
+		Code: 200,
+		Data: TokenData{
+			Token:     impersonatedToken,
+			ExpiresAt: time.Now().Add(24 * time.Hour).Unix(),
+		},
+	})
+}
+
 // RegisterRoutes registers tenant admin routes
 func RegisterRoutes(router *gin.RouterGroup, repo repository.TenantRepository, db *gorm.DB, redisClient *redis.Client) {
 	handler := NewTenantHandler(repo, db, redisClient)
@@ -389,4 +477,5 @@ func RegisterRoutes(router *gin.RouterGroup, repo repository.TenantRepository, d
 	router.GET("/admin/tenants", handler.List)
 	router.PATCH("/admin/tenants/:id", handler.Update)
 	router.PUT("/admin/tenants/:id/status", handler.UpdateStatus)
+	router.POST("/admin/tenants/:id/impersonate", handler.Impersonate)
 }
