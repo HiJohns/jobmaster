@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -11,6 +12,8 @@ import (
 	"jobmaster/internal/middleware"
 	"jobmaster/internal/repository"
 	"jobmaster/pkg/database"
+	"jobmaster/pkg/redis"
+	"jobmaster/pkg/utils"
 )
 
 // SetupRouter configures the API routes with middleware pipeline
@@ -78,7 +81,27 @@ func SetupRouter() *gin.Engine {
 				panic("failed to get database connection: " + err.Error())
 			}
 			tenantRepo := repository.NewTenantRepository(db)
-			admin.RegisterRoutes(protected, tenantRepo, db)
+
+			var redisClient *redis.Client
+			redisHost := utils.GetEnv("REDIS_HOST", "")
+			if redisHost != "" {
+				redisPort := utils.GetEnv("REDIS_PORT", "6379")
+				redisPassword := utils.GetEnv("REDIS_PASSWORD", "")
+				redisDB := 0
+				fmt.Sscanf(utils.GetEnv("REDIS_DB", "0"), "%d", &redisDB)
+				client, err := redis.NewClient(
+					fmt.Sprintf("%s:%s", redisHost, redisPort),
+					redisPassword,
+					redisDB,
+				)
+				if err != nil {
+					fmt.Printf("Warning: failed to connect to redis: %v\n", err)
+				} else {
+					redisClient = client
+				}
+			}
+
+			admin.RegisterRoutes(protected, tenantRepo, db, redisClient)
 		}
 	}
 

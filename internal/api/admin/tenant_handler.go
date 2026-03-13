@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -11,27 +12,42 @@ import (
 	"gorm.io/gorm"
 	"jobmaster/internal/model"
 	"jobmaster/internal/repository"
+	"jobmaster/pkg/redis"
 	"jobmaster/pkg/utils"
 )
 
 // TenantHandler handles tenant management APIs
 type TenantHandler struct {
-	repo repository.TenantRepository
-	db   *gorm.DB
+	repo  repository.TenantRepository
+	db    *gorm.DB
+	redis *redis.Client
 }
 
 // NewTenantHandler creates a new tenant handler
-func NewTenantHandler(repo repository.TenantRepository, db *gorm.DB) *TenantHandler {
-	return &TenantHandler{repo: repo, db: db}
+func NewTenantHandler(repo repository.TenantRepository, db *gorm.DB, redisClient *redis.Client) *TenantHandler {
+	return &TenantHandler{repo: repo, db: db, redis: redisClient}
 }
 
 // CreateTenantRequest represents the request payload for creating a tenant
 type CreateTenantRequest struct {
 	Name          string                 `json:"name" binding:"required"`
-	Code          string                 `json:"code"` // 系统自动生成，无需用户输入
+	Code          string                 `json:"code"`
 	ContactPerson string                 `json:"contact_person"`
 	Status        int8                   `json:"status"`
 	Config        map[string]interface{} `json:"config"`
+}
+
+// UpdateTenantRequest represents the request payload for updating a tenant
+// Note: Code and Slug fields are explicitly excluded to prevent modification
+type UpdateTenantRequest struct {
+	Name          string                 `json:"name"`
+	ContactPerson string                 `json:"contact_person"`
+	Config        map[string]interface{} `json:"config"`
+}
+
+// UpdateTenantStatusRequest represents the request payload for updating tenant status
+type UpdateTenantStatusRequest struct {
+	Status int8 `json:"status" binding:"required"`
 }
 
 // Create handles POST /api/v1/admin/tenants
@@ -228,9 +244,149 @@ func (h *TenantHandler) List(c *gin.Context) {
 	})
 }
 
+// Update handles PATCH /api/v1/admin/tenants/:id
+func (h *TenantHandler) Update(c *gin.Context) {
+	roleVal, exists := c.Get("role")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+	role, ok := roleVal.(string)
+	if !ok || (role != string(model.UserRoleAdmin) && role != string(model.UserRoleBrandHQ)) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied"})
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid tenant ID"})
+		return
+	}
+
+	tenant, err := h.repo.GetByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get tenant"})
+		return
+	}
+	if tenant == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Tenant not found"})
+		return
+	}
+
+	var req UpdateTenantRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		return
+	}
+
+	if req.Name != "" {
+		tenant.Name = req.Name
+	}
+	if req.ContactPerson != "" {
+		tenant.ContactPerson = req.ContactPerson
+	}
+	if req.Config != nil {
+		tenant.Config = model.JSONBMap(req.Config)
+	}
+
+	if err := h.repo.Update(tenant); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update tenant"})
+		return
+	}
+
+	userIDVal, _ := c.Get("userId")
+	if userID, ok := userIDVal.(uuid.UUID); ok && userID != uuid.Nil {
+		logDetails := fmt.Sprintf("Updated tenant: %s (id: %d)", tenant.Name, tenant.ID)
+		h.repo.AddAuditLog(userID, "", "update_tenant", logDetails, tenant.ID)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"data": tenant,
+	})
+}
+
+// UpdateStatus handles PUT /api/v1/admin/tenants/:id/status
+func (h *TenantHandler) UpdateStatus(c *gin.Context) {
+	roleVal, exists := c.Get("role")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+	role, ok := roleVal.(string)
+	if !ok || role != string(model.UserRoleAdmin) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied: admin only"})
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid tenant ID"})
+		return
+	}
+
+	tenant, err := h.repo.GetByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get tenant"})
+		return
+	}
+	if tenant == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Tenant not found"})
+		return
+	}
+
+	var req UpdateTenantStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		return
+	}
+
+	if req.Status != 0 && req.Status != 1 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid status value"})
+		return
+	}
+
+	oldStatus := tenant.Status
+	tenant.Status = req.Status
+
+	if err := h.repo.Update(tenant); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update tenant status"})
+		return
+	}
+
+	if oldStatus == 1 && req.Status == 0 && h.redis != nil {
+		blacklistDuration := 24 * time.Hour
+		if err := h.redis.AddTenantToBlacklist(tenant.UUID, blacklistDuration); err != nil {
+			fmt.Printf("Warning: failed to blacklist tenant %s: %v\n", tenant.UUID, err)
+		}
+		if _, err := h.redis.IncrementTokenVersion(tenant.UUID); err != nil {
+			fmt.Printf("Warning: failed to increment token version for tenant %s: %v\n", tenant.UUID, err)
+		}
+	}
+
+	userIDVal, _ := c.Get("userId")
+	if userID, ok := userIDVal.(uuid.UUID); ok && userID != uuid.Nil {
+		action := "enable_tenant"
+		if req.Status == 0 {
+			action = "disable_tenant"
+		}
+		logDetails := fmt.Sprintf("%s: %s (id: %d)", action, tenant.Name, tenant.ID)
+		h.repo.AddAuditLog(userID, "", action, logDetails, tenant.ID)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"data": tenant,
+	})
+}
+
 // RegisterRoutes registers tenant admin routes
-func RegisterRoutes(router *gin.RouterGroup, repo repository.TenantRepository, db *gorm.DB) {
-	handler := NewTenantHandler(repo, db)
+func RegisterRoutes(router *gin.RouterGroup, repo repository.TenantRepository, db *gorm.DB, redisClient *redis.Client) {
+	handler := NewTenantHandler(repo, db, redisClient)
 	router.POST("/admin/tenants", handler.Create)
 	router.GET("/admin/tenants", handler.List)
+	router.PATCH("/admin/tenants/:id", handler.Update)
+	router.PUT("/admin/tenants/:id/status", handler.UpdateStatus)
 }
