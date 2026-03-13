@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -40,9 +41,9 @@ type CreateTenantRequest struct {
 // UpdateTenantRequest represents the request payload for updating a tenant
 // Note: Code and Slug fields are explicitly excluded to prevent modification
 type UpdateTenantRequest struct {
-	Name          string                 `json:"name"`
-	ContactPerson string                 `json:"contact_person"`
-	Config        map[string]interface{} `json:"config"`
+	Name          string      `json:"name"`
+	ContactPerson string      `json:"contact_person"`
+	Config        interface{} `json:"config"`
 }
 
 // UpdateTenantStatusRequest represents the request payload for updating tenant status
@@ -276,7 +277,7 @@ func (h *TenantHandler) Update(c *gin.Context) {
 
 	var req UpdateTenantRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload: " + err.Error()})
 		return
 	}
 
@@ -287,7 +288,17 @@ func (h *TenantHandler) Update(c *gin.Context) {
 		tenant.ContactPerson = req.ContactPerson
 	}
 	if req.Config != nil {
-		tenant.Config = model.JSONBMap(req.Config)
+		switch v := req.Config.(type) {
+		case map[string]interface{}:
+			tenant.Config = model.JSONBMap(v)
+		case string:
+			if v != "" {
+				var configMap map[string]interface{}
+				if err := json.Unmarshal([]byte(v), &configMap); err == nil {
+					tenant.Config = model.JSONBMap(configMap)
+				}
+			}
+		}
 	}
 
 	if err := h.repo.Update(tenant); err != nil {

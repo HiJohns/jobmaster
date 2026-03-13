@@ -27,12 +27,14 @@ build: ## 编译主程序
 	@echo "编译完成: $(BUILD_DIR)/$(APP_NAME)"
 
 run: ## 运行程序 (跳过迁移，秒开模式)
-	@echo "正在启动 $(APP_NAME) (跳过迁移)..."
+	@echo "正在编译 $(APP_NAME) ..."
 	@if [ ! -f $(CONFIG_FILE) ]; then \
 		echo "错误: 未找到 $(CONFIG_FILE)，请复制 config.yaml.example 并配置"; \
 		exit 1; \
 	fi
-	$(GO) run $(CMD_DIR)/main.go
+	$(GO) build -ldflags="-w -s" -o $(BUILD_DIR)/$(APP_NAME) $(CMD_DIR)
+	@echo "编译完成要，正在启动 $(APP_NAME) (跳过迁移)..."
+	$(BUILD_DIR)/$(APP_NAME)
 
 dev: ## 开发模式：先迁移，再热重载
 	@echo "正在以开发模式启动 (迁移 + 热重载)..."
