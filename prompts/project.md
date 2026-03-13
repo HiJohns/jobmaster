@@ -291,6 +291,8 @@ const OrderContainer: React.FC = () => {
 - [x] 创建租户数据库迁移文件 migrations/003_create_tenants.sql
 - [x] 在 Go 后端实现租户核心层（Model、Repository、API Handler）
 - [x] 实现租户管理前端页面（TenantList.tsx、创建模态框、侧边栏导航）
+- [x] 实现租户代码生成防腐逻辑
+- [x] 升级租户创建表单 TenantForm.tsx
 
 ### [WIP]
 - [ ] 重新设计极简版 Logo 组件。

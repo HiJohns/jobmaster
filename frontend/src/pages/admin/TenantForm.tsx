@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Form, Input, Select, Alert, Typography } from 'antd'
 import { InfoCircleOutlined } from '@ant-design/icons'
+import type { FormInstance } from 'antd'
 
 const { Option } = Select
 const { Text } = Typography
@@ -36,30 +37,16 @@ const toPinyin = (str: string): string => {
 }
 
 interface TenantFormProps {
-  form: any
+  form: FormInstance
 }
 
 const TenantForm: React.FC<TenantFormProps> = ({ form }) => {
   const [codePreview, setCodePreview] = useState<string>('')
-  const [nameValue, setNameValue] = useState<string>('')
-
-  // 监听租户名称变化，动态生成代码预览
-  useEffect(() => {
-    const name = form.getFieldValue('name') || ''
-    setNameValue(name)
-    if (name) {
-      const pinyin = toPinyin(name)
-      setCodePreview(pinyin)
-    } else {
-      setCodePreview('')
-    }
-  }, [form, nameValue])
 
   // 监听表单值变化
   const handleValuesChange = (changedValues: any) => {
     if ('name' in changedValues) {
       const name = changedValues.name || ''
-      setNameValue(name)
       if (name) {
         const pinyin = toPinyin(name)
         setCodePreview(pinyin)

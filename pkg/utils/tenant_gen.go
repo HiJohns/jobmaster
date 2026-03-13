@@ -82,8 +82,11 @@ func GenerateTenantCode(name string) (string, error) {
 	}
 
 	// 确保不以数字开头（避免某些系统限制）
-	if len(code) > 0 && code[0] >= '0' && code[0] <= '9' {
-		code = "t_" + code
+	if len(code) > 0 {
+		matched, _ := regexp.MatchString(`^[0-9]`, code)
+		if matched {
+			code = "t_" + code
+		}
 	}
 
 	// 限制最大长度（避免数据库字段限制）
@@ -94,15 +97,18 @@ func GenerateTenantCode(name string) (string, error) {
 	return code, nil
 }
 
+var (
+	nonAlphaNumRegex     = regexp.MustCompile(`[^a-zA-Z0-9]+`)
+	multiUnderscoreRegex = regexp.MustCompile(`_+`)
+)
+
 // sanitizeCode 清洗代码：保留字母数字，其他转为下划线
 func sanitizeCode(code string) string {
 	// 替换非字母数字字符为下划线
-	re := regexp.MustCompile(`[^a-zA-Z0-9]+`)
-	code = re.ReplaceAllString(code, "_")
+	code = nonAlphaNumRegex.ReplaceAllString(code, "_")
 
 	// 移除连续的下划线
-	re = regexp.MustCompile(`_+`)
-	code = re.ReplaceAllString(code, "_")
+	code = multiUnderscoreRegex.ReplaceAllString(code, "_")
 
 	// 移除首尾下划线
 	code = strings.Trim(code, "_")
@@ -124,7 +130,7 @@ func generateRandomSuffix(length int) (string, error) {
 
 // GenerateUniqueTenantCode 生成唯一的租户代码（带防碰撞）
 // codeExists 是一个检查代码是否已存在的函数
-func GenerateUniqueTenantCode(name string, codeExists func(string) bool) (string, error) {
+func GenerateUniqueTenantCode(name string, codeExists func(string) (bool, error)) (string, error) {
 	baseCode, err := GenerateTenantCode(name)
 	if err != nil {
 		return "", err
@@ -135,7 +141,15 @@ func GenerateUniqueTenantCode(name string, codeExists func(string) bool) (string
 	maxAttempts := 100
 
 	// 防碰撞循环
-	for codeExists(code) && attempts < maxAttempts {
+	for attempts < maxAttempts {
+		exists, err := codeExists(code)
+		if err != nil {
+			return "", fmt.Errorf("failed to check code existence: %w", err)
+		}
+		if !exists {
+			break
+		}
+
 		attempts++
 		suffix, err := generateRandomSuffix(4)
 		if err != nil {

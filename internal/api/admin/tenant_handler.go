@@ -52,9 +52,12 @@ func (h *TenantHandler) Create(c *gin.Context) {
 	}
 
 	// 自动生成租户唯一标识码（防腐层）
-	code, err := utils.GenerateUniqueTenantCode(req.Name, func(code string) bool {
-		existing, _ := h.repo.GetByCode(code)
-		return existing != nil
+	code, err := utils.GenerateUniqueTenantCode(req.Name, func(code string) (bool, error) {
+		existing, err := h.repo.GetByCode(code)
+		if err != nil {
+			return false, fmt.Errorf("failed to check code existence: %w", err)
+		}
+		return existing != nil, nil
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tenant code: " + err.Error()})
@@ -70,7 +73,7 @@ func (h *TenantHandler) Create(c *gin.Context) {
 	}
 
 	if err := h.repo.Create(tenant); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create tenant"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to create tenant: %v", err)})
 		return
 	}
 
@@ -80,7 +83,9 @@ func (h *TenantHandler) Create(c *gin.Context) {
 	if userIDExists {
 		userID, userIDOk := userIDVal.(uuid.UUID)
 		if userIDOk && userID != uuid.Nil {
-			_ = h.repo.AddAuditLog(userID, "", "create_tenant", logDetails, tenant.ID)
+			if err := h.repo.AddAuditLog(userID, "", "create_tenant", logDetails, tenant.ID); err != nil {
+				fmt.Printf("Warning: failed to create audit log for tenant %d: %v\n", tenant.ID, err)
+			}
 		}
 	}
 
