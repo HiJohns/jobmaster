@@ -152,8 +152,9 @@ type WorkOrder struct {
 	Status    WorkOrderStatus `gorm:"index:idx_workorder_status" json:"status"`
 
 	// Assignment fields
-	VendorID   *uuid.UUID `gorm:"type:uuid;index" json:"vendor_id,omitempty"`
-	EngineerID *uuid.UUID `gorm:"type:uuid;index" json:"engineer_id,omitempty"`
+	VendorID         *uuid.UUID `gorm:"type:uuid;index" json:"vendor_id,omitempty"`
+	EngineerID       *uuid.UUID `gorm:"type:uuid;index" json:"engineer_id,omitempty"`
+	ParentProviderID *uuid.UUID `gorm:"type:uuid;index" json:"parent_provider_id,omitempty"` // 单据级临时上下级关系
 
 	// Scheduling fields
 	ScheduledAt *time.Time `json:"scheduled_at,omitempty"`
@@ -191,10 +192,11 @@ type WorkOrder struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Relationships
-	Store    Organization  `gorm:"foreignKey:StoreID" json:"store,omitempty"`
-	Vendor   *Organization `gorm:"foreignKey:VendorID" json:"vendor,omitempty"`
-	Engineer *User         `gorm:"foreignKey:EngineerID" json:"engineer,omitempty"`
-	Creator  User          `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`
+	Store          Organization  `gorm:"foreignKey:StoreID" json:"store,omitempty"`
+	Vendor         *Organization `gorm:"foreignKey:VendorID" json:"vendor,omitempty"`
+	Engineer       *User         `gorm:"foreignKey:EngineerID" json:"engineer,omitempty"`
+	Creator        User          `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`
+	ParentProvider *Organization `gorm:"foreignKey:ParentProviderID" json:"parent_provider,omitempty"` // 临时上级 Provider
 }
 
 // TableName returns the table name for WorkOrder

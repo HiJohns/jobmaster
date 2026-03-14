@@ -128,6 +128,15 @@ func (s *OrderService) Dispatch(ctx context.Context, orderID uuid.UUID, userID u
 		order.EngineerID = engineerID
 		order.Status = model.WorkOrderStatusDispatched
 
+		// Set ParentProviderID for temporary parent-child relationship
+		if vendorID != nil {
+			// Check if the vendor has a parent organization
+			var vendorOrg model.Organization
+			if err := tx.First(&vendorOrg, "id = ?", vendorID).Error; err == nil && vendorOrg.ParentID != nil {
+				order.ParentProviderID = vendorOrg.ParentID
+			}
+		}
+
 		// Build log details
 		details := "Assigned to"
 		if vendorID != nil {
