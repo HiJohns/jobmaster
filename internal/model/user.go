@@ -13,7 +13,7 @@ type User struct {
 	ID                 uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
 	TenantID           uuid.UUID      `gorm:"type:uuid;not null;index:idx_user_tenant" json:"tenant_id"`
 	OrganizationID     uuid.UUID      `gorm:"type:uuid;not null;index" json:"organization_id"`
-	Username           string         `gorman:"size:100;uniqueIndex:idx_user_username_tenant;not null" json:"username"`
+	Username           string         `gorm:"size:100;not null" json:"username"`
 	Email              string         `gorm:"size:255;uniqueIndex:idx_user_email_tenant" json:"email"`
 	Phone              string         `gorm:"size:20" json:"phone"`
 	PasswordHash       string         `gorm:"size:255;not null" json:"-"`
