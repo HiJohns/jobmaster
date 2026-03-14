@@ -1,11 +1,10 @@
 import { useState } from 'react'
-import { Form, Input, Select, Alert, Typography, Button } from 'antd'
+import { Form, Input, Select, Alert, Button } from 'antd'
 import { InfoCircleOutlined, LockOutlined, UpOutlined, DownOutlined } from '@ant-design/icons'
 import type { FormInstance } from 'antd'
 import { pinyin } from 'pinyin-pro'
 
 const { Option } = Select
-const { Text } = Typography
 
 const toPinyin = (str: string): string => {
   return pinyin(str, { separator: '_', toneType: 'none' })
