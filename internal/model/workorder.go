@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -152,8 +153,14 @@ type WorkOrder struct {
 	Status    WorkOrderStatus `gorm:"index:idx_workorder_status" json:"status"`
 
 	// Assignment fields
-	VendorID   *uuid.UUID `gorm:"type:uuid;index" json:"vendor_id,omitempty"`
-	EngineerID *uuid.UUID `gorm:"type:uuid;index" json:"engineer_id,omitempty"`
+	VendorID         *uuid.UUID `gorm:"type:uuid;index" json:"vendor_id,omitempty"`
+	EngineerID       *uuid.UUID `gorm:"type:uuid;index" json:"engineer_id,omitempty"`
+	ParentProviderID *uuid.UUID `gorm:"type:uuid;index" json:"parent_provider_id,omitempty"` // 单据级临时上下级关系
+
+	// Transfer control
+	HopLimit     int            `gorm:"default:0" json:"hop_limit"`                   // 最大流转次数限制
+	CurrentHop   int            `gorm:"default:0" json:"current_hop"`                 // 当前流转次数
+	DispatchPath datatypes.JSON `gorm:"type:jsonb;default:'[]'" json:"dispatch_path"` // 流转路径记录
 
 	// Scheduling fields
 	ScheduledAt *time.Time `json:"scheduled_at,omitempty"`
@@ -191,10 +198,11 @@ type WorkOrder struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Relationships
-	Store    Organization  `gorm:"foreignKey:StoreID" json:"store,omitempty"`
-	Vendor   *Organization `gorm:"foreignKey:VendorID" json:"vendor,omitempty"`
-	Engineer *User         `gorm:"foreignKey:EngineerID" json:"engineer,omitempty"`
-	Creator  User          `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`
+	Store          Organization  `gorm:"foreignKey:StoreID" json:"store,omitempty"`
+	Vendor         *Organization `gorm:"foreignKey:VendorID" json:"vendor,omitempty"`
+	Engineer       *User         `gorm:"foreignKey:EngineerID" json:"engineer,omitempty"`
+	Creator        User          `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`
+	ParentProvider *Organization `gorm:"foreignKey:ParentProviderID" json:"parent_provider,omitempty"` // 临时上级 Provider
 }
 
 // TableName returns the table name for WorkOrder
@@ -317,6 +325,14 @@ func EngineerScope(engineerID uuid.UUID) func(db *gorm.DB) *gorm.DB {
 func VendorScope(vendorID uuid.UUID) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		return db.Where("vendor_id = ?", vendorID)
+	}
+}
+
+// VendorPathScope filters work orders where dispatch_path contains the vendor ID
+func VendorPathScope(vendorID uuid.UUID) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		// Use JSONB containment operator to check if dispatch_path array contains vendorID
+		return db.Where("dispatch_path @> ?", fmt.Sprintf(`"%s"`, vendorID.String()))
 	}
 }
 
