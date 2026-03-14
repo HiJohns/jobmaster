@@ -123,10 +123,31 @@ func (s *OrderService) Dispatch(ctx context.Context, orderID uuid.UUID, userID u
 			return err
 		}
 
+		// Check hop limit from tenant config
+		var tenant model.Tenant
+		if err := tx.First(&tenant, "uuid = ?", order.TenantID).Error; err != nil {
+			return fmt.Errorf("failed to fetch tenant config: %w", err)
+		}
+
+		// Get hop_limit from tenant config, default to 5 if not set
+		hopLimit := 5
+		if tenant.Config != nil {
+			if val, ok := tenant.Config["hop_limit"].(float64); ok {
+				hopLimit = int(val)
+			}
+		}
+
+		// Validate current hop count
+		if order.CurrentHop >= hopLimit {
+			return fmt.Errorf("transfer limit exceeded: current_hop=%d, hop_limit=%d", order.CurrentHop, hopLimit)
+		}
+
 		// Update assignment
 		order.VendorID = vendorID
 		order.EngineerID = engineerID
 		order.Status = model.WorkOrderStatusDispatched
+		order.CurrentHop++
+		order.HopLimit = hopLimit
 
 		// Set ParentProviderID for temporary parent-child relationship
 		if vendorID != nil {

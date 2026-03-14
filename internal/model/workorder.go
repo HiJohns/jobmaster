@@ -156,6 +156,10 @@ type WorkOrder struct {
 	EngineerID       *uuid.UUID `gorm:"type:uuid;index" json:"engineer_id,omitempty"`
 	ParentProviderID *uuid.UUID `gorm:"type:uuid;index" json:"parent_provider_id,omitempty"` // 单据级临时上下级关系
 
+	// Transfer control
+	HopLimit   int `gorm:"default:0" json:"hop_limit"`   // 最大流转次数限制
+	CurrentHop int `gorm:"default:0" json:"current_hop"` // 当前流转次数
+
 	// Scheduling fields
 	ScheduledAt *time.Time `json:"scheduled_at,omitempty"`
 	ArrivedAt   *time.Time `json:"arrived_at,omitempty"`
