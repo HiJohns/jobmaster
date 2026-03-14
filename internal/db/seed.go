@@ -87,35 +87,36 @@ func (s *Seeder) seedSuperAdmin() error {
 		return nil
 	}
 
-	log.Println("Creating super admin user...")
+	log.Println("Creating system owner user...")
 
 	// Use fixed UUIDs to match the organization
 	defaultTenantID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
 	defaultOrgID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
-	adminID := uuid.MustParse("00000000-0000-0000-0000-000000000003")
+	ownerID := uuid.MustParse("00000000-0000-0000-0000-000000000003")
 
-	admin := &model.User{
-		ID:             adminID,
+	owner := &model.User{
+		ID:             ownerID,
 		TenantID:       defaultTenantID,
 		OrganizationID: defaultOrgID,
-		Username:       "admin",
-		Email:          "admin@jobmaster.local",
+		Username:       "owner",
+		Email:          "owner@jobmaster.local",
 		Phone:          "13800138000",
-		Role:           model.UserRoleAdmin,
+		Role:           model.UserRoleOwner,
+		IsOrgOwner:     true,
 		Status:         model.UserStatusActive,
-		DisplayName:    "超级管理员",
+		DisplayName:    "系统所有者",
 	}
 
 	// Set default password (should be changed after first login)
-	if err := admin.HashPassword("admin123"); err != nil {
-		return fmt.Errorf("failed to hash admin password: %w", err)
+	if err := owner.HashPassword("admin123"); err != nil {
+		return fmt.Errorf("failed to hash owner password: %w", err)
 	}
 
-	if err := s.db.Create(admin).Error; err != nil {
-		return fmt.Errorf("failed to create super admin: %w", err)
+	if err := s.db.Create(owner).Error; err != nil {
+		return fmt.Errorf("failed to create system owner: %w", err)
 	}
 
-	log.Printf("Created super admin user: %s (ID: %s)", admin.Username, admin.ID)
+	log.Printf("Created system owner user: %s (ID: %s)", owner.Username, owner.ID)
 	log.Println("Please login with default account and change password immediately")
 	return nil
 }

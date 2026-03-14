@@ -337,6 +337,17 @@ func DeleteUser(c *gin.Context) {
 		return
 	}
 
+	// Check if this is the last owner/admin in the organization
+	canDelete, reason, err := user.CanDeleteUser(db)
+	if err != nil {
+		response.InternalServerError(c, "failed to check user deletion permission")
+		return
+	}
+	if !canDelete {
+		response.Forbidden(c, reason)
+		return
+	}
+
 	// Soft delete
 	if err := db.Delete(&user).Error; err != nil {
 		response.InternalServerError(c, "failed to delete user")
