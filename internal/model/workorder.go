@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -157,8 +158,9 @@ type WorkOrder struct {
 	ParentProviderID *uuid.UUID `gorm:"type:uuid;index" json:"parent_provider_id,omitempty"` // 单据级临时上下级关系
 
 	// Transfer control
-	HopLimit   int `gorm:"default:0" json:"hop_limit"`   // 最大流转次数限制
-	CurrentHop int `gorm:"default:0" json:"current_hop"` // 当前流转次数
+	HopLimit     int            `gorm:"default:0" json:"hop_limit"`                   // 最大流转次数限制
+	CurrentHop   int            `gorm:"default:0" json:"current_hop"`                 // 当前流转次数
+	DispatchPath datatypes.JSON `gorm:"type:jsonb;default:'[]'" json:"dispatch_path"` // 流转路径记录
 
 	// Scheduling fields
 	ScheduledAt *time.Time `json:"scheduled_at,omitempty"`
@@ -323,6 +325,14 @@ func EngineerScope(engineerID uuid.UUID) func(db *gorm.DB) *gorm.DB {
 func VendorScope(vendorID uuid.UUID) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		return db.Where("vendor_id = ?", vendorID)
+	}
+}
+
+// VendorPathScope filters work orders where dispatch_path contains the vendor ID
+func VendorPathScope(vendorID uuid.UUID) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		// Use JSONB containment operator to check if dispatch_path array contains vendorID
+		return db.Where("dispatch_path @> ?", fmt.Sprintf(`"%s"`, vendorID.String()))
 	}
 }
 

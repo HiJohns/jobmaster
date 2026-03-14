@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -156,6 +157,15 @@ func (s *OrderService) Dispatch(ctx context.Context, orderID uuid.UUID, userID u
 			if err := tx.First(&vendorOrg, "id = ?", vendorID).Error; err == nil && vendorOrg.ParentID != nil {
 				order.ParentProviderID = vendorOrg.ParentID
 			}
+
+			// Append vendor ID to dispatch path
+			var dispatchPath []uuid.UUID
+			if order.DispatchPath != nil {
+				_ = json.Unmarshal(order.DispatchPath, &dispatchPath)
+			}
+			dispatchPath = append(dispatchPath, *vendorID)
+			pathJSON, _ := json.Marshal(dispatchPath)
+			order.DispatchPath = pathJSON
 		}
 
 		// Build log details
