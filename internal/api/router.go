@@ -39,6 +39,7 @@ func SetupRouter() *gin.Engine {
 		public := v1.Group("/auth")
 		{
 			public.POST("/login", Login)
+			public.GET("/callback", AuthCallback)
 		}
 
 		// Protected routes (authentication required)
