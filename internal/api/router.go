@@ -76,6 +76,7 @@ func SetupRouter() *gin.Engine {
 			// Organization routes (require authentication)
 			protected.GET("/organizations", ListOrganizations)
 			protected.POST("/organizations", CreateOrganization)
+			protected.PUT("/organizations/:id", UpdateOrganization)
 			protected.GET("/organizations/tree", GetOrganizationTree)
 
 			// User routes (require authentication)

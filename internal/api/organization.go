@@ -38,6 +38,7 @@ type OrganizationResponse struct {
 	ContactPhone string                 `json:"contact_phone"`
 	Children     []OrganizationResponse `json:"children,omitempty"`
 	CreatedAt    time.Time              `json:"created_at"`
+	UpdatedAt    time.Time              `json:"updated_at"`
 }
 
 // CreateOrganization creates a new organization (BrandHQ or MainContractor only)
@@ -123,6 +124,89 @@ func CreateOrganization(c *gin.Context) {
 		ContactName:  org.ContactName,
 		ContactPhone: org.ContactPhone,
 		CreatedAt:    org.CreatedAt,
+		UpdatedAt:    org.UpdatedAt,
+	})
+}
+
+// UpdateOrganizationRequest represents the request to update an organization
+type UpdateOrganizationRequest struct {
+	Name         string `json:"name"`
+	Address      string `json:"address"`
+	ContactName  string `json:"contact_name"`
+	ContactPhone string `json:"contact_phone"`
+}
+
+// UpdateOrganization updates an existing organization
+func UpdateOrganization(c *gin.Context) {
+	userRole, _ := middleware.GetRole(c)
+	if !permissions.HasPermission(&model.User{Role: model.UserRole(userRole), Status: model.UserStatusActive}, permissions.ActionOrgManage) {
+		response.Forbidden(c, "insufficient permissions to update organization")
+		return
+	}
+
+	orgID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "invalid organization id")
+		return
+	}
+
+	var req UpdateOrganizationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid request: "+err.Error())
+		return
+	}
+
+	db, err := database.GetDB()
+	if err != nil {
+		response.InternalServerError(c, "database connection failed")
+		return
+	}
+
+	tenantID, _ := middleware.GetTenantID(c)
+
+	var org model.Organization
+	if err := db.Where("id = ? AND tenant_id = ?", orgID, tenantID).First(&org).Error; err != nil {
+		response.NotFound(c, "organization not found")
+		return
+	}
+
+	updates := make(map[string]interface{})
+	if req.Name != "" {
+		updates["name"] = req.Name
+	}
+	if req.Address != "" {
+		updates["address"] = req.Address
+	}
+	if req.ContactName != "" {
+		updates["contact_name"] = req.ContactName
+	}
+	if req.ContactPhone != "" {
+		updates["contact_phone"] = req.ContactPhone
+	}
+
+	if len(updates) > 0 {
+		if err := db.Model(&org).Updates(updates).Error; err != nil {
+			response.InternalServerError(c, "failed to update organization")
+			return
+		}
+	}
+
+	if redisClient := redis.GetDefaultClient(); redisClient != nil {
+		redisClient.InvalidateOrgTreeCache(tenantID)
+	}
+
+	response.Success(c, OrganizationResponse{
+		ID:           org.ID,
+		Name:         org.Name,
+		Type:         org.Type,
+		Code:         org.Code,
+		ParentID:     org.ParentID,
+		Level:        org.Level,
+		Address:      org.Address,
+		ContactName:  org.ContactName,
+		ContactPhone: org.ContactPhone,
+		CreatedAt:    org.CreatedAt,
+		UpdatedAt:    org.UpdatedAt,
 	})
 }
 
