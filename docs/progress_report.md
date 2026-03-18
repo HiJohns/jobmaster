@@ -1,7 +1,8 @@
 # JobMaster 2.0 系统进度审计报告
 
 > 生成日期: 2026-03-18
-> 版本: v2.0.1-iam-beta
+> 版本: v2.0.2-asset-monitor
+> 最后更新: 2026-03-18 13:30
 
 ---
 
@@ -10,11 +11,11 @@
 | 维度 | 状态 | 完成度 |
 |------|------|--------|
 | 身份底座 (Auth & ID) | 🚧 进行中 | 70% |
-| 组织架构 (Org) | 🚧 进行中 | 60% |
+| 组织架构 (Org) | ✅ 已完成 | 85% |
 | 工单引擎 (Engine) | ✅ 已完成 | 95% |
-| 资产网点 (Asset) | 🚧 进行中 | 40% |
+| 资产网点 (Asset) | 🚧 进行中 | 65% |
 | 运营管理 (Ops) | 🚧 部分完成 | 30% |
-| 前端 UI (Frontend) | 🚧 进行中 | 50% |
+| 前端 UI (Frontend) | 🚧 进行中 | 60% |
 
 ---
 
@@ -52,10 +53,10 @@
 - [x] 层级管理 - HQ/Store/MainContractor/Vendor 支持
 - [x] 影子组织字段 - **已通过迁移添加** (`iam_org_id`, `is_shadow`, `max_dispatch_hops`, `path`)
 - [x] Redis 缓存方法 - 已实现 `GetOrgTreeCache`, `SetOrgTreeCache`, `InvalidateOrgTreeCache`
-
-#### 🚧 进行中
-- [ ] 从 IAM 动态获取组织树 - 尚未调用 IAM API
-- [ ] Redis 缓存集成 - 方法已实现，尚未在 API 中调用
+- [x] **组织树 Redis 缓存集成** (Issue #46)
+  - `GET /api/v1/organizations/tree` - 缓存读取/写入
+  - `PUT /api/v1/organizations/:id` - 更新后缓存失效
+  - `POST /api/v1/organizations` - 创建后缓存失效
 
 #### ❌ 待开发
 - [ ] max_dispatch_hops 业务规则 - 需要从 IAM 获取
@@ -87,9 +88,17 @@
 - [x] **设备 CRUD API** - 完整实现 (Create, List, Get, Update, Delete)
   - 支持按 `org_id` 和 `location_id` 过滤
   - SN 字段带唯一索引 (维修业务关键)
+  - **新增**: 状态过滤 `?status=REPAIRING`
 - [x] **位置 CRUD API** - 完整实现 (Create, List, Get, Update, Delete)
   - 支持 GPSLocation 存储
   - 支持层级结构 (parent_id)
+- [x] **资产监控页面** (Issue #45)
+  - `/assets` 路由及侧边栏入口
+  - StatusFilter: 快速状态筛选标签
+  - RepairingDeviceList: 报修设备列表
+  - EngineerSelector: 师傅选择器
+  - DispatchDialog: 派单对话框
+  - 派单 API 集成: `POST /api/v1/workorders/:id/dispatch`
 
 #### 🚧 进行中
 - [ ] MDM 关联 - 未实现
@@ -99,6 +108,7 @@
 - `internal/model/asset.go` - Device, Location 模型
 - `internal/api/device.go` - 设备 CRUD API
 - `internal/api/location.go` - 位置 CRUD API
+- `frontend/src/pages/AssetMonitor.tsx` - 资产监控页面
 
 ---
 
@@ -180,8 +190,8 @@
 1. [x] ~~组织表添加影子字段~~ ✅ 已完成
 2. [x] ~~Redis 缓存方法~~ ✅ 已完成
 3. [x] ~~Asset 模块原型~~ ✅ 已完成
-4. [ ] Redis 缓存集成到 API
-5. [ ] 设备/网点 CRUD API
+4. [x] ~~Redis 缓存集成到 API~~ ✅ 已完成 (Issue #46)
+5. [x] ~~资产监控页面~~ ✅ 已完成 (Issue #45)
 6. [ ] IAM 组织树集成 (动态查询)
 
 ### 中优先级 (P1)
@@ -201,15 +211,25 @@
 - `migrations/012_add_owner_flag.sql` - is_org_owner 字段
 - `migrations/013_add_iam_user_fields.sql` - iam_sub, is_shadow 字段
 - `migrations/014_add_org_shadow_fields.sql` - iam_org_id, is_shadow, max_dispatch_hops, path 字段
+- `migrations/016_add_workorder_device.sql` - 工单设备关联
 
 ---
 
-## 六、下一步建议
+## 六、已完成 Issue 清单 (2026-03-18)
 
-1. **立即执行**: 将 Redis 缓存方法集成到 Organization API
-2. **短期目标**: 实现设备/网点 CRUD API
-3. **中期目标**: 完成 IAM 组织树集成
-4. **长期目标**: 完善 SLA 和离线功能
+| Issue | 标题 | 状态 | Commit |
+|-------|------|------|--------|
+| #46 | 完善组织树 Redis 缓存集成 | ✅ | `0c8ae42b` |
+| #45 | 前端 PC 端资产监控页面增强 | ✅ | `bd962076` |
+
+---
+
+## 七、下一步建议
+
+1. **立即执行**: IAM 组织树动态查询
+2. **短期目标**: 实现扫码报修接口
+3. **中期目标**: 完成 SLA 定时监控
+4. **长期目标**: 完善离线功能和 MDM 集成
 
 ---
 
