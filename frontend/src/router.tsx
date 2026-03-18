@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard'
 import Home from './pages/Home'
 import WorkOrderList from './pages/WorkOrderList'
 import WorkOrderDetail from './pages/WorkOrderDetail'
+import AssetMonitor from './pages/AssetMonitor'
 import TenantList from './pages/admin/TenantList'
 import AppLayout from './components/Layout'
 import PrivateRoute from './components/PrivateRoute'
@@ -24,6 +25,7 @@ function AppRouter() {
           <Route path="/home" element={<Home />} />
           <Route path="/workorders" element={<WorkOrderList />} />
           <Route path="/workorder/:id" element={<WorkOrderDetail />} />
+          <Route path="/assets" element={<AssetMonitor />} />
           
           {/* Tab routes */}
           <Route path="/inspection" element={<Home />} />

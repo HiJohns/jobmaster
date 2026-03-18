@@ -6,6 +6,7 @@ import {
   UserOutlined,
   BankOutlined,
   LogoutOutlined,
+  AppstoreTwoTone,
   CloseOutlined,
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
@@ -68,6 +69,11 @@ function AppLayout() {
       label: '首页',
     },
     {
+      key: '/assets',
+      icon: <AppstoreTwoTone twoToneColor="#0033FF" />,
+      label: '资产监控',
+    },
+    {
       key: '/workorders',
       icon: <FileTextTwoTone twoToneColor="#0033FF" />,
       label: '工单管理',
@@ -123,6 +129,8 @@ function AppLayout() {
     } else if (path.startsWith('/workorder/')) {
       items.push({ title: '工单管理' })
       items.push({ title: '工单详情' })
+    } else if (path.startsWith('/assets')) {
+      items.push({ title: '资产监控' })
     } else if (path.startsWith('/admin/tenants')) {
       items.push({ title: '系统设置' })
       items.push({ title: '租户管理' })
