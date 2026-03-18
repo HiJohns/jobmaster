@@ -1,0 +1,54 @@
+:root {
+  --primary-color: #0033FF;
+  --primary-hover: #0029CC;
+  --primary-light: #E6ECFF;
+  --primary-lighter: #F0F4FF;
+}
+
+/* Dynamic theme support */
+[data-theme-primary] {
+  --primary-color: var(--dynamic-primary, #0033FF);
+  --primary-hover: color-mix(in srgb, var(--dynamic-primary, #0033FF) 80%, black);
+  --primary-light: color-mix(in srgb, var(--dynamic-primary, #0033FF) 20%, white);
+  --primary-lighter: color-mix(in srgb, var(--dynamic-primary, #0033FF) 10%, white);
+}
+
+/* Apply primary color to Ant Design components */
+.ant-btn-primary {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.ant-btn-primary:hover {
+  background-color: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+}
+
+.ant-menu-item-selected {
+  background-color: var(--primary-light) !important;
+  color: var(--primary-color) !important;
+}
+
+.ant-menu-item-selected .ant-menu-title-content {
+  color: var(--primary-color) !important;
+}
+
+.ant-menu-item:hover {
+  color: var(--primary-color) !important;
+}
+
+/* Logo styling */
+.dynamic-logo {
+  height: 40px;
+  object-fit: contain;
+}
+
+/* Loading animation for theme */
+@keyframes theme-loading {
+  0% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.theme-loading {
+  animation: theme-loading 0.5s ease-in-out;
+}
