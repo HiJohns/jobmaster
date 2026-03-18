@@ -110,6 +110,9 @@ func SetupRouter() *gin.Engine {
 			protected.PUT("/locations/:id", UpdateLocation)
 			protected.DELETE("/locations/:id", DeleteLocation)
 
+			// Repair routes (require authentication)
+			protected.POST("/repair/submit", SubmitRepair)
+
 			// Admin routes (require SYSTEM_ADMIN role)
 			db, err := database.GetDB()
 			if err != nil {
