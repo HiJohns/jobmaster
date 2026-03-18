@@ -109,8 +109,9 @@ func CreateDevice(c *gin.Context) {
 
 // ListDevices returns a list of devices with optional filtering
 type ListDevicesRequest struct {
-	OrgID      string `form:"org_id"`
-	LocationID string `form:"location_id"`
+	OrgID      string             `form:"org_id"`
+	LocationID string             `form:"location_id"`
+	Status     model.DeviceStatus `form:"status"`
 }
 
 func ListDevices(c *gin.Context) {
@@ -139,6 +140,10 @@ func ListDevices(c *gin.Context) {
 		if locID, err := uuid.Parse(req.LocationID); err == nil {
 			query = query.Where("location_id = ?", locID)
 		}
+	}
+
+	if req.Status != "" {
+		query = query.Where("status = ?", req.Status)
 	}
 
 	var devices []model.Device

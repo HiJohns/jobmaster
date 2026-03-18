@@ -76,6 +76,7 @@ func SetupRouter() *gin.Engine {
 			// Organization routes (require authentication)
 			protected.GET("/organizations", ListOrganizations)
 			protected.POST("/organizations", CreateOrganization)
+			protected.PUT("/organizations/:id", UpdateOrganization)
 			protected.GET("/organizations/tree", GetOrganizationTree)
 
 			// User routes (require authentication)
@@ -109,6 +110,9 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/locations/:id", GetLocation)
 			protected.PUT("/locations/:id", UpdateLocation)
 			protected.DELETE("/locations/:id", DeleteLocation)
+
+			// Repair routes (require authentication)
+			protected.POST("/repair/submit", SubmitRepair)
 
 			// Admin routes (require SYSTEM_ADMIN role)
 			db, err := database.GetDB()

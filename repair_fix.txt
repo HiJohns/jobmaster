@@ -1,0 +1,35 @@
+		orderNo, err := generateWorkOrderNo(tx, user.TenantID)
+		if err != nil {
+			return fmt.Errorf("failed to generate order number: %w", err)
+		}
+
+		// 创建工单信息
+		workOrderInfo := model.WorkOrderInfo{
+			Description:   req.FaultDescription,
+			PhotoURLs:     req.PhotoURLs,
+			ContactName:   user.DisplayName,
+			ContactPhone:  req.ContactPhone,
+			EquipmentInfo: fmt.Sprintf("%s %s (SN: %s)", device.Name, device.Model, device.SN),
+			BrandName:     device.Brand,
+		}
+
+		// 创建工单
+		workOrder = model.WorkOrder{
+			OrderNo:   orderNo,
+			TenantID:  user.TenantID,
+			StoreID:   device.OrgID, // use device org as store_id
+			CreatedBy: userID,
+			Status:    model.WorkOrderStatusPending,
+			Info:      workOrderInfo,
+		}
+
+		if err := tx.Create(&workOrder).Error; err != nil {
+			return fmt.Errorf("failed to create work order: %w", err)
+		}
+
+		// 更新设备状态为 REPAIRING
+		if err := tx.Model(&device).Update("status", model.DeviceStatusRepairing).Error; err != nil {
+			return fmt.Errorf("failed to update device status: %w", err)
+		}
+
+		return nil
