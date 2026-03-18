@@ -19,6 +19,7 @@ type User struct {
 	PasswordHash       string         `gorm:"size:255;not null" json:"-"`
 	MustChangePassword bool           `gorm:"default:false;not null" json:"must_change_password"`
 	Role               UserRole       `gorm:"type:varchar(20);not null" json:"role"`
+	IsOrgOwner         bool           `gorm:"default:false" json:"is_org_owner"` // 组织所有者标志
 	Status             UserStatus     `gorm:"type:varchar(20);default:'active'" json:"status"`
 	DisplayName        string         `gorm:"size:100" json:"display_name"`
 	AvatarURL          string         `gorm:"size:500" json:"avatar_url"`
@@ -33,12 +34,18 @@ type User struct {
 type UserRole string
 
 const (
+	// IAM roles (management)
+	UserRoleOwner   UserRole = "OWNER"   // 组织所有者
+	UserRoleAdmin   UserRole = "ADMIN"   // 管理员
+	UserRoleManager UserRole = "MANAGER" // 经理
+	UserRoleStaff   UserRole = "STAFF"   // 员工
+
+	// Business roles
 	UserRoleBrandHQ        UserRole = "BRAND_HQ"        // 总店
 	UserRoleStore          UserRole = "STORE"           // 分店
 	UserRoleMainContractor UserRole = "MAIN_CONTRACTOR" // 工程公司
 	UserRoleVendor         UserRole = "VENDOR"          // 供应商
 	UserRoleEngineer       UserRole = "ENGINEER"        // 工程师
-	UserRoleAdmin          UserRole = "ADMIN"           // 系统管理员
 )
 
 // UserStatus defines user account status
@@ -97,4 +104,85 @@ func (u *User) HashPassword(password string) error {
 func (u *User) CheckPassword(password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password))
 	return err == nil
+}
+
+// IsOwner returns true if the user is the organization owner
+func (u *User) IsOwner() bool {
+	return u.IsOrgOwner || u.Role == UserRoleOwner
+}
+
+// IsAdmin returns true if the user has admin privileges
+func (u *User) IsAdmin() bool {
+	return u.Role == UserRoleOwner || u.Role == UserRoleAdmin
+}
+
+// HasPermission checks if the user has the specified permission
+func (u *User) HasPermission(action string) bool {
+	// Owner has full permissions
+	if u.IsOwner() {
+		return true
+	}
+
+	// Permission map for each role
+	permissions := map[UserRole][]string{
+		UserRoleAdmin: {
+			"user:manage", "user:create", "user:delete", "user:update",
+			"org:manage", "order:manage", "order:dispatch", "order:view",
+			"tenant:manage",
+		},
+		UserRoleManager: {
+			"user:view", "user:create",
+			"org:view", "order:manage", "order:dispatch", "order:view",
+		},
+		UserRoleStaff: {
+			"order:view", "order:create",
+		},
+		UserRoleBrandHQ: {
+			"org:manage", "org:view", "order:manage", "order:view",
+		},
+		UserRoleStore: {
+			"order:create", "order:view",
+		},
+		UserRoleMainContractor: {
+			"org:view", "order:manage", "order:dispatch", "order:view",
+		},
+		UserRoleVendor: {
+			"order:view", "order:accept", "order:complete",
+		},
+		UserRoleEngineer: {
+			"order:view", "order:arrive", "order:work", "order:finish",
+		},
+	}
+
+	perms, exists := permissions[u.Role]
+	if !exists {
+		return false
+	}
+
+	for _, p := range perms {
+		if p == action {
+			return true
+		}
+	}
+	return false
+}
+
+// CanDeleteUser checks if the user can be deleted (protected: last admin/owner)
+func (u *User) CanDeleteUser(db *gorm.DB) (bool, string, error) {
+	// Check if this is the last owner/admin in the organization
+	var count int64
+	err := db.Model(&User{}).
+		Where("organization_id = ? AND status = ? AND (role IN (?, ?) OR is_org_owner = ?)",
+			u.OrganizationID, UserStatusActive, UserRoleOwner, UserRoleAdmin, true).
+		Count(&count).Error
+
+	if err != nil {
+		return false, "", err
+	}
+
+	if count <= 1 {
+		return false, "cannot delete the last owner/admin of this organization", nil
+	}
+
+	return true, "", nil
 }

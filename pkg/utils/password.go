@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"crypto/rand"
 	"fmt"
+	"math/big"
 	"regexp"
 	"unicode"
 
@@ -190,4 +192,22 @@ func PasswordStrengthScore(password string) int {
 	}
 
 	return score
+}
+
+// GenerateRandomPassword generates a random password of specified length
+func GenerateRandomPassword(length int) string {
+	const (
+		lowerChars   = "abcdefghijklmnopqrstuvwxyz"
+		upperChars   = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		digitChars   = "0123456789"
+		specialChars = "!@#$%^&*"
+		allChars     = lowerChars + upperChars + digitChars + specialChars
+	)
+
+	result := make([]byte, length)
+	for i := 0; i < length; i++ {
+		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(allChars))))
+		result[i] = allChars[n.Int64()]
+	}
+	return string(result)
 }
