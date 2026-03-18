@@ -1,14 +1,17 @@
 package api
 
 import (
+	"encoding/json"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"jobmaster/internal/middleware"
 	"jobmaster/internal/model"
 	"jobmaster/pkg/database"
 	"jobmaster/pkg/permissions"
+	"jobmaster/pkg/redis"
 	"jobmaster/pkg/response"
-	"time"
 )
 
 // CreateOrganizationRequest represents the request to create an organization
@@ -104,6 +107,11 @@ func CreateOrganization(c *gin.Context) {
 		return
 	}
 
+	// Invalidate Redis cache after creating organization
+	if redisClient := redis.GetDefaultClient(); redisClient != nil {
+		redisClient.InvalidateOrgTreeCache(tenantID)
+	}
+
 	response.Success(c, OrganizationResponse{
 		ID:           org.ID,
 		Name:         org.Name,
@@ -163,6 +171,21 @@ func GetOrganizationTree(c *gin.Context) {
 
 	tenantID, _ := middleware.GetTenantID(c)
 
+	// 1. Try to get from Redis cache first
+	if redisClient := redis.GetDefaultClient(); redisClient != nil {
+		cached, err := redisClient.GetOrgTreeCache(tenantID)
+		if err == nil && cached != "" {
+			// Hit cache, return cached data
+			c.Header("X-Cache", "HIT")
+			var cachedData []OrganizationResponse
+			if err := json.Unmarshal([]byte(cached), &cachedData); err == nil {
+				response.Success(c, cachedData)
+				return
+			}
+		}
+		c.Header("X-Cache", "MISS")
+	}
+
 	var organizations []model.Organization
 	if err := db.Where("tenant_id = ?", tenantID).Find(&organizations).Error; err != nil {
 		response.InternalServerError(c, "failed to fetch organizations")
@@ -201,6 +224,13 @@ func GetOrganizationTree(c *gin.Context) {
 			if parent, exists := orgMap[*org.ParentID]; exists {
 				parent.Children = append(parent.Children, *node)
 			}
+		}
+	}
+
+	// Cache the result
+	if redisClient := redis.GetDefaultClient(); redisClient != nil {
+		if jsonData, err := json.Marshal(rootOrgs); err == nil {
+			redisClient.SetOrgTreeCache(tenantID, string(jsonData), 10*time.Minute)
 		}
 	}
 

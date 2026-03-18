@@ -42,6 +42,26 @@ func SetupRouter() *gin.Engine {
 			public.GET("/callback", AuthCallback)
 		}
 
+		// Initialize Redis client for this route group
+		redisHost := utils.GetEnv("REDIS_HOST", "")
+		if redisHost != "" {
+			redisPort := utils.GetEnv("REDIS_PORT", "6379")
+			redisPassword := utils.GetEnv("REDIS_PASSWORD", "")
+			redisDB := 0
+			fmt.Sscanf(utils.GetEnv("REDIS_DB", "0"), "%d", &redisDB)
+			client, err := redis.NewClient(
+				fmt.Sprintf("%s:%s", redisHost, redisPort),
+				redisPassword,
+				redisDB,
+			)
+			if err != nil {
+				fmt.Printf("Warning: failed to connect to redis: %v\n", err)
+			} else {
+				redis.SetDefaultClient(client) // Set global client
+				fmt.Printf("Redis client initialized and set as default\n")
+			}
+		}
+
 		// Protected routes (authentication required)
 		protected := v1.Group("")
 		protected.Use(middleware.AuthMiddleware())
@@ -76,6 +96,20 @@ func SetupRouter() *gin.Engine {
 			protected.POST("/workorders/:id/arrive", ArriveWorkOrder)
 			protected.POST("/workorders/:id/finish", FinishWorkOrder)
 
+			// Device routes (require authentication)
+			protected.GET("/devices", ListDevices)
+			protected.POST("/devices", CreateDevice)
+			protected.GET("/devices/:id", GetDevice)
+			protected.PUT("/devices/:id", UpdateDevice)
+			protected.DELETE("/devices/:id", DeleteDevice)
+
+			// Location routes (require authentication)
+			protected.GET("/locations", ListLocations)
+			protected.POST("/locations", CreateLocation)
+			protected.GET("/locations/:id", GetLocation)
+			protected.PUT("/locations/:id", UpdateLocation)
+			protected.DELETE("/locations/:id", DeleteLocation)
+
 			// Admin routes (require SYSTEM_ADMIN role)
 			db, err := database.GetDB()
 			if err != nil {
@@ -83,26 +117,7 @@ func SetupRouter() *gin.Engine {
 			}
 			tenantRepo := repository.NewTenantRepository(db)
 
-			var redisClient *redis.Client
-			redisHost := utils.GetEnv("REDIS_HOST", "")
-			if redisHost != "" {
-				redisPort := utils.GetEnv("REDIS_PORT", "6379")
-				redisPassword := utils.GetEnv("REDIS_PASSWORD", "")
-				redisDB := 0
-				fmt.Sscanf(utils.GetEnv("REDIS_DB", "0"), "%d", &redisDB)
-				client, err := redis.NewClient(
-					fmt.Sprintf("%s:%s", redisHost, redisPort),
-					redisPassword,
-					redisDB,
-				)
-				if err != nil {
-					fmt.Printf("Warning: failed to connect to redis: %v\n", err)
-				} else {
-					redisClient = client
-				}
-			}
-
-			admin.RegisterRoutes(protected, tenantRepo, db, redisClient)
+			admin.RegisterRoutes(protected, tenantRepo, db, nil)
 		}
 	}
 

@@ -3,10 +3,16 @@ package redis
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
+)
+
+var (
+	DefaultClient *Client
+	mu            sync.RWMutex
 )
 
 type Client struct {
@@ -28,6 +34,20 @@ func NewClient(host, password string, db int) (*Client, error) {
 	}
 
 	return &Client{client: client}, nil
+}
+
+// SetDefaultClient sets the global default redis client
+func SetDefaultClient(client *Client) {
+	mu.Lock()
+	defer mu.Unlock()
+	DefaultClient = client
+}
+
+// GetDefaultClient gets the global default redis client
+func GetDefaultClient() *Client {
+	mu.RLock()
+	defer mu.RUnlock()
+	return DefaultClient
 }
 
 func (c *Client) Close() error {
