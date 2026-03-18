@@ -101,6 +101,7 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/devices", ListDevices)
 			protected.POST("/devices", CreateDevice)
 			protected.GET("/devices/:id", GetDevice)
+			protected.GET("/devices/sn/:sn", GetDeviceBySN)
 			protected.PUT("/devices/:id", UpdateDevice)
 			protected.DELETE("/devices/:id", DeleteDevice)
 
@@ -113,6 +114,9 @@ func SetupRouter() *gin.Engine {
 
 			// Repair routes (require authentication)
 			protected.POST("/repair/submit", SubmitRepair)
+
+			// Lease routes (require authentication)
+			RegisterLeaseRoutes(protected)
 
 			// Admin routes (require SYSTEM_ADMIN role)
 			db, err := database.GetDB()

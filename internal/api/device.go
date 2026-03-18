@@ -205,6 +205,50 @@ func GetDevice(c *gin.Context) {
 	})
 }
 
+// GetDeviceBySN returns a device by serial number
+func GetDeviceBySN(c *gin.Context) {
+	sn := c.Param("sn")
+	if sn == "" {
+		response.BadRequest(c, "SN is required")
+		return
+	}
+
+	db, err := database.GetDB()
+	if err != nil {
+		response.InternalServerError(c, "database connection failed")
+		return
+	}
+
+	var device model.Device
+	if err := db.Where("sn = ?", sn).First(&device).Error; err != nil {
+		response.NotFound(c, "device not found")
+		return
+	}
+
+	// Get organization details for the site
+	var org model.Organization
+	var siteName string
+	if err := db.Where("id = ?", device.OrgID).First(&org).Error; err != nil {
+		siteName = "Unknown Site"
+	} else {
+		siteName = org.Name
+	}
+
+	response.Success(c, gin.H{
+		"id":          device.ID,
+		"sn":          device.SN,
+		"name":        device.Name,
+		"model":       device.Model,
+		"brand":       device.Brand,
+		"org_id":      device.OrgID,
+		"location_id": device.LocationID,
+		"status":      device.Status,
+		"site_name":   siteName,
+		"info":        json.RawMessage(device.Info),
+		"created_at":  device.CreatedAt.Format(time.RFC3339),
+	})
+}
+
 // UpdateDeviceRequest represents the request to update a device
 type UpdateDeviceRequest struct {
 	Name       string             `json:"name"`
