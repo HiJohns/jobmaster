@@ -28,6 +28,10 @@ type User struct {
 	CreatedAt          time.Time      `json:"created_at"`
 	UpdatedAt          time.Time      `json:"updated_at"`
 	DeletedAt          gorm.DeletedAt `gorm:"index" json:"-"`
+
+	// IAM Integration Fields
+	IAMSub   string `gorm:"size:100;uniqueIndex:idx_user_iam_sub" json:"iam_sub,omitempty"` // IAM 用户唯一标识
+	IsShadow bool   `gorm:"default:false" json:"is_shadow,omitempty"`                       // 是否为影子用户
 }
 
 // UserRole defines user roles in the system
