@@ -1,8 +1,8 @@
 # JobMaster 2.0 系统进度审计报告
 
 > 生成日期: 2026-03-18
-> 版本: v2.0.3-iam-leases
-> 最后更新: 2026-03-18 14:40
+> 版本: v2.0.4-whitelabel-sla
+> 最后更新: 2026-03-18 17:00
 
 ---
 
@@ -13,9 +13,9 @@
 | 身份底座 (Auth & ID) | ✅ 已完成 | 90% |
 | 组织架构 (Org) | ✅ 已完成 | 95% |
 | 工单引擎 (Engine) | ✅ 已完成 | 95% |
-| 资产网点 (Asset) | 🚧 进行中 | 75% |
-| 运营管理 (Ops) | 🚧 部分完成 | 40% |
-| 前端 UI (Frontend) | 🚧 进行中 | 60% |
+| 资产网点 (Asset) | 🚧 进行中 | 80% |
+| 运营管理 (Ops) | 🚧 部分完成 | 70% |
+| 前端 UI (Frontend) | 🚧 进行中 | 70% |
 
 ---
 
@@ -126,14 +126,22 @@
   - 租期进度查询 API (`GET /api/v1/leases/progress`)
   - 租期更新 API (`POST /api/v1/leases/progress/update`)
   - 阈值监听: paid_months >= 12 自动触发
+- [x] **SLA 监控服务** (Issue #50)
+  - SLAService 实现
+  - Redis TTL Key 监控
+  - `StartSLAMonitor` / `CancelSLAMonitor` 方法
+  - 24 小时 SLA 超时检测
 
 #### 🚧 部分完成
-- [ ] SLA 时效监控 - **租户配置已存在**，但无定时任务检查
+- [ ] SLA 超时告警日志 - 框架已就绪，WorkOrderLogs 写入待实现
+- [ ] SLA 定时监控任务 - Redis Subscriber 待实现
 
 #### 技术关键点
-- `migrations/003_create_tenants.sql` 包含 `config JSONB DEFAULT '{}'::jsonb`
+- `migrations/003_create_tenants.sql` 包含 `config JSONB`
 - `migrations/017_user_asset_progress.sql` - 租期进度表
 - `internal/api/lease.go` - 租期 API
+- `internal/service/sla.go` - SLA 监控服务
+- `pkg/redis/client.go` - Redis SLA 方法扩展
 
 ---
 
@@ -143,17 +151,28 @@
 - [x] 基础登录/登出
 - [x] 工单列表/详情
 - [x] 组织架构展示
+- [x] **资产监控页面** (Issue #45)
+  - `/assets` 路由及侧边栏入口
+  - StatusFilter: 快速状态筛选标签
+  - RepairingDeviceList: 报修设备列表
+- [x] **动态白标主题** (Issue #50)
+  - ThemeContext 全局上下文
+  - CSS 变量 `--primary-color` 动态切换
+  - useAuthStore 集成 brand_config
+- [x] **移动端报修页** (Issue #50)
+  - MobileRepairPage: 扫码-查询-报修完整流程
+  - Scanner: 手动输入/模拟扫码
+  - DeviceInfoCard: 设备信息展示
 
 #### 🚧 进行中
-- [ ] 白标换肤适配 - **仅硬编码 Logo**
-- [ ] 从 IAM 动态加载品牌配置 - 未实现
+- [ ] 前端白标换肤适配 - **动态主题已实现，Logo 动态加载待完成**
 - [ ] 移动端响应式 - 部分支持
 - [ ] 离线操作缓存 - 未实现
 
 #### 技术关键点
-- `frontend/src/components/Logo.tsx` - Logo 组件
-- `frontend/src/pages/admin/TenantForm.tsx` - 租户配置表单
-- `frontend/tailwind.config.js` - 主题配置
+- `frontend/src/context/ThemeContext.tsx` - 动态主题上下文
+- `frontend/src/styles/theme.css` - CSS 变量定义
+- `frontend-mobile/src/pages/MobileRepairPage.tsx` - 移动端报修
 
 ---
 
@@ -230,6 +249,7 @@
 
 | Issue | 标题 | 状态 | Commit |
 |-------|------|------|--------|
+| #50 | 前端动态白标适配与 SLA 监控逻辑 | ✅ | `64a07f69` |
 | #49 | 完善 IAM 集成 - SaaS 身份隔离 | ✅ | `abb6c765` |
 | #48 | 租满 12 个月送乐器 - 所有权累计 | ✅ | `abb6c765` |
 | #47 | frontend-mobile 扫码报修功能 | ✅ | `abb6c765` |
