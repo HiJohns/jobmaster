@@ -59,6 +59,7 @@ const (
 	tokenVersionPrefix    = "token:version:"
 	orgTreeCachePrefix    = "org:tree:"
 	sessionRefreshPrefix  = "session:refresh:"
+	slaMonitorPrefix      = "sla:"
 	cacheTTL              = 10 * time.Minute
 )
 
@@ -145,4 +146,32 @@ func (c *Client) ClearUserRefreshFlag(userSub string) error {
 	ctx := context.Background()
 	key := sessionRefreshPrefix + userSub
 	return c.client.Del(ctx, key).Err()
+}
+
+// SetSLAMonitor sets SLA monitoring key with TTL
+func (c *Client) SetSLAMonitor(tenantID, orderID uuid.UUID, data string, ttl time.Duration) error {
+	ctx := context.Background()
+	key := fmt.Sprintf("%s%s:%s", slaMonitorPrefix, tenantID.String(), orderID.String())
+	return c.client.Set(ctx, key, data, ttl).Err()
+}
+
+// GetSLAMonitor retrieves SLA monitoring data
+func (c *Client) GetSLAMonitor(tenantID, orderID uuid.UUID) (string, error) {
+	ctx := context.Background()
+	key := fmt.Sprintf("%s%s:%s", slaMonitorPrefix, tenantID.String(), orderID.String())
+	return c.client.Get(ctx, key).Result()
+}
+
+// DeleteSLAMonitor removes SLA monitoring key
+func (c *Client) DeleteSLAMonitor(tenantID, orderID uuid.UUID) error {
+	ctx := context.Background()
+	key := fmt.Sprintf("%s%s:%s", slaMonitorPrefix, tenantID.String(), orderID.String())
+	return c.client.Del(ctx, key).Err()
+}
+
+// GetSLATTL gets remaining TTL for SLA monitor key
+func (c *Client) GetSLATTL(tenantID, orderID uuid.UUID) (time.Duration, error) {
+	ctx := context.Background()
+	key := fmt.Sprintf("%s%s:%s", slaMonitorPrefix, tenantID.String(), orderID.String())
+	return c.client.TTL(ctx, key).Result()
 }

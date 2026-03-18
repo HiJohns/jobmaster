@@ -1,6 +1,13 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
+// Brand config interface
+export interface BrandConfig {
+  logo_url: string
+  primary_color: string
+  brand_name: string
+}
+
 // User info interface
 export interface UserInfo {
   userId: string
@@ -16,6 +23,7 @@ interface AuthState {
   // State
   token: string | null
   userInfo: UserInfo | null
+  brandConfig: BrandConfig | null
   isImpersonated: boolean
   isAuthenticated: boolean
   adminToken: string | null
@@ -24,8 +32,9 @@ interface AuthState {
   // Actions
   setToken: (token: string) => void
   setUserInfo: (userInfo: UserInfo) => void
+  setBrandConfig: (config: BrandConfig) => void
   setImpersonated: (isImpersonated: boolean) => void
-  login: (token: string, userInfo: UserInfo, isImpersonated?: boolean) => void
+  login: (token: string, userInfo: UserInfo, brandConfig?: BrandConfig, isImpersonated?: boolean) => void
   logout: () => void
   updateUserInfo: (partialInfo: Partial<UserInfo>) => void
   impersonate: (token: string, userInfo: UserInfo) => void
@@ -39,6 +48,7 @@ export const useAuthStore = create<AuthState>()(
       // Initial state
       token: null,
       userInfo: null,
+      brandConfig: null,
       isImpersonated: false,
       isAuthenticated: false,
       adminToken: null,
@@ -54,6 +64,12 @@ export const useAuthStore = create<AuthState>()(
         set({ userInfo })
       },
       
+      // Set brand config
+      setBrandConfig: (brandConfig) => {
+        set({ brandConfig })
+        localStorage.setItem('brand_config', JSON.stringify(brandConfig))
+      },
+      
       // Set impersonated status
       setImpersonated: (isImpersonated) => {
         set({ isImpersonated })
@@ -61,7 +77,7 @@ export const useAuthStore = create<AuthState>()(
       
       // Login - set both token and user info
       // isImpersonated indicates if the user is viewing data as another role (e.g., admin viewing as store)
-      login: (token, userInfo, isImpersonated = false) => {
+      login: (token, userInfo, brandConfig, isImpersonated = false) => {
         // If not impersonating, save user info for potential admin recovery
         if (!isImpersonated) {
           localStorage.setItem('admin_user_info', JSON.stringify(userInfo))
@@ -69,6 +85,7 @@ export const useAuthStore = create<AuthState>()(
         set({
           token,
           userInfo,
+          brandConfig,
           isAuthenticated: true,
           isImpersonated,
         })
@@ -79,6 +96,7 @@ export const useAuthStore = create<AuthState>()(
         set({
           token: null,
           userInfo: null,
+          brandConfig: null,
           isAuthenticated: false,
           isImpersonated: false,
           adminToken: null,
@@ -88,6 +106,7 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem('auth-storage')
         localStorage.removeItem('admin_token')
         localStorage.removeItem('admin_user_info')
+        localStorage.removeItem('brand_config')
       },
       
       // Update partial user info
@@ -150,6 +169,7 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         token: state.token,
         userInfo: state.userInfo,
+        brandConfig: state.brandConfig,
         isImpersonated: state.isImpersonated,
         isAuthenticated: state.isAuthenticated,
       }),
