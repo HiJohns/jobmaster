@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"regexp"
 	"strconv"
 	"time"
 
@@ -32,12 +31,15 @@ func NewTenantHandler(repo repository.TenantRepository, db *gorm.DB, redisClient
 
 // CreateTenantRequest represents the request payload for creating a tenant
 type CreateTenantRequest struct {
-	Name            string                 `json:"name" binding:"required"`
-	Code            string                 `json:"code"`
-	ContactPerson   string                 `json:"contact_person"`
-	Status          int8                   `json:"status"`
-	Config          map[string]interface{} `json:"config"`
-	InitialPassword string                 `json:"initial_password" binding:"required,min=8"`
+	Name          string                 `json:"name" binding:"required"`
+	Code          string                 `json:"code"`
+	ContactPerson string                 `json:"contact_person"`
+	Status        int8                   `json:"status"`
+	Config        map[string]interface{} `json:"config"`
+	// Owner info (replaces initial password)
+	OwnerName  string `json:"owner_name" binding:"required"`
+	OwnerEmail string `json:"owner_email"`
+	OwnerPhone string `json:"owner_phone" binding:"required"`
 }
 
 // UpdateTenantRequest represents the request payload for updating a tenant
@@ -73,16 +75,9 @@ func (h *TenantHandler) Create(c *gin.Context) {
 		return
 	}
 
-	// 密码复杂度校验
-	if len(req.InitialPassword) < 8 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "密码至少8位"})
-		return
-	}
-
-	hasLetter := regexp.MustCompile(`[A-Za-z]`).MatchString(req.InitialPassword)
-	hasDigit := regexp.MustCompile(`\d`).MatchString(req.InitialPassword)
-	if !hasLetter || !hasDigit {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "密码需包含字母和数字"})
+	// 负责人信息至少需要一个联系方式
+	if req.OwnerEmail == "" && req.OwnerPhone == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "owner_email 或 owner_phone 至少填写一项"})
 		return
 	}
 
@@ -149,30 +144,35 @@ func (h *TenantHandler) Create(c *gin.Context) {
 		return
 	}
 
-	// 创建管理员用户
-	adminUser := &model.User{
+	// 创建租户负责人（Owner）用户
+	// 生成随机初始密码
+	initialPassword := utils.GenerateRandomPassword(12)
+
+	ownerUser := &model.User{
 		TenantID:           tenant.UUID,
 		OrganizationID:     org.ID,
-		Username:           "admin",
-		Email:              "admin@" + slug + ".com",
+		Username:           req.OwnerName, // 使用姓名作为用户名
+		Email:              req.OwnerEmail,
+		Phone:              req.OwnerPhone,
 		MustChangePassword: true,
-		Role:               model.UserRoleAdmin,
+		Role:               model.UserRoleOwner,
+		IsOrgOwner:         true,
 		Status:             model.UserStatusActive,
-		DisplayName:        "租户管理员",
+		DisplayName:        req.OwnerName,
 	}
 
 	// 生成密码哈希
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.InitialPassword), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(initialPassword), bcrypt.DefaultCost)
 	if err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to hash password: %v", err)})
 		return
 	}
-	adminUser.PasswordHash = string(hashedPassword)
+	ownerUser.PasswordHash = string(hashedPassword)
 
-	if err := tx.Create(adminUser).Error; err != nil {
+	if err := tx.Create(ownerUser).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to create admin user: %v", err)})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to create owner user: %v", err)})
 		return
 	}
 

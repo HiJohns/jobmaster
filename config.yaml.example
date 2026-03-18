@@ -29,3 +29,11 @@ redis:
   port: 6379
   password: ""
   db: 0
+
+# IAM 配置
+iam:
+  base_url: "https://iam.beacon.cn"          # Beacon-IAM 服务地址
+  client_id: "jobmaster"                      # JobMaster 在 IAM 注册的身份
+  client_secret: ""                           # 密钥（生产环境通过环境变量注入）
+  public_key: ""                              # 用于本地离线校验 JWT 签名的公钥（RS256）
+  callback_url: "/api/v1/auth/callback"       # OIDC 回调路径
