@@ -37,6 +37,8 @@ func (c *Client) Close() error {
 const (
 	tenantBlacklistPrefix = "blacklist:tenant:"
 	tokenVersionPrefix    = "token:version:"
+	orgTreeCachePrefix    = "org:tree:"
+	cacheTTL              = 10 * time.Minute
 )
 
 func (c *Client) AddTenantToBlacklist(tenantUUID uuid.UUID, duration time.Duration) error {
@@ -75,4 +77,25 @@ func (c *Client) GetTokenVersion(tenantUUID uuid.UUID) (int64, error) {
 		return 0, nil
 	}
 	return result, err
+}
+
+// GetOrgTreeCache retrieves organization tree from cache
+func (c *Client) GetOrgTreeCache(tenantID uuid.UUID) (string, error) {
+	ctx := context.Background()
+	key := orgTreeCachePrefix + tenantID.String()
+	return c.client.Get(ctx, key).Result()
+}
+
+// SetOrgTreeCache stores organization tree in cache
+func (c *Client) SetOrgTreeCache(tenantID uuid.UUID, data string, ttl time.Duration) error {
+	ctx := context.Background()
+	key := orgTreeCachePrefix + tenantID.String()
+	return c.client.Set(ctx, key, data, ttl).Err()
+}
+
+// InvalidateOrgTreeCache removes organization tree from cache
+func (c *Client) InvalidateOrgTreeCache(tenantID uuid.UUID) error {
+	ctx := context.Background()
+	key := orgTreeCachePrefix + tenantID.String()
+	return c.client.Del(ctx, key).Err()
 }
