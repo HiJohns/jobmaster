@@ -12,7 +12,7 @@
 | 身份底座 (Auth & ID) | 🚧 进行中 | 70% |
 | 组织架构 (Org) | 🚧 进行中 | 60% |
 | 工单引擎 (Engine) | ✅ 已完成 | 95% |
-| 资产网点 (Asset) | 🚧 进行中 | 10% |
+| 资产网点 (Asset) | 🚧 进行中 | 40% |
 | 运营管理 (Ops) | 🚧 部分完成 | 30% |
 | 前端 UI (Frontend) | 🚧 进行中 | 50% |
 
@@ -84,19 +84,21 @@
 - [x] 位置模型 - `Location` 模型已创建
 - [x] 设备状态枚举 - `DeviceStatus` (ACTIVE, INACTIVE, BROKEN, REPAIRING)
 - [x] GPS 坐标支持 - `GPSLocation` JSONB
+- [x] **设备 CRUD API** - 完整实现 (Create, List, Get, Update, Delete)
+  - 支持按 `org_id` 和 `location_id` 过滤
+  - SN 字段带唯一索引 (维修业务关键)
+- [x] **位置 CRUD API** - 完整实现 (Create, List, Get, Update, Delete)
+  - 支持 GPSLocation 存储
+  - 支持层级结构 (parent_id)
 
 #### 🚧 进行中
-- [ ] 设备 CRUD API - 模型已创建，API 未实现
-- [ ] 位置 CRUD API - 模型已创建，API 未实现
 - [ ] MDM 关联 - 未实现
-
-#### ❌ 待开发
-- [ ] 扫码报修接口
-- [ ] 设备与网点关联
+- [ ] 扫码报修接口 - 未实现
 
 #### 技术关键点
 - `internal/model/asset.go` - Device, Location 模型
-- 迁移文件: `migrations/014_add_org_shadow_fields.sql`
+- `internal/api/device.go` - 设备 CRUD API
+- `internal/api/location.go` - 位置 CRUD API
 
 ---
 

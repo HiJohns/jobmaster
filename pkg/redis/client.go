@@ -3,10 +3,16 @@ package redis
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
+)
+
+var (
+	DefaultClient *Client
+	mu            sync.RWMutex
 )
 
 type Client struct {
@@ -30,6 +36,20 @@ func NewClient(host, password string, db int) (*Client, error) {
 	return &Client{client: client}, nil
 }
 
+// SetDefaultClient sets the global default redis client
+func SetDefaultClient(client *Client) {
+	mu.Lock()
+	defer mu.Unlock()
+	DefaultClient = client
+}
+
+// GetDefaultClient gets the global default redis client
+func GetDefaultClient() *Client {
+	mu.RLock()
+	defer mu.RUnlock()
+	return DefaultClient
+}
+
 func (c *Client) Close() error {
 	return c.client.Close()
 }
@@ -38,6 +58,7 @@ const (
 	tenantBlacklistPrefix = "blacklist:tenant:"
 	tokenVersionPrefix    = "token:version:"
 	orgTreeCachePrefix    = "org:tree:"
+	sessionRefreshPrefix  = "session:refresh:"
 	cacheTTL              = 10 * time.Minute
 )
 
@@ -97,5 +118,31 @@ func (c *Client) SetOrgTreeCache(tenantID uuid.UUID, data string, ttl time.Durat
 func (c *Client) InvalidateOrgTreeCache(tenantID uuid.UUID) error {
 	ctx := context.Background()
 	key := orgTreeCachePrefix + tenantID.String()
+	return c.client.Del(ctx, key).Err()
+}
+
+// SetUserRefreshFlag marks a user for session refresh via Redis
+func (c *Client) SetUserRefreshFlag(userSub string) error {
+	ctx := context.Background()
+	key := sessionRefreshPrefix + userSub
+	// Set flag with 1 hour TTL
+	return c.client.Set(ctx, key, "1", 1*time.Hour).Err()
+}
+
+// GetUserRefreshFlag checks if a user needs session refresh
+func (c *Client) GetUserRefreshFlag(userSub string) (bool, error) {
+	ctx := context.Background()
+	key := sessionRefreshPrefix + userSub
+	result, err := c.client.Exists(ctx, key).Result()
+	if err != nil {
+		return false, err
+	}
+	return result > 0, nil
+}
+
+// ClearUserRefreshFlag removes the session refresh flag
+func (c *Client) ClearUserRefreshFlag(userSub string) error {
+	ctx := context.Background()
+	key := sessionRefreshPrefix + userSub
 	return c.client.Del(ctx, key).Err()
 }

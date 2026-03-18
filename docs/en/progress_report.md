@@ -12,7 +12,7 @@
 | Auth & ID | 🚧 In Progress | 70% |
 | Organization | 🚧 In Progress | 60% |
 | WorkOrder Engine | ✅ Complete | 95% |
-| Asset Management | 🚧 In Progress | 10% |
+| Asset Management | 🚧 In Progress | 40% |
 | Operations | 🚧 Partial | 30% |
 | Frontend UI | 🚧 In Progress | 50% |
 
@@ -84,19 +84,21 @@
 - [x] Location Model - `Location` model created
 - [x] Device Status Enum - `DeviceStatus` (ACTIVE, INACTIVE, BROKEN, REPAIRING)
 - [x] GPS Coordinates Support - `GPSLocation` JSONB
+- [x] **Device CRUD API** - Fully implemented (Create, List, Get, Update, Delete)
+  - Supports filtering by `org_id` and `location_id`
+  - SN field has uniqueIndex constraint (critical for repair business)
+- [x] **Location CRUD API** - Fully implemented (Create, List, Get, Update, Delete)
+  - Supports GPSLocation storage
+  - Supports hierarchical structure (parent_id)
 
 #### 🚧 In Progress
-- [ ] Device CRUD API - Model created, API not implemented
-- [ ] Location CRUD API - Model created, API not implemented
 - [ ] MDM Association - Not implemented
-
-#### ❌ To Do
-- [ ] QR Code Repair Interface
-- [ ] Device-Location Association
+- [ ] QR Code Repair Interface - Not implemented
 
 #### Key Technical Points
 - `internal/model/asset.go` - Device, Location models
-- Migration: `migrations/014_add_org_shadow_fields.sql`
+- `internal/api/device.go` - Device CRUD API
+- `internal/api/location.go` - Location CRUD API
 
 ---
 

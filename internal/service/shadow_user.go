@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"jobmaster/internal/model"
+	"jobmaster/pkg/redis"
 	"jobmaster/pkg/utils"
 )
 
@@ -32,17 +33,28 @@ func (s *ShadowUserService) SyncShadowUser(claims *utils.IAMClaims) (*model.User
 	}
 
 	var user model.User
+	var infoChanged bool
 
 	// 1. Try to find existing shadow user by iam_sub
 	result := s.db.Where("iam_sub = ?", claims.Sub).First(&user)
 
 	if result.Error == nil {
-		// User exists, update its information
+		// User exists, check if information changed
+		currentRole := mapIAMRoleToJobMaster(claims.Role)
+
+		if user.Email != claims.Email ||
+			user.Phone != claims.Phone ||
+			user.DisplayName != claims.Name ||
+			user.Role != currentRole ||
+			user.IsOrgOwner != claims.IsOwner {
+			infoChanged = true
+		}
+
 		updates := map[string]interface{}{
 			"email":        claims.Email,
 			"phone":        claims.Phone,
 			"display_name": claims.Name,
-			"role":         mapIAMRoleToJobMaster(claims.Role),
+			"role":         currentRole,
 			"is_org_owner": claims.IsOwner,
 		}
 
@@ -54,6 +66,22 @@ func (s *ShadowUserService) SyncShadowUser(claims *utils.IAMClaims) (*model.User
 
 		if err := s.db.Model(&user).Updates(updates).Error; err != nil {
 			return nil, false, fmt.Errorf("failed to update shadow user: %w", err)
+		}
+
+		// Log if info changed and mark for session refresh
+		if infoChanged {
+			fmt.Printf("[ShadowUserSync] IAM info changed for sub=%s: email=%s->%s, role=%s->%s, name=%s->%s\n",
+				claims.Sub, user.Email, claims.Email, user.Role, currentRole, user.DisplayName, claims.Name)
+
+			// Mark user for session refresh via Redis
+			if redisClient := redis.GetDefaultClient(); redisClient != nil {
+				// Set a flag that this user needs session refresh
+				// Key format: session:refresh:{sub}
+				err := redisClient.SetUserRefreshFlag(claims.Sub)
+				if err != nil {
+					fmt.Printf("[ShadowUserSync] Failed to set refresh flag for sub=%s: %v\n", claims.Sub, err)
+				}
+			}
 		}
 
 		return &user, false, nil
@@ -90,6 +118,8 @@ func (s *ShadowUserService) SyncShadowUser(claims *utils.IAMClaims) (*model.User
 	if err := s.db.Create(&user).Error; err != nil {
 		return nil, false, fmt.Errorf("failed to create shadow user: %w", err)
 	}
+
+	fmt.Printf("[ShadowUserSync] Created new shadow user for sub=%s, email=%s\n", claims.Sub, claims.Email)
 
 	return &user, true, nil
 }
