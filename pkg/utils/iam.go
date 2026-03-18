@@ -22,6 +22,12 @@ type IAMClaims struct {
 	Avatar  string `json:"avatar"`   // 头像 URL
 	Email   string `json:"email"`
 	Phone   string `json:"phone"`
+	// 新增：品牌配置
+	BrandConfig struct {
+		LogoURL      string `json:"logo_url"`
+		PrimaryColor string `json:"primary_color"`
+		BrandName    string `json:"brand_name"`
+	} `json:"brand_config"`
 	jwt.RegisteredClaims
 }
 

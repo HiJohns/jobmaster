@@ -359,3 +359,73 @@ func GetRole(c *gin.Context) (string, bool) {
 	role, ok := val.(string)
 	return role, ok
 }
+
+// BrandConfig represents brand configuration from IAM
+type BrandConfig struct {
+	LogoURL      string `json:"logo_url"`
+	PrimaryColor string `json:"primary_color"`
+	BrandName    string `json:"brand_name"`
+}
+
+// SessionResponse represents the session response
+type SessionResponse struct {
+	User         UserResponse       `json:"user"`
+	BrandConfig  BrandConfig        `json:"brand_config"`
+	Organization *OrganizationBrief `json:"organization,omitempty"`
+}
+
+// GetSession returns current session information including brand config
+func GetSession(c *gin.Context) {
+	// Get user from context
+	userID, exists := GetUserID(c)
+	if !exists {
+		response.Unauthorized(c, "user not authenticated")
+		return
+	}
+
+	db, err := database.GetDB()
+	if err != nil {
+		response.InternalServerError(c, "database connection failed")
+		return
+	}
+
+	// Get user details
+	var user model.User
+	if err := db.First(&user, "id = ?", userID).Error; err != nil {
+		response.NotFound(c, "user not found")
+		return
+	}
+
+	// Get organization details
+	var org *model.Organization
+	if user.OrganizationID != uuid.Nil {
+		org = &model.Organization{}
+		if err := db.First(org, "id = ?", user.OrganizationID).Error; err != nil {
+			// Don't fail if org not found
+			org = nil
+		}
+	}
+
+	// Extract brand config from current token
+	brandConfig := BrandConfig{}
+	if token := c.GetString("access_token"); token != "" {
+		// TODO: Parse token to extract brand_config if available
+		// For now, return empty
+	}
+
+	response.Success(c, SessionResponse{
+		User: UserResponse{
+			ID:             user.ID,
+			Username:       user.Username,
+			Email:          user.Email,
+			Phone:          user.Phone,
+			Role:           user.Role,
+			Status:         string(user.Status),
+			OrganizationID: user.OrganizationID,
+			DisplayName:    user.DisplayName,
+			CreatedAt:      user.CreatedAt,
+		},
+		BrandConfig:  brandConfig,
+		Organization: nil, // TODO: Map organization if available
+	})
+}

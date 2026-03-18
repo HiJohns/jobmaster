@@ -9,21 +9,25 @@ import (
 
 // Organization represents a business entity (HQ or Store)
 type Organization struct {
-	ID           uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
-	TenantID     uuid.UUID      `gorm:"type:uuid;not null;index:idx_org_tenant" json:"tenant_id"`
-	Name         string         `gorm:"size:255;not null" json:"name"`
-	Type         OrgType        `gorm:"type:varchar(20);not null" json:"type"`
-	Code         string         `gorm:"size:50;uniqueIndex:idx_org_code_tenant" json:"code"`
-	ParentID     *uuid.UUID     `gorm:"type:uuid;index" json:"parent_id,omitempty"`
-	Level        int            `gorm:"default:0" json:"level"`
-	Address      string         `gorm:"size:500" json:"address"`
-	ContactName  string         `gorm:"size:100" json:"contact_name"`
-	ContactPhone string         `gorm:"size:20" json:"contact_phone"`
-	Parent       *Organization  `gorm:"foreignKey:ParentID" json:"parent,omitempty"`
-	Children     []Organization `gorm:"foreignKey:ParentID" json:"children,omitempty"`
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"updated_at"`
-	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
+	ID              uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
+	TenantID        uuid.UUID      `gorm:"type:uuid;not null;index:idx_org_tenant" json:"tenant_id"`
+	Name            string         `gorm:"size:255;not null" json:"name"`
+	Type            OrgType        `gorm:"type:varchar(20);not null" json:"type"`
+	Code            string         `gorm:"size:50;uniqueIndex:idx_org_code_tenant" json:"code"`
+	ParentID        *uuid.UUID     `gorm:"type:uuid;index" json:"parent_id,omitempty"`
+	Level           int            `gorm:"default:0" json:"level"`
+	Address         string         `gorm:"size:500" json:"address"`
+	ContactName     string         `gorm:"size:100" json:"contact_name"`
+	ContactPhone    string         `gorm:"size:20" json:"contact_phone"`
+	IAMOrgID        *string        `gorm:"size:100" json:"iam_org_id,omitempty"` // IAM 组织 ID
+	IsShadow        bool           `gorm:"default:false" json:"is_shadow"`       // 是否为影子组织
+	MaxDispatchHops int            `gorm:"default:3" json:"max_dispatch_hops"`   // 最大流转跳数
+	Path            string         `gorm:"size:500" json:"path,omitempty"`       // 组织路径
+	Parent          *Organization  `gorm:"foreignKey:ParentID" json:"parent,omitempty"`
+	Children        []Organization `gorm:"foreignKey:ParentID" json:"children,omitempty"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 // OrgType defines the organization type

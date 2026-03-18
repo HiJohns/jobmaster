@@ -124,6 +124,44 @@ func (s *ShadowUserService) SyncShadowUser(claims *utils.IAMClaims) (*model.User
 	return &user, true, nil
 }
 
+// EnsureShadowOrg ensures shadow organization exists based on IAM org ID
+func (s *ShadowUserService) EnsureShadowOrg(iamOrgID string) (*model.Organization, error) {
+	if iamOrgID == "" {
+		return nil, fmt.Errorf("IAM org ID is empty")
+	}
+
+	// 1. Try to find existing organization by IAM org ID
+	var org model.Organization
+	result := s.db.Where("iam_org_id = ?", iamOrgID).First(&org)
+
+	if result.Error == nil {
+		// Organization already exists
+		return &org, nil
+	}
+
+	if result.Error != gorm.ErrRecordNotFound {
+		return nil, fmt.Errorf("failed to query organization: %w", result.Error)
+	}
+
+	// 2. Create new shadow organization
+	org = model.Organization{
+		IAMOrgID: &iamOrgID,
+		IsShadow: true,
+		Name:     fmt.Sprintf("Shadow Org %s", iamOrgID),
+		Type:     model.OrgTypeStore, // Default type for shadow org
+		Code:     generateOrgCodeFromIAMID(iamOrgID),
+		Level:    0, // Root level by default
+	}
+
+	if err := s.db.Create(&org).Error; err != nil {
+		return nil, fmt.Errorf("failed to create shadow organization: %w", err)
+	}
+
+	fmt.Printf("[ShadowOrgSync] Created new shadow organization for iam_org_id=%s\n", iamOrgID)
+
+	return &org, nil
+}
+
 // GetUserFromCacheOrDB retrieves user from Redis cache or local database
 func (s *ShadowUserService) GetUserFromCacheOrDB(sub string) (*model.User, error) {
 	if sub == "" {
@@ -181,6 +219,14 @@ func generateUsernameFromSub(sub string) string {
 		return sub[:50]
 	}
 	return sub
+}
+
+// generateOrgCodeFromIAMID generates organization code from IAM org ID
+func generateOrgCodeFromIAMID(iamOrgID string) string {
+	if len(iamOrgID) > 50 {
+		return iamOrgID[:50]
+	}
+	return iamOrgID
 }
 
 // UserInfo structure for caching

@@ -1,8 +1,8 @@
 # JobMaster 2.0 系统进度审计报告
 
 > 生成日期: 2026-03-18
-> 版本: v2.0.2-asset-monitor
-> 最后更新: 2026-03-18 13:30
+> 版本: v2.0.3-iam-leases
+> 最后更新: 2026-03-18 14:40
 
 ---
 
@@ -10,11 +10,11 @@
 
 | 维度 | 状态 | 完成度 |
 |------|------|--------|
-| 身份底座 (Auth & ID) | 🚧 进行中 | 70% |
-| 组织架构 (Org) | ✅ 已完成 | 85% |
+| 身份底座 (Auth & ID) | ✅ 已完成 | 90% |
+| 组织架构 (Org) | ✅ 已完成 | 95% |
 | 工单引擎 (Engine) | ✅ 已完成 | 95% |
-| 资产网点 (Asset) | 🚧 进行中 | 65% |
-| 运营管理 (Ops) | 🚧 部分完成 | 30% |
+| 资产网点 (Asset) | 🚧 进行中 | 75% |
+| 运营管理 (Ops) | 🚧 部分完成 | 40% |
 | 前端 UI (Frontend) | 🚧 进行中 | 60% |
 
 ---
@@ -29,19 +29,21 @@
 - [x] IAM 角色映射表 - 已实现 `mapIAMRoleToJobMaster`
 - [x] OIDC Callback 接口 - `/api/v1/auth/callback` 已注册
 - [x] Redis 缓存方法 - `pkg/redis/client.go` 已实现缓存方法
+- [x] **IAM 品牌配置集成** (Issue #49)
+  - IAMClaims 扩展 BrandConfig (logo_url, primary_color, brand_name)
+  - Session API 返回 brand_config
+- [x] **影子组织自动创建** (Issue #49)
+  - EnsureShadowOrg 函数实现
+  - is_shadow 组织字段支持
 
 #### 🚧 进行中
-- [ ] Redis 缓存集成到 API - 尚未在业务中调用
-- [ ] 影子用户同步完整逻辑 - 基础同步完成，需完善错误处理
-
-#### ❌ 待开发
 - [ ] 登录页面重定向至 IAM - 需要前端配合
 
 #### 技术关键点
-- `pkg/utils/iam.go` - RS256 JWT 解析
-- `internal/service/shadow_user.go` - 影子用户服务
-- `internal/api/auth.go` - OIDC Callback
-- `pkg/redis/client.go` - 缓存方法 (GetOrgTreeCache, SetOrgTreeCache)
+- `pkg/utils/iam.go` - RS256 JWT 解析 + BrandConfig
+- `internal/service/shadow_user.go` - 影子用户服务 + EnsureShadowOrg
+- `internal/api/auth.go` - OIDC Callback + Session API
+- `pkg/redis/client.go` - 缓存方法
 
 ---
 
@@ -89,6 +91,7 @@
   - 支持按 `org_id` 和 `location_id` 过滤
   - SN 字段带唯一索引 (维修业务关键)
   - **新增**: 状态过滤 `?status=REPAIRING`
+  - **新增**: 按 SN 码查询 `GET /api/v1/devices/sn/:sn`
 - [x] **位置 CRUD API** - 完整实现 (Create, List, Get, Update, Delete)
   - 支持 GPSLocation 存储
   - 支持层级结构 (parent_id)
@@ -102,11 +105,11 @@
 
 #### 🚧 进行中
 - [ ] MDM 关联 - 未实现
-- [ ] 扫码报修接口 - 未实现
+- [ ] 扫码报修接口 - 后端已完成 (`GetDeviceBySN`)
 
 #### 技术关键点
 - `internal/model/asset.go` - Device, Location 模型
-- `internal/api/device.go` - 设备 CRUD API
+- `internal/api/device.go` - 设备 CRUD API + GetDeviceBySN
 - `internal/api/location.go` - 位置 CRUD API
 - `frontend/src/pages/AssetMonitor.tsx` - 资产监控页面
 
@@ -118,13 +121,19 @@
 - [x] 工单日志审计 - `WorkOrderLogs` JSONB
 - [x] 租户审计日志 - `tenant_audit_logs` 表
 - [x] 多媒体存证 - `photo_urls` JSONB 数组
+- [x] **租期累计系统** (Issue #48)
+  - `user_asset_progress` 表迁移
+  - 租期进度查询 API (`GET /api/v1/leases/progress`)
+  - 租期更新 API (`POST /api/v1/leases/progress/update`)
+  - 阈值监听: paid_months >= 12 自动触发
 
 #### 🚧 部分完成
 - [ ] SLA 时效监控 - **租户配置已存在**，但无定时任务检查
 
 #### 技术关键点
 - `migrations/003_create_tenants.sql` 包含 `config JSONB DEFAULT '{}'::jsonb`
-- 可在 config 中配置 SLA 阈值
+- `migrations/017_user_asset_progress.sql` - 租期进度表
+- `internal/api/lease.go` - 租期 API
 
 ---
 
@@ -192,17 +201,18 @@
 3. [x] ~~Asset 模块原型~~ ✅ 已完成
 4. [x] ~~Redis 缓存集成到 API~~ ✅ 已完成 (Issue #46)
 5. [x] ~~资产监控页面~~ ✅ 已完成 (Issue #45)
-6. [ ] IAM 组织树集成 (动态查询)
+6. [x] ~~IAM 组织集成~~ ✅ 已完成 (Issue #49)
+7. [ ] 前端白标换肤 (IAM brand_config 动态加载)
 
 ### 中优先级 (P1)
-7. [ ] SLA 定时监控任务
-8. [ ] 扫码报修接口
-9. [ ] IAM 用户同步完整闭环
+8. [ ] SLA 定时监控任务
+9. [ ] 扫码报修接口 (后端已完成，前端待开发)
+10. [ ] IAM 用户同步完整闭环
 
 ### 低优先级 (P2)
-10. [ ] 前端白标换肤 (IAM 动态加载)
 11. [ ] 移动端离线缓存
 12. [ ] MDM 设备关联
+13. [ ] 前端移动端报修页面
 
 ---
 
@@ -212,6 +222,7 @@
 - `migrations/013_add_iam_user_fields.sql` - iam_sub, is_shadow 字段
 - `migrations/014_add_org_shadow_fields.sql` - iam_org_id, is_shadow, max_dispatch_hops, path 字段
 - `migrations/016_add_workorder_device.sql` - 工单设备关联
+- `migrations/017_user_asset_progress.sql` - 租期进度表
 
 ---
 
@@ -219,6 +230,9 @@
 
 | Issue | 标题 | 状态 | Commit |
 |-------|------|------|--------|
+| #49 | 完善 IAM 集成 - SaaS 身份隔离 | ✅ | `abb6c765` |
+| #48 | 租满 12 个月送乐器 - 所有权累计 | ✅ | `abb6c765` |
+| #47 | frontend-mobile 扫码报修功能 | ✅ | `abb6c765` |
 | #46 | 完善组织树 Redis 缓存集成 | ✅ | `0c8ae42b` |
 | #45 | 前端 PC 端资产监控页面增强 | ✅ | `bd962076` |
 
@@ -226,8 +240,8 @@
 
 ## 七、下一步建议
 
-1. **立即执行**: IAM 组织树动态查询
-2. **短期目标**: 实现扫码报修接口
+1. **立即执行**: 前端白标换肤 (IAM brand_config 动态加载)
+2. **短期目标**: 实现前端移动端报修页面
 3. **中期目标**: 完成 SLA 定时监控
 4. **长期目标**: 完善离线功能和 MDM 集成
 
