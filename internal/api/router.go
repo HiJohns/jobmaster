@@ -96,11 +96,13 @@ func SetupRouter() *gin.Engine {
 			protected.POST("/workorders/:id/reserve", ReserveWorkOrder)
 			protected.POST("/workorders/:id/arrive", ArriveWorkOrder)
 			protected.POST("/workorders/:id/finish", FinishWorkOrder)
+			protected.POST("/workorders/:id/validate-location", ValidateWorkOrderLocation)
 
 			// Device routes (require authentication)
 			protected.GET("/devices", ListDevices)
 			protected.POST("/devices", CreateDevice)
 			protected.GET("/devices/:id", GetDevice)
+			protected.GET("/devices/:id/qrcode", GenerateQRCode)
 			protected.GET("/devices/sn/:sn", GetDeviceBySN)
 			protected.PUT("/devices/:id", UpdateDevice)
 			protected.DELETE("/devices/:id", DeleteDevice)
