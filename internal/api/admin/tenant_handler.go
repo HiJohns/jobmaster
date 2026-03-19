@@ -36,10 +36,12 @@ type CreateTenantRequest struct {
 	ContactPerson string                 `json:"contact_person"`
 	Status        int8                   `json:"status"`
 	Config        map[string]interface{} `json:"config"`
-	// Owner info (replaces initial password)
-	OwnerName  string `json:"owner_name" binding:"required"`
-	OwnerEmail string `json:"owner_email"`
-	OwnerPhone string `json:"owner_phone" binding:"required"`
+	// Admin fields
+	AdminEmail string `json:"admin_email" binding:"required,email"`
+	AdminPhone string `json:"admin_phone" binding:"required"`
+	MaxHops    int    `json:"max_hops"`
+	// Initial password
+	InitialPassword string `json:"initial_password" binding:"required,min=8"`
 }
 
 // UpdateTenantRequest represents the request payload for updating a tenant
@@ -57,15 +59,15 @@ type UpdateTenantStatusRequest struct {
 
 // Create handles POST /api/v1/admin/tenants
 func (h *TenantHandler) Create(c *gin.Context) {
-	// Permission check - only SYSTEM_ADMIN or BRAND_HQ can access
+	// Permission check - only SYS_ADMIN can access
 	roleVal, exists := c.Get("role")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 	role, ok := roleVal.(string)
-	if !ok || (role != string(model.UserRoleAdmin) && role != string(model.UserRoleBrandHQ)) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied"})
+	if !ok || role != string(model.UserRoleSysAdmin) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied: SYS_ADMIN only"})
 		return
 	}
 
@@ -75,9 +77,9 @@ func (h *TenantHandler) Create(c *gin.Context) {
 		return
 	}
 
-	// 负责人信息至少需要一个联系方式
-	if req.OwnerEmail == "" && req.OwnerPhone == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "owner_email 或 owner_phone 至少填写一项"})
+	// Validate admin fields
+	if req.MaxHops < 1 || req.MaxHops > 10 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "max_hops must be between 1 and 10"})
 		return
 	}
 
@@ -126,6 +128,9 @@ func (h *TenantHandler) Create(c *gin.Context) {
 		ContactPerson: req.ContactPerson,
 		Status:        req.Status,
 		Config:        config,
+		AdminEmail:    req.AdminEmail,
+		AdminPhone:    req.AdminPhone,
+		MaxHops:       req.MaxHops,
 	}
 
 	if err := tx.Create(tenant).Error; err != nil {
@@ -134,12 +139,14 @@ func (h *TenantHandler) Create(c *gin.Context) {
 		return
 	}
 
-	// 创建默认组织
+	// 创建影子组织 (Shadow Organization)
 	org := &model.Organization{
-		TenantID: tenant.UUID,
-		Name:     req.Name + "总部",
-		Type:     model.OrgTypeHQ,
-		Code:     slug,
+		TenantID:        tenant.UUID,
+		Name:            "总部",
+		Type:            model.OrgTypeHQ,
+		Code:            slug,
+		IsShadow:        true,
+		MaxDispatchHops: req.MaxHops,
 	}
 
 	if err := tx.Create(org).Error; err != nil {
@@ -148,35 +155,33 @@ func (h *TenantHandler) Create(c *gin.Context) {
 		return
 	}
 
-	// 创建租户负责人（Owner）用户
-	// 生成随机初始密码
-	initialPassword := utils.GenerateRandomPassword(12)
-
-	ownerUser := &model.User{
+	// 创建租户管理员（Shadow Admin）用户
+	adminUser := &model.User{
 		TenantID:           tenant.UUID,
 		OrganizationID:     org.ID,
-		Username:           req.OwnerName, // 使用姓名作为用户名
-		Email:              req.OwnerEmail,
-		Phone:              req.OwnerPhone,
+		Username:           req.AdminEmail,
+		Email:              req.AdminEmail,
+		Phone:              req.AdminPhone,
 		MustChangePassword: true,
-		Role:               model.UserRoleOwner,
+		Role:               model.UserRoleBrandHQ,
 		IsOrgOwner:         true,
 		Status:             model.UserStatusActive,
-		DisplayName:        req.OwnerName,
+		DisplayName:        req.ContactPerson,
+		IsShadow:           true, // 标记为影子用户
 	}
 
 	// 生成密码哈希
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(initialPassword), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.InitialPassword), bcrypt.DefaultCost)
 	if err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to hash password: %v", err)})
 		return
 	}
-	ownerUser.PasswordHash = string(hashedPassword)
+	adminUser.PasswordHash = string(hashedPassword)
 
-	if err := tx.Create(ownerUser).Error; err != nil {
+	if err := tx.Create(adminUser).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to create owner user: %v", err)})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to create admin user: %v", err)})
 		return
 	}
 
@@ -200,7 +205,14 @@ func (h *TenantHandler) Create(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{
 		"code": 201,
-		"data": tenant,
+		"data": gin.H{
+			"tenant": tenant,
+			"admin_account": gin.H{
+				"username":  req.AdminEmail,
+				"password":  req.InitialPassword,
+				"login_url": "/login",
+			},
+		},
 	})
 }
 
@@ -219,15 +231,15 @@ type ListTenantData struct {
 }
 
 func (h *TenantHandler) List(c *gin.Context) {
-	// Permission check - only SYSTEM_ADMIN or BRAND_HQ can access
+	// Permission check - only SYS_ADMIN can access
 	roleVal, exists := c.Get("role")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 	role, ok := roleVal.(string)
-	if !ok || (role != string(model.UserRoleAdmin) && role != string(model.UserRoleBrandHQ)) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied"})
+	if !ok || role != string(model.UserRoleSysAdmin) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied: SYS_ADMIN only"})
 		return
 	}
 
@@ -272,8 +284,8 @@ func (h *TenantHandler) Update(c *gin.Context) {
 		return
 	}
 	role, ok := roleVal.(string)
-	if !ok || (role != string(model.UserRoleAdmin) && role != string(model.UserRoleBrandHQ)) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied"})
+	if !ok || role != string(model.UserRoleSysAdmin) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied: SYS_ADMIN only"})
 		return
 	}
 
@@ -345,8 +357,8 @@ func (h *TenantHandler) UpdateStatus(c *gin.Context) {
 		return
 	}
 	role, ok := roleVal.(string)
-	if !ok || role != string(model.UserRoleAdmin) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied: admin only"})
+	if !ok || role != string(model.UserRoleSysAdmin) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied: SYS_ADMIN only"})
 		return
 	}
 
@@ -430,8 +442,8 @@ func (h *TenantHandler) Impersonate(c *gin.Context) {
 		return
 	}
 	role, ok := roleVal.(string)
-	if !ok || role != string(model.UserRoleAdmin) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied: admin only"})
+	if !ok || role != string(model.UserRoleSysAdmin) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied: SYS_ADMIN only"})
 		return
 	}
 

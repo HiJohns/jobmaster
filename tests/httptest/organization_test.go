@@ -19,7 +19,13 @@ func setupOrgTestHelpers() {
 }
 
 func TestCreateOrganization(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupOrgTestHelpers()
+	if orgAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	tests := []struct {
 		name           string
@@ -59,7 +65,13 @@ func TestCreateOrganization(t *testing.T) {
 }
 
 func TestListOrganizations(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupOrgTestHelpers()
+	if orgAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	tests := []struct {
 		name           string
@@ -87,7 +99,13 @@ func TestListOrganizations(t *testing.T) {
 }
 
 func TestGetOrganization(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupOrgTestHelpers()
+	if orgAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	tests := []struct {
 		name           string
@@ -120,7 +138,13 @@ func TestGetOrganization(t *testing.T) {
 }
 
 func TestGetOrganizationTree(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupOrgTestHelpers()
+	if orgAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	tests := []struct {
 		name           string
@@ -141,7 +165,13 @@ func TestGetOrganizationTree(t *testing.T) {
 }
 
 func TestUpdateOrganization(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupOrgTestHelpers()
+	if orgAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	tests := []struct {
 		name           string
@@ -176,7 +206,13 @@ func TestUpdateOrganization(t *testing.T) {
 }
 
 func TestOrganization_CrossTenantIsolation(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupOrgTestHelpers()
+	if orgAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	t.Run("租户内组织可见", func(t *testing.T) {
 		w := ExecuteRequestWithAuth(t, "GET", "/api/v1/organizations/"+getTestOrgID(), nil, orgAdminToken)

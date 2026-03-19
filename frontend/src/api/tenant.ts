@@ -17,6 +17,10 @@ export interface CreateTenantRequest {
   contact_person?: string
   status?: number
   config?: Record<string, any>
+  admin_email: string
+  admin_phone: string
+  max_hops?: number
+  initial_password?: string
 }
 
 export interface TenantListData {
@@ -35,7 +39,18 @@ export interface TenantListResponse {
 export interface CreateTenantResponse {
   code: number
   message?: string
-  data: Tenant
+  data: {
+    tenant: Tenant & {
+      admin_email: string
+      admin_phone: string
+      max_hops: number
+    }
+    admin_account: {
+      username: string
+      password: string
+      login_url: string
+    }
+  }
 }
 
 export interface UpdateTenantRequest {
@@ -67,14 +82,14 @@ class TenantApi {
   }
 
   async create(data: CreateTenantRequest): Promise<CreateTenantResponse> {
-    return request.post<Tenant>(this.prefix, data)
+    return request.post<CreateTenantResponse['data']>(this.prefix, data)
   }
 
-  async update(id: number, data: UpdateTenantRequest): Promise<CreateTenantResponse> {
+  async update(id: number, data: UpdateTenantRequest): Promise<{ code: number; message?: string; data: Tenant }> {
     return request.patch<Tenant>(`${this.prefix}/${id}`, data)
   }
 
-  async updateStatus(id: number, status: 0 | 1): Promise<CreateTenantResponse> {
+  async updateStatus(id: number, status: 0 | 1): Promise<{ code: number; message?: string; data: Tenant }> {
     return request.put<Tenant>(`${this.prefix}/${id}/status`, { status })
   }
 

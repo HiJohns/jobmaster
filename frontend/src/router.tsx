@@ -9,6 +9,7 @@ import AssetList from './pages/AssetList'
 import AssetDetail from './pages/AssetDetail'
 import AssetMonitor from './pages/AssetMonitor'
 import TenantList from './pages/admin/TenantList'
+import TenantCreateSuccess from './pages/admin/TenantCreateSuccess'
 import AppLayout from './components/Layout'
 import PrivateRoute from './components/PrivateRoute'
 import DynamicThemeLoader from './components/DynamicTheme'
@@ -40,7 +41,8 @@ function AppRouter() {
             <Route path="/service" element={<Home />} />
             <Route path="/cost" element={<Home />} />
             
-            <Route path="/admin/tenants" element={<TenantList />} />
+             <Route path="/admin/tenants" element={<TenantList />} />
+             <Route path="/admin/tenants/success" element={<TenantCreateSuccess />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

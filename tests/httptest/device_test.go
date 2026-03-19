@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"jobmaster/internal/model"
 )
 
 var (
@@ -18,6 +17,9 @@ var (
 )
 
 func setupDeviceTestHelpers() {
+	if !dbAvailable {
+		return
+	}
 	if deviceAdminToken == "" {
 		deviceAdminToken = getAdminToken()
 	}
@@ -26,34 +28,14 @@ func setupDeviceTestHelpers() {
 	}
 }
 
-func createTestDeviceForCrossTenant(t *testing.T, token string, sn string, orgID string) *model.Device {
-	payload := map[string]interface{}{
-		"sn":     sn,
-		"name":   fmt.Sprintf("CrossTenant Device %d", time.Now().UnixNano()),
-		"model":  "Test Model",
-		"brand":  "Test Brand",
-		"org_id": orgID,
-	}
-
-	w := ExecuteRequestWithAuth(t, "POST", "/api/v1/devices", payload, token)
-	if w.Code != http.StatusOK {
-		return nil
-	}
-
-	var resp map[string]interface{}
-	ParseResponse(w, &resp)
-	if data, ok := resp["data"].(map[string]interface{}); ok {
-		return &model.Device{
-			ID:   parseUUID(data["id"]),
-			SN:   data["sn"].(string),
-			Name: data["name"].(string),
-		}
-	}
-	return nil
-}
-
 func TestCreateDevice(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupDeviceTestHelpers()
+	if deviceAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	tests := []struct {
 		name           string
@@ -142,7 +124,13 @@ func TestCreateDevice_DuplicateSN(t *testing.T) {
 }
 
 func TestListDevices(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupDeviceTestHelpers()
+	if deviceAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	tests := []struct {
 		name           string

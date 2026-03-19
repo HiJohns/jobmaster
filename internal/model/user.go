@@ -38,6 +38,10 @@ type User struct {
 type UserRole string
 
 const (
+	// Platform roles
+	UserRoleSysAdmin UserRole = "SYS_ADMIN" // 系统管理员
+	UserRoleSysIT    UserRole = "SYS_IT"    // 平台 IT
+
 	// IAM roles (management)
 	UserRoleOwner   UserRole = "OWNER"   // 组织所有者
 	UserRoleAdmin   UserRole = "ADMIN"   // 管理员

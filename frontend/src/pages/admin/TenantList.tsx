@@ -172,9 +172,11 @@ const TenantList = () => {
       try {
         const response = await tenantApi.create(values)
         if (response.code === 201) {
+          const successData = response.data
           message.success('创建租户成功')
           setDrawerVisible(false)
-          fetchData(1)
+          // Navigate to success page with data
+          navigate('/admin/tenants/success', { state: { successData } })
         } else {
           message.error('创建失败: ' + (response.message || '未知错误'))
         }

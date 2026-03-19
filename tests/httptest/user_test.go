@@ -19,7 +19,13 @@ func setupUserTestHelpers() {
 }
 
 func TestCreateUser(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupUserTestHelpers()
+	if userAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	tests := []struct {
 		name           string
@@ -71,7 +77,13 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestListUsers(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupUserTestHelpers()
+	if userAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	tests := []struct {
 		name           string
@@ -109,7 +121,13 @@ func TestListUsers(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupUserTestHelpers()
+	if userAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	tests := []struct {
 		name           string
@@ -137,7 +155,13 @@ func TestGetUser(t *testing.T) {
 }
 
 func TestUpdateUser(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupUserTestHelpers()
+	if userAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	tests := []struct {
 		name           string
@@ -172,7 +196,13 @@ func TestUpdateUser(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupUserTestHelpers()
+	if userAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	tests := []struct {
 		name           string
@@ -200,7 +230,13 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestUser_CrossTenantIsolation(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupUserTestHelpers()
+	if userAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	t.Run("租户内用户可见", func(t *testing.T) {
 		w := ExecuteRequestWithAuth(t, "GET", "/api/v1/users", nil, userAdminToken)

@@ -2,21 +2,6 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { message } from 'antd'
 
-interface AuthCallbackResponse {
-  token: string
-  user: {
-    id: string
-    email: string
-    name: string
-    role: string
-  }
-  brand_config?: {
-    logo_url: string
-    primary_color: string
-    brand_name: string
-  }
-}
-
 export default function AuthCallback() {
   const navigate = useNavigate()
 
