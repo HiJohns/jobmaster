@@ -115,13 +115,17 @@ func (h *TenantHandler) Create(c *gin.Context) {
 	}
 
 	// 创建租户
+	config := model.JSONBMap{}
+	if req.Config != nil {
+		config = model.JSONBMap(req.Config)
+	}
 	tenant := &model.Tenant{
 		Name:          req.Name,
 		Code:          code,
 		Slug:          slug,
 		ContactPerson: req.ContactPerson,
 		Status:        req.Status,
-		Config:        model.JSONBMap(req.Config),
+		Config:        config,
 	}
 
 	if err := tx.Create(tenant).Error; err != nil {

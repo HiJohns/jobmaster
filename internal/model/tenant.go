@@ -43,7 +43,7 @@ type JSONBMap map[string]interface{}
 
 // Value implements the driver.Valuer interface
 func (j JSONBMap) Value() (driver.Value, error) {
-	if len(j) == 0 {
+	if j == nil || len(j) == 0 {
 		return "{}", nil
 	}
 	return json.Marshal(j)
