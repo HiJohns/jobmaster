@@ -1,8 +1,8 @@
 # JobMaster 2.0 系统进度审计报告
 
 > 生成日期: 2026-03-19
-> 版本: v2.0.5-fullstack-sla
-> 最后更新: 2026-03-19 02:30
+> 版本: v2.0.6-api-tests
+> 最后更新: 2026-03-19 05:40
 
 ---
 
@@ -17,6 +17,7 @@
 | 运营管理 (Ops) | ✅ 已完成 | 85% |
 | 前端 UI (Frontend) | ✅ 已完成 | 90% |
 | DevOps 部署 | ✅ 已完成 | 85% |
+| API 单元测试 | ✅ 已完成 | 75% |
 
 ---
 
@@ -227,6 +228,64 @@
 
 ---
 
+### 8. API 单元测试 (Testing)
+
+#### ✅ 已完成
+- [x] **测试基础设施** (Issue #58)
+  - httptest 包结构
+  - ExecuteRequest, ExecuteRequestWithAuth, ParseResponse 辅助函数
+  - BeginTransaction 事务隔离
+- [x] **WorkOrder 测试** (Issue #58)
+  - 状态机非法流转测试 (PENDING→FINISH, PENDING→ARRIVE, etc.)
+  - CRUD 操作测试
+  - Dispatch/Accept/Reject/Reserve/Arrive/Finish 端点测试
+- [x] **Device 测试** (Issue #58)
+  - CRUD 操作测试
+  - 重复 SN 冲突测试
+  - 二维码生成测试
+  - 跨租户隔离测试
+- [x] **Organization 测试** (Issue #58)
+  - CRUD 操作测试
+  - 组织树查询测试
+  - 跨租户隔离测试
+- [x] **User 测试** (Issue #58)
+  - CRUD 操作测试
+  - 角色过滤测试
+  - 跨租户隔离测试
+- [x] **Lease 测试** (Issue #58)
+  - 租期进度查询测试
+  - 12 个月阈值触发测试
+  - 时间旅行测试
+- [x] **Location 测试** (Issue #58)
+  - CRUD 操作测试
+  - 组织过滤测试
+  - 跨租户隔离测试
+- [x] **Repair 测试** (Issue #58)
+  - 提交维修测试
+  - 设备不存在处理测试
+
+#### 测试文件结构
+```
+tests/httptest/
+├── main_test.go           # 测试基础设施
+├── auth_test.go          # 认证测试 (已有)
+├── workorder_test.go     # 工单测试 (24 用例)
+├── device_test.go        # 设备测试 (16 用例)
+├── organization_test.go  # 组织测试 (10 用例)
+├── user_test.go          # 用户测试 (12 用例)
+├── location_test.go      # 位置测试 (7 用例)
+├── lease_test.go         # 租期测试 (8 用例)
+└── repair_test.go        # 维修测试 (4 用例)
+```
+
+#### 技术关键点
+- `github.com/stretchr/testify` 测试框架
+- `net/http/httptest` HTTP 测试
+- `github.com/gin-gonic/gin` 测试模式
+- 表格驱动测试模式
+
+---
+
 ## 三、数据库对比
 
 ### users 表
@@ -301,6 +360,7 @@
 
 | Issue | 标题 | 状态 | Commit |
 |-------|------|------|--------|
+| #58 | API 单元测试覆盖率提升 | ✅ | `a5abafb6` |
 | #57 | DevOps 与商业化部署 | ✅ | `5c8f241b` |
 | #56 | 移动端适配与扫码 | ✅ | `5c8f241b` |
 | #54 | SLA 哨兵与 Ops 管理 | ✅ | `5c8f241b` |
