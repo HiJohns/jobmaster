@@ -23,7 +23,6 @@ services:
     networks:
       - jobmaster-network
 
-  # Redis (可选，用于缓存和会话)
   redis:
     image: redis:7-alpine
     container_name: jobmaster-redis
@@ -38,6 +37,63 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+    networks:
+      - jobmaster-network
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.go
+    container_name: jobmaster-migrate
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: jobmaster
+      DB_PASSWORD: jobmaster_dev_password
+      DB_NAME: jobmaster
+    command: ["--migrate"]
+    networks:
+      - jobmaster-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.go
+    container_name: jobmaster-api
+    restart: unless-stopped
+    ports:
+      - "5555:5555"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: jobmaster
+      DB_PASSWORD: jobmaster_dev_password
+      DB_NAME: jobmaster
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      GIN_MODE: release
+    networks:
+      - jobmaster-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: jobmaster-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
     networks:
       - jobmaster-network
 
