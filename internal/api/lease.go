@@ -241,14 +241,52 @@ func UpdateLeaseProgress(c *gin.Context) {
 
 // generateOwnershipTransferWorkOrder generates a special work order for ownership transfer
 func generateOwnershipTransferWorkOrder(tx *gorm.DB, userID, deviceID uuid.UUID) (uuid.UUID, string, error) {
-	// This is a placeholder implementation
-	// In real implementation, you would:
-	// 1. Create a work order with special type
-	// 2. Link to device and user
-	// 3. Set status to CLOSED
-	// 4. Store transfer details in info JSONB
+	now := time.Now()
 
-	return uuid.New(), fmt.Sprintf("TRANS-%s", time.Now().Format("20060102")), nil
+	var device model.Device
+	if err := tx.First(&device, "id = ?", deviceID).Error; err != nil {
+		return uuid.Nil, "", fmt.Errorf("device not found: %w", err)
+	}
+
+	var user model.User
+	if err := tx.First(&user, "id = ?", userID).Error; err != nil {
+		return uuid.Nil, "", fmt.Errorf("user not found: %w", err)
+	}
+
+	orderID := uuid.New()
+	orderNo := fmt.Sprintf("TRANS-%s-%s", now.Format("20060102"), orderID.String()[:8])
+
+	workOrder := model.WorkOrder{
+		ID:         orderID,
+		OrderNo:    orderNo,
+		TenantID:   user.TenantID,
+		StoreID:    device.OrgID,
+		CreatedBy:  userID,
+		Status:     model.WorkOrderStatusClosed,
+		EngineerID: &userID,
+		ClosedAt:   &now,
+		Info: model.WorkOrderInfo{
+			Description:   "所有权转移 - 租满12个月赠送",
+			EquipmentInfo: fmt.Sprintf("DeviceID: %s, SN: %s", deviceID.String(), device.SN),
+			CategoryPath:  []string{"所有权转移"},
+			BrandName:     device.Brand,
+		},
+		Logs: model.WorkOrderLogs{
+			{
+				Timestamp: now,
+				UserID:    userID,
+				UserName:  user.DisplayName,
+				Action:    "ownership_transfer",
+				Details:   fmt.Sprintf("租满12个月，设备 %s (%s) 所有权转移给用户 %s", device.Name, device.SN, user.DisplayName),
+			},
+		},
+	}
+
+	if err := tx.Create(&workOrder).Error; err != nil {
+		return uuid.Nil, "", fmt.Errorf("failed to create ownership transfer work order: %w", err)
+	}
+
+	return orderID, orderNo, nil
 }
 
 // RegisterLeaseRoutes registers lease progress routes
