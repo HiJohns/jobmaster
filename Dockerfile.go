@@ -1,4 +1,8 @@
-# Build stage
+//go:build ignore
+
+package main
+
+// Build stage
 FROM golang:1.22-alpine AS builder
 
 WORKDIR /app

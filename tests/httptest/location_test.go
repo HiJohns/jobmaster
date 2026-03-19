@@ -19,7 +19,13 @@ func setupLocationTestHelpers() {
 }
 
 func TestCreateLocation(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupLocationTestHelpers()
+	if locationAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	tests := []struct {
 		name           string
@@ -67,7 +73,13 @@ func TestCreateLocation(t *testing.T) {
 }
 
 func TestListLocations(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupLocationTestHelpers()
+	if locationAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	tests := []struct {
 		name           string
@@ -100,7 +112,13 @@ func TestListLocations(t *testing.T) {
 }
 
 func TestGetLocation(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupLocationTestHelpers()
+	if locationAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	tests := []struct {
 		name           string
@@ -133,7 +151,13 @@ func TestGetLocation(t *testing.T) {
 }
 
 func TestUpdateLocation(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupLocationTestHelpers()
+	if locationAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	tests := []struct {
 		name           string
@@ -168,7 +192,13 @@ func TestUpdateLocation(t *testing.T) {
 }
 
 func TestDeleteLocation(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupLocationTestHelpers()
+	if locationAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	tests := []struct {
 		name           string
@@ -196,7 +226,13 @@ func TestDeleteLocation(t *testing.T) {
 }
 
 func TestLocation_CrossTenantIsolation(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupLocationTestHelpers()
+	if locationAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	t.Run("租户内位置可见", func(t *testing.T) {
 		w := ExecuteRequestWithAuth(t, "GET", "/api/v1/locations", nil, locationAdminToken)

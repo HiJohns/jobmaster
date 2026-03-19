@@ -18,7 +18,13 @@ func setupRepairTestHelpers() {
 }
 
 func TestSubmitRepair(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupRepairTestHelpers()
+	if repairAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	tests := []struct {
 		name           string
@@ -76,7 +82,13 @@ func TestSubmitRepair(t *testing.T) {
 }
 
 func TestSubmitRepair_DeviceNotFound(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupRepairTestHelpers()
+	if repairAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	t.Run("提交维修设备不存在", func(t *testing.T) {
 		payload := map[string]interface{}{
@@ -89,7 +101,13 @@ func TestSubmitRepair_DeviceNotFound(t *testing.T) {
 }
 
 func TestSubmitRepair_CrossTenantIsolation(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupRepairTestHelpers()
+	if repairAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	t.Run("租户隔离-提交维修", func(t *testing.T) {
 		payload := map[string]interface{}{

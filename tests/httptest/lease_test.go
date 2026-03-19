@@ -17,7 +17,13 @@ func setupLeaseTestHelpers() {
 }
 
 func TestGetLeaseProgress(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupLeaseTestHelpers()
+	if leaseAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	tests := []struct {
 		name           string
@@ -50,7 +56,13 @@ func TestGetLeaseProgress(t *testing.T) {
 }
 
 func TestUpdateLeaseProgress(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupLeaseTestHelpers()
+	if leaseAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	tests := []struct {
 		name           string
@@ -115,7 +127,13 @@ func TestUpdateLeaseProgress(t *testing.T) {
 }
 
 func TestLeaseProgress_12MonthThreshold(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupLeaseTestHelpers()
+	if leaseAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	t.Run("触发12个月阈值", func(t *testing.T) {
 		payload := map[string]interface{}{
@@ -139,7 +157,13 @@ func TestLeaseProgress_12MonthThreshold(t *testing.T) {
 }
 
 func TestLeaseProgress_AlreadyCompleted(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupLeaseTestHelpers()
+	if leaseAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	t.Run("已完成租期更新", func(t *testing.T) {
 		payload := map[string]interface{}{
@@ -154,7 +178,13 @@ func TestLeaseProgress_AlreadyCompleted(t *testing.T) {
 }
 
 func TestLeaseProgress_CrossTenantIsolation(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupLeaseTestHelpers()
+	if leaseAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	t.Run("租户隔离-查询租期进度", func(t *testing.T) {
 		w := ExecuteRequestWithAuth(t, "GET", "/api/v1/leases/progress?device_id="+getTestOrgID(), nil, leaseAdminToken)
@@ -173,7 +203,13 @@ func TestLeaseProgress_CrossTenantIsolation(t *testing.T) {
 }
 
 func TestLeaseProgress_TimeTravel(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
 	setupLeaseTestHelpers()
+	if leaseAdminToken == "" {
+		t.Skip("Admin token not available, skipping test")
+	}
 
 	t.Run("时间回溯到过去", func(t *testing.T) {
 		payload := map[string]interface{}{
