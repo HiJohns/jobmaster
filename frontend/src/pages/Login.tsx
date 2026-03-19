@@ -39,7 +39,7 @@ function Login() {
           role,
           orgId: org_id,
           tenantId: tenant_id,
-        }, is_impersonated)
+        }, undefined, is_impersonated)
         
         // Remember username
         if (values.remember) {

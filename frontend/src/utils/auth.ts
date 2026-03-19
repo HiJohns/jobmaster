@@ -33,14 +33,6 @@ function authRequestInterceptor(config: InternalAxiosRequestConfig) {
   return config
 }
 
-function authResponseInterceptor(error: AxiosError) {
-  if (error.response?.status === 401) {
-    removeToken()
-    window.location.href = '/login'
-  }
-  return Promise.reject(error)
-}
-
 export const setupInterceptors = (navigate?: (path: string) => void) => {
   axios.interceptors.request.use(authRequestInterceptor, (error) => {
     return Promise.reject(error)
