@@ -18,6 +18,9 @@ type Tenant struct {
 	Code          string         `gorm:"size:100;uniqueIndex;not null;comment:唯一标识码" json:"code"`
 	Slug          string         `gorm:"size:100;uniqueIndex;not null;comment:用于URL/子域名" json:"slug"`
 	ContactPerson string         `gorm:"size:255;comment:联系人" json:"contact_person"`
+	AdminEmail    string         `gorm:"size:255;comment:管理员邮箱" json:"admin_email"`
+	AdminPhone    string         `gorm:"size:20;comment:管理员手机" json:"admin_phone"`
+	MaxHops       int            `gorm:"default:3;comment:最大转派跳数" json:"max_hops"`
 	Status        int8           `gorm:"default:1;comment:租户状态 (0:禁用, 1:启用)" json:"status"`
 	Config        JSONBMap       `gorm:"type:jsonb;default:'{}';comment:租户专属配置" json:"config"`
 	CreatedAt     time.Time      `gorm:"autoCreateTime" json:"created_at"`

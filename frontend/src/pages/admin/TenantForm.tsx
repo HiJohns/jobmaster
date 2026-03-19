@@ -23,6 +23,10 @@ interface TenantFormProps {
     contact_person?: string
     status?: number
     config?: string
+    admin_email?: string
+    admin_phone?: string
+    max_hops?: number
+    initial_password?: string
   }
 }
 
@@ -38,7 +42,13 @@ const TenantForm: React.FC<TenantFormProps> = ({ form, onFinish, isEditMode = fa
         contact_person: initialValues.contact_person,
         status: initialValues.status,
         config: initialValues.config ? JSON.stringify(initialValues.config, null, 2) : undefined,
+        admin_email: initialValues.admin_email,
+        admin_phone: initialValues.admin_phone,
+        max_hops: initialValues.max_hops ?? 3,
+        initial_password: initialValues.initial_password,
       })
+    } else if (!isEditMode) {
+      form.setFieldsValue({ max_hops: 3 })
     }
   })
 
@@ -97,6 +107,90 @@ const TenantForm: React.FC<TenantFormProps> = ({ form, onFinish, isEditMode = fa
           suffix={isEditMode ? <LockOutlined /> : null}
           style={{ backgroundColor: '#f5f5f5' }}
         />
+      </Form.Item>
+
+      <Form.Item
+        name="contact_person"
+        label="联系人"
+      >
+        <Input placeholder="请输入联系人姓名" />
+      </Form.Item>
+
+      {!isEditMode && (
+        <>
+          <Form.Item
+            name="admin_email"
+            label={<> <span style={{ color: 'red' }}>*</span> 管理员邮箱 </>}
+            rules={[
+              { required: true, message: '请输入管理员邮箱' },
+              { type: 'email', message: '请输入有效的邮箱地址' }
+            ]}
+          >
+            <Input placeholder="admin@example.com" size="large" />
+          </Form.Item>
+
+          <Form.Item
+            name="admin_phone"
+            label={<> <span style={{ color: 'red' }}>*</span> 管理员手机 </>}
+            rules={[
+              { required: true, message: '请输入管理员手机号' },
+              {
+                pattern: /^1[3-9]\d{9}$/, 
+                message: '请输入有效的中国大陆手机号'
+              }
+            ]}
+          >
+            <Input placeholder="13800000000" size="large" />
+          </Form.Item>
+
+          <Form.Item
+            name="max_hops"
+            label="最大转派跳数"
+            initialValue={3}
+            rules={[
+              { required: true, message: '请输入最大转派跳数' },
+              {
+                validator: (_, value) => {
+                  const num = Number(value)
+                  if (num >= 1 && num <= 10) return Promise.resolve()
+                  return Promise.reject(new Error('跳数必须在1-10之间'))
+                }
+              }
+            ]}
+          >
+            <Input type="number" min={1} max={10} placeholder="1-10" size="large" />
+          </Form.Item>
+
+          <Form.Item
+            name="initial_password"
+            label={<> <span style={{ color: 'red' }}>*</span> 初始密码 </>}
+            rules={[
+              { required: true, message: '请输入初始密码' },
+              { min: 8, message: '密码至少8位' },
+              {
+                pattern: /^(?=.*[A-Za-z])(?=.*\d)/,
+                message: '密码需包含字母和数字'
+              }
+            ]}
+            extra="至少8位，包含字母和数字"
+          >
+            <Input.Password
+              placeholder="请设置租户管理员初始密码"
+              size="large"
+            />
+          </Form.Item>
+        </>
+      )}
+
+      <Form.Item
+        name="status"
+        label="状态"
+        initialValue={1}
+      >
+        <Select>
+          <Option value={1}>启用</Option>
+          <Option value={0}>禁用</Option>
+        </Select>
       </Form.Item>
 
       {!isEditMode && (
