@@ -8,7 +8,7 @@ import { useAuthStore } from '../../store/useAuthStore'
 import TenantForm from './TenantForm'
 
 // Roles that can access tenant management
-const ALLOWED_ROLES = ['ADMIN', 'BRAND_HQ']
+const ALLOWED_ROLES = ['OWNER', 'ADMIN', 'BRAND_HQ']
 
 const TenantList = () => {
   const navigate = useNavigate()
