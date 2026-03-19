@@ -1124,3 +1124,45 @@ func extractWorkRecords(logs model.WorkOrderLogs) []WorkRecordResponse {
 
 	return records
 }
+
+type ValidateLocationRequest struct {
+	Latitude  float64 `json:"latitude" binding:"required"`
+	Longitude float64 `json:"longitude" binding:"required"`
+}
+
+func ValidateWorkOrderLocation(c *gin.Context) {
+	orderID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "invalid order id")
+		return
+	}
+
+	var req ValidateLocationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid request: "+err.Error())
+		return
+	}
+
+	db, err := database.GetDB()
+	if err != nil {
+		response.InternalServerError(c, "database connection failed")
+		return
+	}
+
+	var order model.WorkOrder
+	if err := db.First(&order, "id = ?", orderID).Error; err != nil {
+		response.NotFound(c, "order not found")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"is_valid":        true,
+		"distance_meters": 0,
+		"max_distance":    100.0,
+		"message":         "GPS validation is a placeholder - store coordinates not configured",
+		"user_location": gin.H{
+			"latitude":  req.Latitude,
+			"longitude": req.Longitude,
+		},
+	})
+}

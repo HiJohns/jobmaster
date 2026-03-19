@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -10,6 +11,7 @@ import (
 	"jobmaster/internal/model"
 	"jobmaster/pkg/database"
 	"jobmaster/pkg/response"
+	"jobmaster/pkg/utils"
 )
 
 // CreateDeviceRequest represents the request to create a device
@@ -324,4 +326,43 @@ func DeleteDevice(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{"message": "device deleted successfully"})
+}
+
+func GenerateQRCode(c *gin.Context) {
+	deviceID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "invalid device id")
+		return
+	}
+
+	db, err := database.GetDB()
+	if err != nil {
+		response.InternalServerError(c, "database connection failed")
+		return
+	}
+
+	var device model.Device
+	if err := db.Where("id = ?", deviceID).First(&device).Error; err != nil {
+		response.NotFound(c, "device not found")
+		return
+	}
+
+	secretKey := utils.GetEnv("QR_SECRET_KEY", "jobmaster-default-secret-key-32ch")
+	generator := utils.NewQRCodeGenerator(secretKey)
+
+	token, expiresAt, err := generator.GenerateToken(deviceID)
+	if err != nil {
+		response.InternalServerError(c, "failed to generate QR token: "+err.Error())
+		return
+	}
+
+	qrURL := fmt.Sprintf("/scan?token=%s", token)
+
+	response.Success(c, gin.H{
+		"device_id":  deviceID,
+		"sn":         device.SN,
+		"qr_url":     qrURL,
+		"expires_at": expiresAt.Format(time.RFC3339),
+		"qr_token":   token,
+	})
 }
