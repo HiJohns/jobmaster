@@ -115,6 +115,114 @@ type Order struct {
 - 仅记录金额字段，不做业务逻辑校验
 - 结算流程在 V2 版本迭代
 
+### 3.5 身份与租户关联模型 ("一号多中心")
+
+#### 3.5.1 架构原则
+
+JobMaster 支持同一 IAM 身份在多个租户下拥有独立账户，实现"一号多中心"。
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Beacon-IAM                               │
+│  ┌─────────────┐                                                │
+│  │   User      │  iam_sub: "u_abc123"                           │
+│  │   email:    │  email: "john@company.com"                     │
+│  └─────────────┘                                                │
+└─────────────────────────────────────────────────────────────────┘
+           │                    │                    │
+           ▼                    ▼                    ▼
+┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+│   Tenant Alpha   │  │   Tenant Beta    │  │   Tenant Gamma   │
+│  ┌────────────┐  │  ┌────────────┐    │  │  ┌────────────┐  │
+│  │ Local User │  │  │ Local User │     │  │  │ Local User │  │
+│  │ iam_sub ✓  │  │  │ iam_sub ✓  │     │  │  │ iam_sub ✓  │  │
+│  │ role: STORE│  │  │ role: VENDOR│    │  │  │ role: HQ   │  │
+│  └────────────┘  │  └────────────┘     │  │  └────────────┘  │
+└──────────────────┘  └──────────────────┘  └──────────────────┘
+```
+
+#### 3.5.2 身份占位符与激活
+
+当用户在本地被创建但尚未通过 OIDC 登录时：
+- `iam_sub` 字段为空 (`""`)
+- `is_shadow` 为 `false`
+
+当用户首次通过 OIDC 登录时，`SyncShadowUser` 执行"身份占位符激活"：
+1. 通过 `iam_sub` 查找用户（未找到）
+2. 通过 `email` 查找本地用户（找到占位符）
+3. 将 `iam_sub` 物理更新到本地记录
+4. 设置 `is_shadow = true`
+
+#### 3.5.3 数据库索引约束
+
+| 索引名 | 字段 | 类型 | 说明 |
+|--------|------|------|------|
+| `idx_user_email` | `email` | 普通索引 | 支持按邮箱查询 |
+| `idx_user_iam_sub` | `iam_sub` | 普通索引 | 支持按身份查询 |
+| `idx_user_tenant_iam_sub` | `(tenant_id, iam_sub)` | 联合唯一 | 同一租户内身份唯一 |
+| `idx_user_username_tenant` | `(tenant_id, username)` | 联合唯一 | 同一租户内用户名唯一 |
+
+#### 3.5.4 IAM 服务间通信
+
+内部服务调用（如 `GetUserByEmail`）使用以下安全措施：
+- `X-Internal-Caller: jobmaster` 请求头标识调用方
+- `Authorization: Bearer {InternalSecret}` 内部密钥认证
+- 建议 IAM 侧对 `/internal/*` 接口做 IP 白名单限制
+
+#### 3.5.5 租户选择器流程 (Tenant Picker)
+
+用户登录后的租户选择流程：
+
+```
+1. 用户登录成功 → 获得 JWT Token
+                         │
+                         ▼
+2. 前端调用 GET /api/v1/auth/my-tenants
+                         │
+                         ▼
+3. IF 返回数组长度 > 1
+   THEN 展示租户选择列表
+   - 显示租户名称、Logo、用户角色
+   - 用户点击后，将 tenant_id 存入 LocalStorage
+   - 后续所有请求带上 X-Tenant-ID Header
+                         │
+   ELSE IF 长度 == 1
+   THEN 自动进入该租户
+   - 直接存储 tenant_id 到 LocalStorage
+                         │
+                         ▼
+4. 后续请求带上 X-Tenant-ID Header
+   Backend 中间件解析 Header，切换租户上下文
+```
+
+**API 响应格式** (`GET /api/v1/auth/my-tenants`):
+
+```json
+{
+  "code": 0,
+  "data": [
+    {
+      "tenant_id": "uuid-alpha",
+      "tenant_name": "Tenant Alpha",
+      "tenant_code": "alpha",
+      "logo_url": "https://...",
+      "role": "STORE",
+      "org_id": "uuid-store",
+      "org_name": "Store 001"
+    },
+    {
+      "tenant_id": "uuid-beta",
+      "tenant_name": "Tenant Beta",
+      "tenant_code": "beta",
+      "logo_url": "https://...",
+      "role": "VENDOR",
+      "org_id": "uuid-vendor",
+      "org_name": "Vendor A"
+    }
+  ]
+}
+```
+
 ---
 
 ## 4. 代码规范
@@ -385,6 +493,37 @@ const OrderContainer: React.FC = () => {
 
 本文档为中文主文档，英文翻译位于 `docs/en/project.md`。
 **任何更新必须中英同步**。
+
+---
+
+## 8. 架构变更记录 (2026-03-20)
+
+### 8.1 一号多中心身份模型 (Issue #65)
+
+**状态**: Ready for Implementation
+
+**核心变更**:
+- 移除 `users.email` 的唯一索引约束
+- 建立 `(tenant_id, iam_sub)` 联合唯一索引
+- 新增 `GetUserByEmail` IAM 适配器方法
+- 实现"先查后建"用户创建逻辑
+- 新增 `GET /api/v1/auth/my-tenants` 租户选择接口
+- 实现身份占位符激活逻辑
+
+**影响范围**:
+- `migrations/018_refactor_user_identity.sql` (NEW)
+- `internal/model/user.go`
+- `pkg/utils/iam.go`
+- `internal/service/user_membership.go` (NEW)
+- `internal/service/shadow_user.go`
+- `internal/api/user.go`
+- `internal/api/auth.go`
+- `tests/httptest/integration_flow_test.go`
+
+**前端影响**:
+- 登录后需调用 `/my-tenants` 接口
+- 多租户场景下展示租户选择器
+- 所有请求需携带 `X-Tenant-ID` Header
 
 ---
 
