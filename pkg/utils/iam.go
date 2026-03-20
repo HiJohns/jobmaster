@@ -3,9 +3,13 @@ package utils
 import (
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"net/http"
+	"net/url"
 	"strings"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -113,3 +117,69 @@ const (
 	ContextKeyName    = "name"
 	ContextKeyAvatar  = "avatar"
 )
+
+// GetUserByEmail queries IAM system for user by email
+// Uses internal secret for authentication to prevent user enumeration attacks
+// Returns IAM claims if user exists, nil if not found, error on failure
+func GetUserByEmail(email string, config *IAMConfig) (*IAMClaims, error) {
+	if config == nil {
+		config = DefaultIAMConfig()
+	}
+
+	if config.BaseURL == "" {
+		return nil, fmt.Errorf("IAM base URL not configured")
+	}
+
+	if config.InternalSecret == "" {
+		return nil, fmt.Errorf("IAM internal secret not configured")
+	}
+
+	baseURL := strings.TrimSuffix(config.BaseURL, "/")
+	reqURL := baseURL + "/api/v1/internal/users/lookup?email=" + url.QueryEscape(email)
+
+	req, err := http.NewRequest("GET", reqURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create IAM request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+config.InternalSecret)
+	req.Header.Set("X-Internal-Caller", "jobmaster")
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call IAM service: %w", err)
+	}
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		var result struct {
+			Sub   string `json:"sub"`
+			Name  string `json:"name"`
+			Email string `json:"email"`
+			Phone string `json:"phone"`
+			Role  string `json:"role"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			return nil, fmt.Errorf("failed to parse IAM response: %w", err)
+		}
+		return &IAMClaims{
+			Sub:   result.Sub,
+			Name:  result.Name,
+			Email: result.Email,
+			Phone: result.Phone,
+			Role:  result.Role,
+		}, nil
+
+	case http.StatusNotFound:
+		return nil, nil
+
+	case http.StatusUnauthorized:
+		return nil, fmt.Errorf("IAM authentication failed: invalid internal secret")
+
+	default:
+		return nil, fmt.Errorf("IAM returned unexpected status: %d", resp.StatusCode)
+	}
+}

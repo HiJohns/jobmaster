@@ -1,14 +1,13 @@
 package api
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 	"jobmaster/internal/middleware"
 	"jobmaster/internal/model"
+	"jobmaster/internal/service"
 	"jobmaster/pkg/database"
 	"jobmaster/pkg/permissions"
 	"jobmaster/pkg/response"
@@ -99,37 +98,21 @@ func CreateUser(c *gin.Context) {
 		}
 	}
 
-	// Check if username already exists in tenant
-	var existingUser model.User
-	err = db.Where("username = ? AND tenant_id = ?", req.Username, tenantID).First(&existingUser).Error
-	if err == nil {
-		response.BadRequest(c, "username already exists")
-		return
-	}
-	if err != gorm.ErrRecordNotFound {
-		response.InternalServerError(c, fmt.Errorf("failed to check username existence: %w", err).Error())
-		return
-	}
-
-	user := model.User{
+	// Use membership service for creation with "lookup-first, create-if-needed" logic
+	membershipService := service.NewUserMembershipService(db)
+	user, err := membershipService.CreateUserWithMembership(service.CreateUserRequest{
 		TenantID:       tenantID,
 		OrganizationID: req.OrganizationID,
 		Username:       req.Username,
 		Email:          req.Email,
 		Phone:          req.Phone,
+		Password:       req.Password,
 		Role:           req.Role,
-		Status:         model.UserStatusActive,
 		DisplayName:    req.DisplayName,
-	}
+	})
 
-	// Hash password
-	if err := user.HashPassword(req.Password); err != nil {
-		response.InternalServerError(c, "failed to hash password")
-		return
-	}
-
-	if err := db.Create(&user).Error; err != nil {
-		response.InternalServerError(c, "failed to create user")
+	if err != nil {
+		response.BadRequest(c, err.Error())
 		return
 	}
 

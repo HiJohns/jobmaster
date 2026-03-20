@@ -88,10 +88,53 @@ func (s *ShadowUserService) SyncShadowUser(claims *utils.IAMClaims) (*model.User
 	}
 
 	if result.Error != gorm.ErrRecordNotFound {
-		return nil, false, fmt.Errorf("failed to query user: %w", result.Error)
+		return nil, false, fmt.Errorf("failed to query user by iam_sub: %w", result.Error)
 	}
 
-	// 2. Create new shadow user
+	// 2. Identity Placeholder Activation
+	// Find ALL local users with the same email that have empty iam_sub
+	// This handles the case where the same email exists in MULTIPLE tenants
+	// without being linked to IAM yet (cross-tenant automatic association)
+	var placeholders []model.User
+	result = s.db.Where("email = ? AND (iam_sub IS NULL OR iam_sub = '')", claims.Email).Find(&placeholders)
+
+	if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
+		return nil, false, fmt.Errorf("failed to query identity placeholders: %w", result.Error)
+	}
+
+	if len(placeholders) > 0 {
+		currentRole := mapIAMRoleToJobMaster(claims.Role)
+		updates := map[string]interface{}{
+			"iam_sub":      claims.Sub,
+			"phone":        claims.Phone,
+			"display_name": claims.Name,
+			"role":         currentRole,
+			"is_org_owner": claims.IsOwner,
+			"is_shadow":    true,
+		}
+
+		if claims.Oid != "" {
+			if orgID, err := uuid.Parse(claims.Oid); err == nil {
+				updates["organization_id"] = orgID
+			}
+		}
+
+		updateResult := s.db.Model(&model.User{}).
+			Where("email = ? AND (iam_sub IS NULL OR iam_sub = '')", claims.Email).
+			Updates(updates)
+
+		if updateResult.Error != nil {
+			return nil, false, fmt.Errorf("failed to activate identity placeholders: %w", updateResult.Error)
+		}
+
+		fmt.Printf("[ShadowUserSync] Activated %d identity placeholder(s): email=%s -> iam_sub=%s\n",
+			len(placeholders), claims.Email, claims.Sub)
+
+		s.db.First(&placeholders[0], placeholders[0].ID)
+		return &placeholders[0], false, nil
+	}
+
+	// 3. Create new shadow user
 	user = model.User{
 		TenantID:    parseUUIDOrNew(claims.Tid),
 		IAMSub:      claims.Sub,

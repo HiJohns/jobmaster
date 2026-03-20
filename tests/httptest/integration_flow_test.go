@@ -121,6 +121,10 @@ func TestIntegrationFlow(t *testing.T) {
 	t.Run("Step 16: Generate Account List", func(t *testing.T) {
 		testGenerateAccountList(t)
 	})
+
+	t.Run("Step 17: Multi-Tenant User Creation", func(t *testing.T) {
+		testMultiTenantUserCreation(t)
+	})
 }
 
 // testSysAdminLogin logs in as SYS_ADMIN (OWNER role with SYS_ADMIN permissions)
@@ -818,4 +822,79 @@ func testGenerateAccountList(t *testing.T) {
 	} else {
 		t.Logf("Account list written to: %s", outputPath)
 	}
+}
+
+func testMultiTenantUserCreation(t *testing.T) {
+	payload := map[string]interface{}{
+		"name":             "Tenant_Beta",
+		"admin_email":      "shared_user@example.com",
+		"admin_phone":      "13900000000",
+		"max_hops":         3,
+		"initial_password": "Beta123456",
+	}
+
+	headers := map[string]string{
+		"Authorization": "Bearer " + flowData.SysAdminToken,
+	}
+
+	w := ExecuteRequest(t, "POST", "/api/v1/admin/tenants", payload, headers)
+	assert.Equal(t, http.StatusCreated, w.Code, "Create Tenant_Beta should succeed")
+
+	var resp map[string]interface{}
+	ParseResponse(w, &resp)
+
+	var betaTenantID string
+	if data, ok := resp["data"].(map[string]interface{}); ok {
+		if tenantData, ok := data["tenant"].(map[string]interface{}); ok {
+			if uuidStr, ok := tenantData["uuid"].(string); ok {
+				betaTenantID = uuidStr
+			}
+		}
+	}
+	assert.NotEmpty(t, betaTenantID, "Beta tenant ID should not be empty")
+
+	loginPayload := map[string]string{
+		"username": "shared_user@example.com",
+		"password": "Beta123456",
+	}
+	w = ExecuteRequest(t, "POST", "/api/v1/auth/login", loginPayload, nil)
+	assert.Equal(t, http.StatusOK, w.Code, "Login as Beta BrandHQ should succeed")
+
+	ParseResponse(w, &resp)
+	data, _ := resp["data"].(map[string]interface{})
+	betaToken, _ := data["token"].(string)
+
+	storePayload := map[string]interface{}{
+		"name":          "Store_Beta",
+		"type":          "STORE",
+		"code":          "STORE_BETA",
+		"contact_name":  "Beta Store Manager",
+		"contact_phone": "13900000001",
+	}
+	headers = map[string]string{
+		"Authorization": "Bearer " + betaToken,
+	}
+	w = ExecuteRequest(t, "POST", "/api/v1/organizations", storePayload, headers)
+	assert.Equal(t, http.StatusOK, w.Code, "Create Store_Beta should succeed")
+
+	ParseResponse(w, &resp)
+	betaStoreID, _ := resp["id"].(string)
+
+	betaStoreUUID, _ := uuid.Parse(betaStoreID)
+	userPayload := map[string]interface{}{
+		"username":        "store_mg_beta@shared.test",
+		"email":           "store_mg@store001.test",
+		"phone":           "13900000002",
+		"password":        "StoreMGBeta123",
+		"role":            "STORE",
+		"organization_id": betaStoreUUID,
+		"display_name":    "Beta Store Manager (Shared)",
+	}
+
+	w = ExecuteRequest(t, "POST", "/api/v1/users", userPayload, headers)
+
+	assert.Equal(t, http.StatusOK, w.Code,
+		"Creating user with same email in different tenant should succeed")
+
+	t.Log("Multi-tenant user creation test passed: Same email can exist in different tenants")
 }

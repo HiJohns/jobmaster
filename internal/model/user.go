@@ -14,7 +14,7 @@ type User struct {
 	TenantID           uuid.UUID      `gorm:"type:uuid;not null;index:idx_user_tenant" json:"tenant_id"`
 	OrganizationID     uuid.UUID      `gorm:"type:uuid;not null;index" json:"organization_id"`
 	Username           string         `gorm:"size:100;not null" json:"username"`
-	Email              string         `gorm:"size:255;uniqueIndex:idx_user_email_tenant" json:"email"`
+	Email              string         `gorm:"size:255;index:idx_user_email" json:"email"`
 	Phone              string         `gorm:"size:20" json:"phone"`
 	PasswordHash       string         `gorm:"size:255;not null" json:"-"`
 	MustChangePassword bool           `gorm:"default:false;not null" json:"must_change_password"`
@@ -30,8 +30,8 @@ type User struct {
 	DeletedAt          gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// IAM Integration Fields
-	IAMSub   string `gorm:"size:100;uniqueIndex:idx_user_iam_sub" json:"iam_sub,omitempty"` // IAM 用户唯一标识
-	IsShadow bool   `gorm:"default:false" json:"is_shadow,omitempty"`                       // 是否为影子用户
+	IAMSub   string `gorm:"size:100;index:idx_user_iam_sub" json:"iam_sub,omitempty"` // IAM 用户唯一标识
+	IsShadow bool   `gorm:"default:false" json:"is_shadow,omitempty"`                 // 是否为影子用户
 }
 
 // UserRole defines user roles in the system

@@ -72,6 +72,7 @@ func SetupRouter() *gin.Engine {
 			// Auth routes (require authentication)
 			protected.POST("/auth/refresh", RefreshToken)
 			protected.POST("/auth/change-password", ChangePassword)
+			protected.GET("/auth/my-tenants", GetMyTenants)
 
 			// Organization routes (require authentication)
 			protected.GET("/organizations", ListOrganizations)

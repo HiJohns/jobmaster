@@ -429,3 +429,83 @@ func GetSession(c *gin.Context) {
 		Organization: nil, // TODO: Map organization if available
 	})
 }
+
+type MyTenantInfo struct {
+	TenantID   uuid.UUID      `json:"tenant_id"`
+	TenantName string         `json:"tenant_name"`
+	TenantCode string         `json:"tenant_code"`
+	LogoURL    string         `json:"logo_url"`
+	Role       model.UserRole `json:"role"`
+	OrgID      uuid.UUID      `json:"org_id"`
+	OrgName    string         `json:"org_name"`
+}
+
+func GetMyTenants(c *gin.Context) {
+	userID, exists := GetUserID(c)
+	if !exists {
+		response.Unauthorized(c, "user not authenticated")
+		return
+	}
+
+	db, err := database.GetDB()
+	if err != nil {
+		response.InternalServerError(c, "database connection failed")
+		return
+	}
+
+	var currentUser model.User
+	if err := db.First(&currentUser, "id = ?", userID).Error; err != nil {
+		response.NotFound(c, "user not found")
+		return
+	}
+
+	var users []model.User
+
+	if currentUser.IAMSub != "" {
+		if err := db.Where("iam_sub = ?", currentUser.IAMSub).Find(&users).Error; err != nil {
+			response.InternalServerError(c, "failed to fetch tenant memberships")
+			return
+		}
+	} else {
+		users = []model.User{currentUser}
+	}
+
+	tenantCache := make(map[uuid.UUID]model.Tenant)
+	orgCache := make(map[uuid.UUID]model.Organization)
+
+	var tenantInfos []MyTenantInfo
+	for _, user := range users {
+		tenant, ok := tenantCache[user.TenantID]
+		if !ok {
+			if err := db.Where("uuid = ?", user.TenantID).First(&tenant).Error; err == nil {
+				tenantCache[user.TenantID] = tenant
+			}
+		}
+
+		org, ok := orgCache[user.OrganizationID]
+		if !ok {
+			if err := db.Where("id = ?", user.OrganizationID).First(&org).Error; err == nil {
+				orgCache[user.OrganizationID] = org
+			}
+		}
+
+		logoURL := ""
+		if tenant.Config != nil {
+			if url, ok := tenant.Config["logo_url"].(string); ok {
+				logoURL = url
+			}
+		}
+
+		tenantInfos = append(tenantInfos, MyTenantInfo{
+			TenantID:   user.TenantID,
+			TenantName: tenant.Name,
+			TenantCode: tenant.Code,
+			LogoURL:    logoURL,
+			Role:       user.Role,
+			OrgID:      user.OrganizationID,
+			OrgName:    org.Name,
+		})
+	}
+
+	response.Success(c, tenantInfos)
+}
