@@ -193,45 +193,6 @@ const TenantForm: React.FC<TenantFormProps> = ({ form, onFinish, isEditMode = fa
         </Select>
       </Form.Item>
 
-      {!isEditMode && (
-        <Form.Item
-          name="initial_password"
-          label={<><span style={{ color: 'red' }}>*</span> 初始密码</>}
-          rules={[
-            { required: true, message: '请输入初始密码' },
-            { min: 8, message: '密码至少8位' },
-            {
-              pattern: /^(?=.*[A-Za-z])(?=.*\d)/,
-              message: '密码需包含字母和数字'
-            }
-          ]}
-          extra="至少8位，包含字母和数字"
-        >
-          <Input.Password
-            placeholder="请设置租户管理员初始密码"
-            size="large"
-          />
-        </Form.Item>
-      )}
-
-      <Form.Item
-        name="contact_person"
-        label="联系人"
-      >
-        <Input placeholder="请输入联系人姓名" />
-      </Form.Item>
-
-      <Form.Item
-        name="status"
-        label="状态"
-        initialValue={1}
-      >
-        <Select>
-          <Option value={1}>启用</Option>
-          <Option value={0}>禁用</Option>
-        </Select>
-      </Form.Item>
-
       <Form.Item label="配置 (JSON)">
         <Button
           type="link"
