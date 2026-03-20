@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"jobmaster/internal/api"
+	"jobmaster/internal/db"
 	"jobmaster/pkg/database"
 )
 
@@ -64,12 +65,43 @@ func setupTestDB() bool {
 		SSLMode:  getEnv("TEST_DB_SSLMODE", "disable"),
 	}
 
-	db, err := database.InitDB(config)
+	dbConn, err := database.InitDB(config)
 	if err != nil {
 		log.Printf("Warning: failed to connect to test database: %v (tests requiring DB will be skipped)", err)
 		return false
 	}
-	testDB = db
+	testDB = dbConn
+
+	// For integration flow test, we need to ensure fresh seed data
+	// Check if we should force reseed (set via environment variable)
+	if os.Getenv("FORCE_RESEED") == "true" {
+		log.Println("Force reseed enabled, clearing existing data...")
+		// Delete all users and organizations in the correct order to avoid FK constraints
+		testDB.Exec("DELETE FROM users WHERE username IN ('owner', 'admin') OR tenant_id = '00000000-0000-0000-0000-000000000001'")
+		testDB.Exec("DELETE FROM organizations WHERE code = 'HQ-001' OR tenant_id = '00000000-0000-0000-0000-000000000001'")
+		// Delete tenants created by previous tests
+		testDB.Exec("DELETE FROM tenants WHERE code = 'tenant_alpha'")
+	}
+
+	// Ensure schema is up to date by adding missing columns if needed
+	log.Println("Ensuring database schema is up to date...")
+	testDB.Exec("ALTER TABLE organizations ADD COLUMN IF NOT EXISTS iam_org_id VARCHAR(100)")
+	testDB.Exec("ALTER TABLE organizations ADD COLUMN IF NOT EXISTS is_shadow BOOLEAN DEFAULT false")
+	testDB.Exec("ALTER TABLE organizations ADD COLUMN IF NOT EXISTS max_dispatch_hops INT DEFAULT 3")
+	testDB.Exec("ALTER TABLE organizations ADD COLUMN IF NOT EXISTS path VARCHAR(500)")
+	testDB.Exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS iam_sub VARCHAR(100)")
+	testDB.Exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_shadow BOOLEAN DEFAULT false")
+	testDB.Exec("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS admin_email VARCHAR(255)")
+	testDB.Exec("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS admin_phone VARCHAR(20)")
+	testDB.Exec("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS max_hops INT DEFAULT 3")
+
+	// Run seeder to ensure admin user exists
+	seeder := db.NewSeeder(testDB)
+	if err := seeder.SeedAll(); err != nil {
+		log.Printf("Warning: failed to seed database: %v", err)
+		// Don't return false, as this might be a partial failure
+	}
+
 	return true
 }
 

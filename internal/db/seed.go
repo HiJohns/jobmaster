@@ -39,21 +39,22 @@ func (s *Seeder) SeedAll() error {
 
 // seedDefaultOrganization creates the default headquarters organization if not exists
 func (s *Seeder) seedDefaultOrganization() error {
-	var count int64
-	if err := s.db.Model(&model.Organization{}).Count(&count).Error; err != nil {
-		return fmt.Errorf("failed to check organizations count: %w", err)
-	}
+	// Use fixed UUIDs for the default tenant and organization
+	defaultTenantID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	defaultOrgID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
 
-	if count > 0 {
-		log.Println("Organizations already exist, skipping HQ seeding")
+	// Check if default org already exists by ID
+	var existing model.Organization
+	err := s.db.Where("id = ?", defaultOrgID).First(&existing).Error
+	if err == nil {
+		log.Println("Default HQ organization already exists, skipping HQ seeding")
 		return nil
+	}
+	if err != gorm.ErrRecordNotFound {
+		return fmt.Errorf("failed to check default organization: %w", err)
 	}
 
 	log.Println("Creating default headquarters organization...")
-
-	// Use a fixed UUID for the default tenant and organization
-	defaultTenantID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
-	defaultOrgID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
 
 	hq := &model.Organization{
 		ID:           defaultOrgID,
@@ -87,13 +88,14 @@ func (s *Seeder) seedSuperAdmin() error {
 		return nil
 	}
 
-	log.Println("Creating system owner user...")
+	log.Println("Creating system admin users...")
 
 	// Use fixed UUIDs to match the organization
 	defaultTenantID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
 	defaultOrgID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
-	ownerID := uuid.MustParse("00000000-0000-0000-0000-000000000003")
 
+	// Create OWNER user
+	ownerID := uuid.MustParse("00000000-0000-0000-0000-000000000003")
 	owner := &model.User{
 		ID:             ownerID,
 		TenantID:       defaultTenantID,
@@ -105,9 +107,9 @@ func (s *Seeder) seedSuperAdmin() error {
 		IsOrgOwner:     true,
 		Status:         model.UserStatusActive,
 		DisplayName:    "系统所有者",
+		IAMSub:         "owner_" + ownerID.String(), // Unique IAMSub
 	}
 
-	// Set default password (should be changed after first login)
 	if err := owner.HashPassword("admin123"); err != nil {
 		return fmt.Errorf("failed to hash owner password: %w", err)
 	}
@@ -117,7 +119,33 @@ func (s *Seeder) seedSuperAdmin() error {
 	}
 
 	log.Printf("Created system owner user: %s (ID: %s)", owner.Username, owner.ID)
-	log.Println("Please login with default account and change password immediately")
+
+	// Create ADMIN user (for backward compatibility with tests)
+	adminID := uuid.MustParse("00000000-0000-0000-0000-000000000004")
+	admin := &model.User{
+		ID:             adminID,
+		TenantID:       defaultTenantID,
+		OrganizationID: defaultOrgID,
+		Username:       "admin",
+		Email:          "admin@jobmaster.local",
+		Phone:          "13800138001",
+		Role:           model.UserRoleAdmin,
+		IsOrgOwner:     false,
+		Status:         model.UserStatusActive,
+		DisplayName:    "系统管理员",
+		IAMSub:         "admin_" + adminID.String(), // Unique IAMSub
+	}
+
+	if err := admin.HashPassword("admin123"); err != nil {
+		return fmt.Errorf("failed to hash admin password: %w", err)
+	}
+
+	if err := s.db.Create(admin).Error; err != nil {
+		return fmt.Errorf("failed to create system admin: %w", err)
+	}
+
+	log.Printf("Created system admin user: %s (ID: %s)", admin.Username, admin.ID)
+	log.Println("Please login with default accounts and change passwords immediately")
 	return nil
 }
 
