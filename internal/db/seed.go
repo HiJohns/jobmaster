@@ -78,14 +78,14 @@ func (s *Seeder) seedDefaultOrganization() error {
 
 // seedSuperAdmin creates the super admin user if no users exist
 func (s *Seeder) seedSuperAdmin() error {
-	var count int64
-	if err := s.db.Model(&model.User{}).Count(&count).Error; err != nil {
-		return fmt.Errorf("failed to check users count: %w", err)
-	}
-
-	if count > 0 {
-		log.Println("Users already exist, skipping super admin seeding")
+	// Check if owner user already exists by specific ID
+	ownerID := uuid.MustParse("00000000-0000-0000-0000-000000000003")
+	var existing model.User
+	if err := s.db.Where("id = ?", ownerID).First(&existing).Error; err == nil {
+		log.Println("System owner already exists, skipping super admin seeding")
 		return nil
+	} else if err != gorm.ErrRecordNotFound {
+		return fmt.Errorf("failed to check system owner: %w", err)
 	}
 
 	log.Println("Creating system admin users...")
@@ -95,7 +95,6 @@ func (s *Seeder) seedSuperAdmin() error {
 	defaultOrgID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
 
 	// Create OWNER user
-	ownerID := uuid.MustParse("00000000-0000-0000-0000-000000000003")
 	owner := &model.User{
 		ID:             ownerID,
 		TenantID:       defaultTenantID,
