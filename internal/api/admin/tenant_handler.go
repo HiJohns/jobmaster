@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -16,6 +17,22 @@ import (
 	"jobmaster/pkg/redis"
 	"jobmaster/pkg/utils"
 )
+
+type FlexibleInt int
+
+func (f *FlexibleInt) UnmarshalJSON(data []byte) error {
+	s := strings.Trim(string(data), `"`)
+	if s == "" || s == "null" {
+		*f = 0
+		return nil
+	}
+	v, err := strconv.Atoi(s)
+	if err != nil {
+		return err
+	}
+	*f = FlexibleInt(v)
+	return nil
+}
 
 // TenantHandler handles tenant management APIs
 type TenantHandler struct {
@@ -37,9 +54,9 @@ type CreateTenantRequest struct {
 	Status        int8                   `json:"status"`
 	Config        map[string]interface{} `json:"config"`
 	// Admin fields
-	AdminEmail string `json:"admin_email" binding:"required,email"`
-	AdminPhone string `json:"admin_phone" binding:"required"`
-	MaxHops    int    `json:"max_hops"`
+	AdminEmail string      `json:"admin_email" binding:"required,email"`
+	AdminPhone string      `json:"admin_phone" binding:"required"`
+	MaxHops    FlexibleInt `json:"max_hops"`
 	// Initial password
 	InitialPassword string `json:"initial_password" binding:"required,min=8"`
 }
@@ -130,7 +147,7 @@ func (h *TenantHandler) Create(c *gin.Context) {
 		Config:        config,
 		AdminEmail:    req.AdminEmail,
 		AdminPhone:    req.AdminPhone,
-		MaxHops:       req.MaxHops,
+		MaxHops:       int(req.MaxHops),
 	}
 
 	if err := tx.Create(tenant).Error; err != nil {
@@ -146,7 +163,7 @@ func (h *TenantHandler) Create(c *gin.Context) {
 		Type:            model.OrgTypeHQ,
 		Code:            slug,
 		IsShadow:        true,
-		MaxDispatchHops: req.MaxHops,
+		MaxDispatchHops: int(req.MaxHops),
 	}
 
 	if err := tx.Create(org).Error; err != nil {
