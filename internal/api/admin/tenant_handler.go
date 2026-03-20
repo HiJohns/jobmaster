@@ -59,21 +59,21 @@ type UpdateTenantStatusRequest struct {
 
 // Create handles POST /api/v1/admin/tenants
 func (h *TenantHandler) Create(c *gin.Context) {
-	// Permission check - only SYS_ADMIN can access
+	// Permission check - only SYS_ADMIN, OWNER, or ADMIN can access
 	roleVal, exists := c.Get("role")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 	role, ok := roleVal.(string)
-	if !ok || role != string(model.UserRoleSysAdmin) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied: SYS_ADMIN only"})
+	if !ok || (role != string(model.UserRoleSysAdmin) && role != string(model.UserRoleOwner) && role != string(model.UserRoleAdmin)) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied: SYS_ADMIN, OWNER, or ADMIN only"})
 		return
 	}
 
 	var req CreateTenantRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload: " + err.Error()})
 		return
 	}
 
@@ -231,15 +231,15 @@ type ListTenantData struct {
 }
 
 func (h *TenantHandler) List(c *gin.Context) {
-	// Permission check - only SYS_ADMIN can access
+	// Permission check - only SYS_ADMIN, OWNER, or ADMIN can access
 	roleVal, exists := c.Get("role")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 	role, ok := roleVal.(string)
-	if !ok || role != string(model.UserRoleSysAdmin) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied: SYS_ADMIN only"})
+	if !ok || (role != string(model.UserRoleSysAdmin) && role != string(model.UserRoleOwner) && role != string(model.UserRoleAdmin)) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied: SYS_ADMIN, OWNER, or ADMIN only"})
 		return
 	}
 
@@ -284,8 +284,8 @@ func (h *TenantHandler) Update(c *gin.Context) {
 		return
 	}
 	role, ok := roleVal.(string)
-	if !ok || role != string(model.UserRoleSysAdmin) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied: SYS_ADMIN only"})
+	if !ok || (role != string(model.UserRoleSysAdmin) && role != string(model.UserRoleOwner) && role != string(model.UserRoleAdmin)) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied: SYS_ADMIN, OWNER, or ADMIN only"})
 		return
 	}
 
@@ -357,8 +357,8 @@ func (h *TenantHandler) UpdateStatus(c *gin.Context) {
 		return
 	}
 	role, ok := roleVal.(string)
-	if !ok || role != string(model.UserRoleSysAdmin) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied: SYS_ADMIN only"})
+	if !ok || (role != string(model.UserRoleSysAdmin) && role != string(model.UserRoleOwner) && role != string(model.UserRoleAdmin)) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied: SYS_ADMIN, OWNER, or ADMIN only"})
 		return
 	}
 
@@ -442,8 +442,8 @@ func (h *TenantHandler) Impersonate(c *gin.Context) {
 		return
 	}
 	role, ok := roleVal.(string)
-	if !ok || role != string(model.UserRoleSysAdmin) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied: SYS_ADMIN only"})
+	if !ok || (role != string(model.UserRoleSysAdmin) && role != string(model.UserRoleOwner) && role != string(model.UserRoleAdmin)) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied: SYS_ADMIN, OWNER, or ADMIN only"})
 		return
 	}
 
