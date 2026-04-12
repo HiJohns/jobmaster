@@ -1,292 +1,305 @@
 # JobMaster UI Design Document
 
-This document describes the UI design planning for JobMaster system on PC and WeChat.
+This document describes the UI design specifications for JobMaster system on PC and WeChat platforms.
 
 ---
 
-## 1. Role & UI Mapping
+## 0. Design Goals & Principles
 
-### 1.1 PC UI Matrix
+### 0.1 Product Essence
 
-| Role | Normal View | Impersonated View | Description |
-|------|-------------|-------------------|-------------|
-| Super Admin | System Config | N/A | Global system config |
-| Main Tenant Admin | Tenant Management | N/A | Create tenants, contractors |
-| Tenant Admin | Tenant Overview | N/A | View tenants, branches, **associate contractors (requires impersonation)** |
-| Branch Admin | Order List/Detail | Branch Admin Backend | Create orders, **associate contractors (requires impersonation)**, generate QR, accept |
-| Branch Employee | Order List/Detail | N/A | Create orders |
-| Contractor Admin | Order List/Detail | Contractor Admin Backend | Assign orders, **associate vendors (requires impersonation)** |
-| Contractor Employee | Order List/Detail | N/A | Assign orders |
+> **JobMaster = Multi-role collaborative work order flow system (B2B + Operations Dispatch)**
+
+### 0.2 Core Experience Goals
+
+1. **Reduce complexity (multi-role)**
+2. **Strengthen state awareness (order flow)**
+3. **Improve operation efficiency (high-frequency tasks)**
+
+### 0.3 Design Principles
+
+#### Principle 1: Role-Invisible Design
+
+> **Don't let users perceive "roles", let them perceive "what I can do"**
+
+- Menus organized by "tasks" not "roles"
+- Same page, different permissions → control buttons, not different pages
+- **One UI + permission control > Multiple UIs**
+
+#### Principle 2: Work Order as Core Object
+
+All design revolves around:
+- Work order status
+- Work order flow
+- Work order responsibility
+
+#### Principle 3: State-Driven UI
+
+> **Buttons = Visualization of State Machine**
+
+Invalid buttons are not allowed (no grayed-out button piles)
+
+#### Principle 4: Operation Priority
+
+Each page can only have **1 Primary Action**
+
+| Page | Primary Action |
+|------|----------------|
+| Order List | Create Order |
+| Order Detail | Current state action (e.g., verify) |
+
+---
+
+## 1. Role & Interface Mapping
+
+### 1.1 PC Interface Matrix
+
+| Role | Normal View | Impersonated View | Notes |
+|------|-------------|-------------------|-------|
+| Super Admin | System Config | No impersonation | Global system config |
+| Main Tenant Admin | Tenant Management | No impersonation | Create tenants, contractors |
+| Tenant Admin | Tenant Overview | No impersonation | View tenant, branch list, **associate contractor (requires impersonation)** |
+| Branch Admin | Order List/Detail | Branch Admin Backend | Create orders, **associate contractor (requires impersonation)**, generate QR, verify |
+| Branch Employee | Order List/Detail | No impersonation | Create orders |
+| Contractor Admin | Order List/Detail | Contractor Admin Backend | Assign orders, **associate vendor (requires impersonation)** |
+| Contractor Employee | Order List/Detail | No impersonation | Assign orders |
 | Vendor Admin | Order List/Detail | Vendor Admin Backend | Receive orders, assign engineers |
-| Vendor Employee | Order List/Detail | N/A | Assign orders |
+| Vendor Employee | Order List/Detail | No impersonation | Assign orders |
 
-### 1.2 WeChat UI Matrix
+### 1.2 WeChat Interface Matrix
 
-| Role | UI | Description |
-|------|-----|-------------|
-| Engineer | Order List | View orders assigned to me |
-| Engineer | Order Detail | Accept, reserve time, arrive, depart |
-| Engineer | Arrive Scan | Scan work order QR to confirm arrival |
-| Engineer | Construction Record | Submit messages, upload photos |
+| Role | Interface | Notes |
+|------|-----------|-------|
+| Engineer | Order List | View orders assigned to self |
+| Engineer | Order Detail | Accept, schedule, arrive, depart |
+| Engineer | Scan to Arrive | Scan order QR to confirm arrival |
+| Engineer | Work Record | Submit messages, upload photos |
 
 ---
 
-## 2. PC Design
+## 2. Status Visualization Specification
 
-### 2.1 Login Page
+### 2.1 Status Color System
+
+| Status | Color | Hex | Description |
+|--------|-------|-----|-------------|
+| PENDING | Gray | #9CA3AF | Pending |
+| DISPATCHED | Blue | #3B82F6 | Assigned |
+| ACCEPTED | Cyan | #06B6D4 | Accepted, pending confirmation |
+| RESERVED | Orange | #F59E0B | Scheduled |
+| ARRIVED | Purple | #8B5CF6 | Arrived |
+| WORKING | Indigo | #6366F1 | In Progress |
+| FINISHED | Green | #10B981 | Completed |
+| OBSERVING | Yellow | #EAB308 | Observation Period |
+| CLOSED | Black | #1F2937 | Closed |
+
+### 2.2 Status Badge Application Locations
+
+- Order card in list page
+- Top status area in detail page
+- Timeline nodes
+- Dashboard stat cards
+
+---
+
+## 3. PC Design
+
+### 3.1 Main Layout (AppLayout)
+
+**Components**:
+- Top bar: Tenant name, current user, read-only watermark
+- Sidebar: Navigation menu
+- Breadcrumb
+- Content area
+
+#### Sidebar Structure (Unified)
+
+**Level 1 Menu**:
+```
+Dashboard
+Orders
+Organization
+Admin
+```
+
+**Dynamically displayed by role**, not different systems.
+
+### 3.2 Dashboard
+
+**Must implement**: Different cards for different roles.
+
+#### Branch Admin
+
+| Card | Content |
+|------|---------|
+| Today's Orders | Number + trend |
+| Pending | PENDING/ACCEPTED count |
+| In Progress | RESERVED/ARRIVED/WORKING count |
+| Exception Orders | Overdue or rejected count |
+
+#### Contractor
+
+| Card | Content |
+|------|---------|
+| To Assign | DISPATCHED count |
+| Engineer Load | Chart of orders per engineer |
+
+### 3.3 Login Page
 
 **Route**: `/login`
 
 **Features**:
-- Username/Email input
+- Username/email input
 - Password input
-- Remember account checkbox
+- Remember me checkbox
 - Login button
 - Forgot password link (TODO)
 
-### 2.2 Tenant Selection Page
+### 3.4 Tenant Selection Page
 
 **Route**: `/select-tenant`
 
 **Features**:
-- Tenant list (name, logo, role)
-- Tenant click to select
-- Single tenant auto-redirect
+- Tenant list display (name, logo, role)
+- Click to select tenant
+- Auto-redirect for single tenant
 
-**Trigger**: After login, if `GET /api/v1/auth/my-tenants` returns array length > 1
+**Trigger**: `GET /api/v1/auth/my-tenants` returns array length > 1
 
-### 2.3 Main Layout (AppLayout)
-
-**Components**:
-- Top bar: tenant name, current user, read-only watermark
-- Sidebar: navigation menu
-- Breadcrumb
-- Content area
-
-### 2.4 Super Admin UI
-
-#### 2.4.1 System Config Page
-
-**Route**: `/admin/system`
-
-**Features**:
-- System parameter config
-- Environment variable management (read-only)
-- System log viewing
-
-### 2.5 Main Tenant Admin UI
-
-#### 2.5.1 Tenant Management Page
-
-**Route**: `/admin/tenants`
-
-**Features**:
-- Tenant list (name, code, status)
-- Create tenant button → Modal
-- View tenant details
-- Edit tenant
-- Delete tenant (soft delete)
-
-#### 2.5.2 Contractor Management Page
-
-**Route**: `/admin/contractors`
-
-**Features**:
-- Contractor list (name, code, related tenant)
-- Create contractor button → Modal
-- View contractor details
-- Edit contractor
-
-#### 2.5.3 User Management Page
-
-**Route**: `/admin/users`
-
-**Features**:
-- User list (name, email, role, tenant)
-- Create user button → Modal
-- Search users (by name, email)
-- Assign role
-
-### 2.6 Tenant Admin UI
-
-#### 2.6.1 Tenant Overview Page
-
-**Route**: `/tenant/overview`
-
-**Features**:
-- Tenant basic info
-- Branch list
-- Related contractors list
-
-#### 2.6.2 Branch Management Page
-
-**Route**: `/tenant/branches`
-
-**Features**:
-- Branch list
-- Create branch → Modal
-- Branch details (related contractors)
-- **Assign contractors to branch (requires impersonation)**
-
-### 2.7 Branch Admin UI
-
-#### 2.7.1 Normal View: Order List
+### 3.5 Order List Page
 
 **Route**: `/orders`
 
-**Features**:
-- Week calendar selector
-- Status Tabs: Pending, In Progress, Needs Correction, Completed
-- Search box (fuzzy search order no., address)
-- Order card list
-- Create order button
+**Layout**:
+- Top: Week calendar selector + status filter tabs
+- Middle: Order card list
+- Bottom: Pagination
 
-#### 2.7.2 Normal View: Order Detail
+#### Order Card (Core Component)
+
+**Card Info**:
+- Order number
+- Address
+- Status (large badge, color-coded)
+- Current assignee
+- Time (scheduled/created)
+- Urgent flag (red corner badge)
+
+**Design Rules**:
+- Cards > Tables (more intuitive)
+- Tables only for admin backend (users/tenants)
+
+### 3.6 Order Detail Page
 
 **Route**: `/orders/:id`
 
 **Features**:
-- Order basic info (no., status, created time)
-- Device info (type, brand, location)
+- Basic info (order number, status, created time)
+- Equipment info (type, brand, location)
 - Geo location (address, coordinates)
 - Timeline (status change times)
 - Fee info (labor_fee, material_fee, other_fee)
-- **Generate Arrival QR Code button** (status = RESERVED/ARRIVED)
-- **Accept button** (status = FINISHED)
-- **Reject button** (status = FINISHED)
 
-#### 2.7.3 Impersonated View: Branch Admin Backend
+#### State-Driven Buttons
 
-**Route**: `/branch-admin`
+| Status | Buttons Shown |
+|--------|---------------|
+| DISPATCHED | [Assign Engineer] [Assign Vendor] |
+| ACCEPTED | [Confirm Appointment Time] |
+| RESERVED | [Generate QR Code] |
+| FINISHED | [Approve] [Disprove] |
+| OBSERVING | [Approve] [Disprove] |
+
+### 3.7 Impersonated View Design (High Risk)
+
+#### Global Warning Bar (Like Stripe)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ ⚠️ You are operating as [Admin]                    [Exit Admin] │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### UI Changes (Must be Obvious)
+
+| Component | Normal View | Impersonated View |
+|-----------|-------------|-------------------|
+| Top bar | No change | **Red/Purple background** + "Impersonating" indicator |
+| Page | Normal | Slightly grayed background |
+| Buttons | Normal | "Admin Action" label added |
+| Sidebar | Business menu | Admin menu |
+
+#### Operation Confirmation (Double Confirm)
+
+These operations must show confirmation dialog:
+- Delete user
+- Assign relationship
+| Reject acceptance
+
+### 3.8 Create Order Modal
 
 **Features**:
-- Employee list
-- Create employee → Modal
-- Related contractors list
-- Order statistics panel
-
-#### 2.7.4 Create Order Modal
-
-**Features**:
-- Device type selection
+- Equipment type selection
 - Brand selection
 - Fault category selection
 - Fault description (text)
 - Photo upload (multiple)
 - Urgency toggle
 
-### 2.8 Branch Employee UI
-
-Same as Branch Admin normal view, differences:
-- No impersonation entry
-- No accept button
-- No generate QR button
-
-### 2.9 Contractor Admin UI
-
-#### 2.9.1 Normal View: Order List
-
-**Route**: `/orders`
-
-**Features**:
-- Order list (assigned to me + transferred to me)
-- Status filter
-- Order detail
-
-#### 2.9.2 Normal View: Order Detail
-
-**Features**:
-- Fee desensitization (hide amounts)
-- **Assign order to Engineer button** (status = DISPATCHED/RESERVED)
-- **Assign order to Vendor button** (status = DISPATCHED/RESERVED)
-
-#### 2.9.3 Impersonated View: Contractor Admin Backend
-
-**Route**: `/contractor-admin`
-
-**Features**:
-- Employee list (employee + engineer)
-- Create employee/engineer
-- Vendor list (can add external vendors)
-- Add vendor search
-
-### 2.10 Vendor Admin UI
-
-#### 2.10.1 Normal View: Order List
-
-**Route**: `/orders`
-
-**Features**:
-- Order list (transferred to me)
-- Status filter
-
-#### 2.10.2 Normal View: Order Detail
-
-**Features**:
-- **Assign order to Engineer button**
-
-#### 2.10.3 Impersonated View: Vendor Admin Backend
-
-**Route**: `/vendor-admin`
-
-**Features**:
-- Employee list
-- Engineer list
-- Create employee/engineer
-
 ---
 
-## 3. WeChat Design
+## 4. WeChat Design
 
-### 3.1 WeChat Architecture
+### 4.1 Design Goal
+
+> **Complete operation within 3 seconds**
+
+### 4.2 WeChat Architecture
 
 - WeChat Mini Program or H5 (using WeChat JS-SDK)
-- WeChat auth login (silent)
+- WeChat auth login (silent openid acquisition)
 - Lightweight mobile UI
 
-### 3.2 WeChat Login Page
-
-**Route**: `/wechat/login`
-
-**Features**:
-- WeChat auth button
-- Auto login (silent)
-- Bind existing account (first login)
-
-### 3.3 Engineer Home Page
+### 4.3 Engineer Home
 
 **Route**: `/wechat/orders`
 
-**Features**:
-- Order list (assigned to me)
-- Status badges (Reserved/Arrived/Working)
-- Order count statistics
+**Layout**:
+- Top: Today's order count + status stats (horizontal scroll)
+- Middle: Order cards (large cards)
+- Bottom: Tab navigation (Home / Mine)
 
-### 3.4 Engineer Order Detail Page
+### 4.4 Engineer Order Detail
 
 **Route**: `/wechat/orders/:id`
 
+**Design: Step Flow**
+
+```
+Accept → Schedule → Arrive → Work → Depart
+```
+
+Each step is a **large button** (highlighted, huge, easy to tap).
+
 **Features**:
-- Order basic info
-- Device info
+- Basic order info
+- Equipment info
 - Geo location (map display)
-- **Accept button** (status = DISPATCHED)
-- **Reserve time picker** (status = DISPATCHED)
-- **Scan to Arrive button** (status = RESERVED, use WeChat scan)
-- **Departure button** (status = WORKING)
+- **Accept button** (status = DISPATCHED) - Primary action, single large button
+- **Schedule time picker** (status = ACCEPTED)
+- **Scan to arrive button** (status = RESERVED, calls WeChat scan)
+- **Depart button** (status = WORKING)
 - Status timeline
 
-### 3.5 WeChat Scan Arrive Page
+### 4.5 Scan Experience Optimization
 
-**Route**: `/wechat/arrive/:qrcode`
+**Optimizations**:
+- Auto-redirect after scan (minimize confirmation pages)
+- Auto-get GPS
+- Auto-open camera
+- Minimize clicks
 
-**Features**:
-- Scan result display
-- Confirm arrival button
-- GPS location (WeChat JSSDK)
-- Photo upload (arrival photo)
-
-### 3.6 Engineer Construction Record Page
+### 4.6 Work Record Page
 
 **Route**: `/wechat/orders/:id/record`
 
@@ -296,22 +309,21 @@ Same as Branch Admin normal view, differences:
 - Photo preview and delete
 - Submit button
 
-### 3.7 WeChat Common Components
-
-- Bottom navigation: Home, Mine
-- Navigation bar: Back button + Title
-- Loading indicator
-- Error Toast
+**Upload Strategy**:
+- Upload first, submit later (async mode)
+- Engineer uploads one by one
+- Submit only sends URL array
+- Prevents form refill anxiety in basements with poor signal
 
 ---
 
-## 4. Impersonation Mechanism
+## 5. Impersonation Mechanism
 
-### 4.1 Impersonation Flow
+### 5.1 Impersonation Flow
 
 ```
 1. Normal user clicks "Enter Admin Backend"
-2. Call POST /api/v1/auth/impersonate
+2. Call POST /api/v1/auth/impersonate { tenant_id: "uuid" }
 3. Server returns new JWT token (contains impersonator_id)
 4. Frontend switches token, enters impersonated view
 5. Click "Exit Admin Interface"
@@ -319,7 +331,7 @@ Same as Branch Admin normal view, differences:
 7. Server returns original normal token
 ```
 
-### 4.2 UI Changes After Impersonation
+### 5.2 Impersonated View Changes
 
 | Component | Normal View | Impersonated View |
 |-----------|-------------|-------------------|
@@ -330,16 +342,16 @@ Same as Branch Admin normal view, differences:
 
 ---
 
-## 5. UI State Management
+## 6. UI State Management
 
-### 5.1 Read-only Mode
+### 6.1 Read-only Mode
 
 When `is_impersonated = true`:
 - All inputs disabled
 - All action buttons hidden
 - Data display only
 
-### 5.2 Status Interaction
+### 6.2 Status Interaction
 
 | Order Status | Branch Actions | Contractor Actions | Vendor Actions | Engineer Actions |
 |--------------|----------------|--------------------|-----------------|-------------------|
@@ -352,3 +364,66 @@ When `is_impersonated = true`:
 | FINISHED | Verify | View | View | - |
 | OBSERVING | Verify | View | View | - |
 | CLOSED | View | View | View | - |
+
+---
+
+## 7. Component Design Specification
+
+### 7.1 Common Components
+
+| Component | Variants |
+|-----------|----------|
+| Button | Primary / Secondary / Danger / Outline |
+| Tag | Status badges (color-coded) |
+| Card | Order card, stat card |
+| Timeline | Timeline |
+| Modal | Form modal, confirm modal |
+
+### 7.2 Business Components
+
+| Component | Description |
+|-----------|-------------|
+| OrderCard | Core component, order card |
+| OrderTimeline | Order status timeline |
+| StatusBadge | Status badge |
+| FeeBlock | Fee display area |
+| GeofencingAlert | Remote check-in warning |
+
+---
+
+## 8. Visual Style
+
+### 8.1 Recommended Style
+
+> **Modern SaaS Style (Like: Linear / Notion / Stripe)**
+
+### 8.2 Colors
+
+- Primary: Blue (actions) #3B82F6
+- Status colors: Multi-color (order states)
+- Background: Light gray #F9FAFB
+- Danger: Red #EF4444
+
+### 8.3 Layout
+
+- Card-based
+- Generous whitespace
+- Minimal borders
+
+### 8.4 Details
+
+- Hover animations
+- Skeleton loading
+- Transition animations (state changes)
+
+---
+
+## 9. Optimization Priority
+
+| Priority | Module | Importance |
+|----------|--------|------------|
+| 1 | Order UI (list + detail) | ⭐⭐⭐⭐⭐ |
+| 2 | State-driven buttons | ⭐⭐⭐⭐ |
+| 3 | Impersonation UI warning | ⭐⭐⭐⭐ |
+| 4 | Dashboard | ⭐⭐⭐ |
+| 5 | WeChat flow optimization | ⭐⭐⭐ |
