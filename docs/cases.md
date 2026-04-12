@@ -31,7 +31,7 @@
 用户创建以下账户
 
 - 租户tenant1/tenant2管理员的个人账户(admin@tenant1 / admin@tenant2)
-- 工程公司 firm1 / firm2 / firm3同步登录工程公司管理员的个人账户（admin@firm1 / admin@firm2 / admin@firm3），注意工程公司在这个体系中也是一种租户
+- 工程公司 contractor1 / contractor2 / contractor3同步登录工程公司管理员的个人账户（admin@contractor1 / admin@contractor2 / admin@contractor3），注意工程公司在这个体系中也是一种租户
 
 用户查看租户列表，可以看到新建的租户和新建的工程公司
 
@@ -47,39 +47,41 @@
 
 用户查看分公司列表（此时为空）
 
-用户创建分公司 sub1 / sub2，同步登记分公司管理员的 个人账户（admin@sub1 / admin@sub2）
+用户创建分公司 branch1 / branch2，同步登记分公司管理员的 个人账户（admin@branch1 / admin@branch2）
 
 用户查看分公司列表，可以看到新建的分公司
 
 用户查看用户列表，可以看到租户管理员、分公司管理员和工程公司管理员的用户，看不到超级用户和主户管理员。
 
-用户用 firm1搜索，可以搜索 firm1 / firm2 / firm3
+用户用 contractor1搜索，可以搜索 contractor1 / contractor2 / contractor3
 
-用户将 firm1分配给 sub1
+用户将 contractor1分配给 branch1（需提权）
 
-用户查看 firm1详情，可以看到业务来源中有 Sub1
+用户查看 contractor1详情，可以看到业务来源中有 branch1
 
-用户查看 sub1详情，可以看到关联的工程公司有 firm1
+用户查看 branch1详情，可以看到关联的工程公司有 contractor1
 
-用户查看日志，可以看到自己登录、创建分公司和管理员、分配 firm1的记录
+用户查看日志，可以看到自己登录、创建分公司和管理员、分配 contractor1的记录
 
 ## 用例04 分公司管理员登录
 
-前置条件：分公司 sub1已创建
+前置条件：分公司 branch1已创建
 
-用户使用admin@sub1 +通用密码登录
+用户使用admin@branch1 +通用密码登录
 
 用户呼叫 API 进入管理界面（服务器端分配给提权 token）
 
-用户创建员工账户 employee1（employee1@sub1）
+用户创建员工账户 employee1（employee1@branch1）
 
 用户查看用户列表，可以看到分公司管理员和员工用户。
 
 用户退出管理界面（服务器端重新生成普权token）
 
-用户查看关联的工程公司，可以看到firm1
+用户查看关联的工程公司，可以看到contractor1
 
-用户创建工单1、2，指派给firm1
+用户将 contractor1分配给 branch1（需提权）
+
+用户创建工单1、2，指派给contractor1
 
 用户查看工单列表，看到自己创建的工单1、2
 
@@ -87,19 +89,19 @@
 
 ## 用例05 分公司员工登录
 
-前置条件：分公司 sub1已创建，员工已创建
+前置条件：分公司 branch1已创建，员工已创建
 
-用户使用employee1@sub1通用密码登录
+用户使用employee1@branch1通用密码登录
 
-用户查看关联的工程公司，可以看到firm1
+用户查看关联的工程公司，可以看到contractor1
 
-用户创建工单3、4，指派给firm1
+用户创建工单3、4，指派给contractor1
 
 用户查看日志，可以看到自己登录、创建工单的记录
 
 用户查看工单列表，看到工单1~4处于等待状态
 
-用户使用admin@sub1登录
+用户使用admin@branch1登录
 
 用户查看日志可以看到 employee1创建工单的记录
 
@@ -107,29 +109,29 @@
 
 ## 用例06 工程公司管理员登录
 
-前置条件：工程公司 firm1已创建
+前置条件：工程公司 contractor1已创建
 
-用户使用admin@firm1+通用密码登录
+用户使用admin@contractor1+通用密码登录
 
 用户呼叫 API 进入管理界面（服务器端分配给提权 token）
 
-用户创建员工账户 employee1（employee1@firm1）
+用户创建员工账户 employee1（employee1@contractor1）
 
-用户创建工程师账户 engineer1（engineer1@firm1）和engineer2（engineer2@firm1）
+用户创建工程师账户 engineer1（engineer1@contractor1）和engineer2（engineer2@contractor1）
 
 用户查看用户列表，可以看到工程公司管理员、员工、工程师用户。
 
-用户用关键字firm2搜索，找到公司 firm2
+用户用关键字contractor2搜索，找到公司 contractor2
 
-用户将公司 firm2加入自己的供应商列表
+用户将公司 contractor2加入自己的供应商列表（需提权）
 
-用户查看供应商列表，看到 firm2
+用户查看供应商列表，看到 contractor2
 
 用户退出管理界面（服务器端重新生成普权token）
 
 用户查看工单列表，看到工单1~4处于等待状态
 
-用户将工单1分配给 Engineer1，3分配给 firm2
+用户将工单1分配给 Engineer1，3分配给 contractor2
 
 系统开始微信呼叫工程师 Engineer1
 
@@ -139,13 +141,13 @@
 
 ## 用例07 工程公司员工登录
 
-前置条件：工程公司 firm1已创建，员工已创建
+前置条件：工程公司 contractor1已创建，员工已创建
 
-用户使用employee1@firm1+通用密码登录
+用户使用employee1@contractor1+通用密码登录
 
 用户查看工单列表，可以看到工单1-4其中2、4处于等待状态
 
-用户将工单2分配给 Engineer2，4分配给 firm2
+用户将工单2分配给 Engineer2，4分配给 contractor2
 
 系统开始微信呼叫工程师 Engineer2
 
@@ -155,17 +157,17 @@
 
 ## 用例08 供应商管理员登录
 
-前置条件：工程公司 firm2已创建
+前置条件：供应商 contractor2已创建
 
-用户使用admin@firm2+通用密码登录
+用户使用admin@contractor2+通用密码登录
 
 用户呼叫 API 进入管理界面（服务器端分配给提权 token）
 
-用户创建员工账户 employee1（employee1@firm2）
+用户创建员工账户 employee1（employee1@contractor2）
 
-用户创建工程师账户 engineer1（engineer1@firm2）和engineer2（engineer2@firm2）
+用户创建工程师账户 engineer1（engineer1@contractor2）和engineer2（engineer2@contractor2）
 
-用户查看用户列表，可以看到工程公司管理员、员工、工程师用户。
+用户查看用户列表，可以看到供应商管理员、员工、工程师用户。
 
 用户退出管理界面（服务器端重新生成普权token）
 
@@ -179,11 +181,11 @@
 
 用户查看日志，可以看到自己登录、创建员工、工程师用户、分配工单的记录
 
-## 用例07 供应商员工登录
+## 用例09 供应商员工登录
 
-前置条件：工程公司 firm2已创建，员工已创建
+前置条件：供应商 contractor2已创建，员工已创建
 
-用户使用employee1@firm2+通用密码登录
+用户使用employee1@contractor2+通用密码登录
 
 用户查看工单列表，可以看到工单3、4其中4处于流转状态
 
@@ -195,17 +197,17 @@
 
 用户查看日志，可以看到自己登录、分配工单的记录
 
-## 用例08 维修流程
+## 用例10 维修流程
 
 前置条件：工程师收到微信呼叫
 
-工程师使用engineerX@firmY+通用密码登录
+工程师使用engineerX@contractorY+通用密码登录
 
 工程师查看工单列表，可以看到分配给自己的工单 X
 
 工程师通过 API 确认接单，设置上门时间
 
-系统自动通知工单 X 的创建人所在的分公司 sub1（工程师、上门时间）
+系统自动通知工单 X 的创建人所在的分公司 branch1（工程师、上门时间）
 
 employee1登录，查看工单列表，打开相应的工单 X ，可以看到工程师和上门时间，点击确认
 
@@ -222,3 +224,36 @@ employee1登录，打开工单 X，点击生成进场确认二维码，服务端
 employee 登录，打开工单 X，点击验收通过，服务器端将工单状态转为完成（生成日志）
 
 系统自动通知工程师和所在公司。
+
+---
+
+## 权限说明：关联组织
+
+### 关联操作必须提权
+
+以下关联组织操作必须在提权（Impersonation）状态下完成：
+
+| 操作类型 | 角色 | 提权后操作 |
+|----------|------|------------|
+| 给分公司指定工程公司 | 租户管理员 | 将工程公司分配给分公司 |
+| 给分公司指定工程公司 | 分公司管理员 | 将工程公司分配给自己所属分公司 |
+| 给工程公司指定供应商 | 工程公司管理员 | 将供应商加入工程公司的供应商列表 |
+
+### 关联关系
+
+```
+租户 (Tenant)
+    │
+    ├── 分公司 (Branch)
+    │       └── 关联工程公司 (Contractor) ← 需提权操作
+    │
+    └── 工程公司 (Contractor)
+            └── 关联供应商 (Vendor) ← 需提权操作
+```
+
+### 权限说明
+
+- **租户管理员**：可给分公司分配工程公司（需提权）
+- **分公司管理员**：可给自己所属分公司分配工程公司（需提权）
+- **工程公司管理员**：可添加外部供应商到自己公司（需提权）
+- **普通员工**：不可进行关联组织操作
