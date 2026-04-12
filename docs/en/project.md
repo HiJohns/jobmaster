@@ -8,6 +8,24 @@ JobMaster is an intelligent work order management system for chain maintenance s
 - **False Arrival**: Lack of effective arrival verification mechanism
 - **Quality Disputes**: Subsequent disputes caused by "fix and leave" approach
 
+Business logic reference:
+- [Business Architecture Specification](docs/business_architecture.md)
+- [Test Case Flow Document](docs/cases.md) - Contains 8 core user scenario end-to-end test flows
+
+### 1.1.1 Arrival & Construction Flow Supplement
+
+Based on cases.md analysis, the complete arrival and construction flow is as follows:
+
+1. **Store Employee Generates QR Code**: Employee opens work order detail, clicks "Generate Arrival Confirmation QR Code"
+2. **Engineer Scans to Arrive**: Engineer uses WeChat to scan QR code, clicks "Arrival", status changes to "Working"
+3. **Engineer Construction Records**:
+   - Submit text messages
+   - Upload construction photos
+   - Submit departure confirmation
+4. **Store Acceptance**: Store employee clicks "Acceptance Passed", status changes to "Completed"
+
+> **Note**: Engineer construction message and photo records during construction is a missing feature in the current version that needs to be implemented.
+
 ### 1.2 Five-Party Collaboration Model
 
 | Role | Identifier | Core Responsibilities |
@@ -264,6 +282,41 @@ const OrderContainer: React.FC = () => {
 
 ### [TODO]
 *None*
+
+---
+
+## 9. Test Case Flow (Based on cases.md)
+
+All features implemented in this project revolve around the 8 core user scenarios defined in `docs/cases.md`.
+
+### 9.1 Role Hierarchy & Permission Matrix
+
+| Level | Role | Can Impersonate | Can Manage | Can Create Order | Can Assign Order | Can Execute |
+|-------|------|-----------------|------------|-------------------|-------------------|--------------|
+| System | Super Admin | ❌ | Global | ❌ | ❌ | ❌ |
+| Main Tenant | Main Tenant Admin | ❌ | Main Tenant | ❌ | ❌ | ❌ |
+| Tenant | Tenant Admin | ✅ | Tenant | ❌ | ❌ | ❌ |
+| Branch | Branch Admin | ✅ | Branch | ✅ | ✅ | ❌ |
+| Branch | Employee | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Main Contractor | Main Contractor Admin | ✅ | Main Contractor | ❌ | ✅ | ❌ |
+| Main Contractor | Employee | ❌ | ❌ | ❌ | ✅ | ❌ |
+| Main Contractor | Engineer | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Vendor | Vendor Admin | ✅ | Vendor | ❌ | ✅ | ❌ |
+| Vendor | Employee | ❌ | ❌ | ❌ | ✅ | ❌ |
+| Vendor | Engineer | ❌ | ❌ | ❌ | ❌ | ✅ |
+
+### 9.2 Arrival & Construction Flow (Supplement)
+
+Based on cases.md Use Case 08 complete flow:
+
+```
+Store Generates QR Code → Engineer Scans to Arrive → Engineer Constructs (Message + Photos) → Engineer Departs → Store Accepts
+```
+
+**Engineer Construction Record Features**:
+- Text Messages: Engineer can submit text explanations during construction
+- Construction Photos: Engineer can upload multiple on-site photos as evidence
+- Departure Confirmation: Engineer submits departure, work order enters acceptance stage
 
 ---
 
