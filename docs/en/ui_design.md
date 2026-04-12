@@ -323,7 +323,7 @@ Same as Branch Admin normal view, differences:
 
 | Component | Normal View | Impersonated View |
 |-----------|-------------|-------------------|
-| Top bar | No change | Shows "Impersonating" indicator |
+| Top bar | No change | Dark background + "Impersonating" indicator |
 | Sidebar | Business menu | Admin menu |
 | Order actions | Business operations | Admin operations |
 | Read-only mode | N/A | Not affected by is_impersonated |
@@ -341,13 +341,14 @@ When `is_impersonated = true`:
 
 ### 5.2 Status Interaction
 
-| Order Status | Store Actions | Contractor Actions | Vendor Actions | Engineer Actions |
-|--------------|---------------|--------------------|-----------------|-------------------|
+| Order Status | Branch Actions | Contractor Actions | Vendor Actions | Engineer Actions |
+|--------------|----------------|--------------------|-----------------|-------------------|
 | PENDING | Create order | Assign order | - | - |
-| DISPATCHED | View | Assign engineer/vendor | Assign engineer | Accept |
+| DISPATCHED | View | Assign engineer/vendor | Assign engineer | Acknowledge |
+| ACCEPTED | Confirm time | View | View | Set appointment |
 | RESERVED | Generate QR | View | View | Scan arrive |
 | ARRIVED | View | View | View | Start work |
-| WORKING | View | View | View | Submit construction record |
-| FINISHED | Accept | View | View | - |
-| OBSERVING | Accept | View | View | - |
+| WORKING | View | View | View | Submit record |
+| FINISHED | Verify | View | View | - |
+| OBSERVING | Verify | View | View | - |
 | CLOSED | View | View | View | - |

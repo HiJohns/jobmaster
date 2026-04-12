@@ -203,9 +203,9 @@ Engineer logs in with engineerX@contractorY + common password
 
 Engineer views work order list, can see work order X assigned to self
 
-Engineer confirms order via API, sets appointment time
+Engineer acknowledges order via API, sets appointment time
 
-System automatically notifies branch branch1 (engineer, appointment time) where work order X creator belongs
+Server changes work order status to accepted (ACCEPTED), and notifies branch branch1 (engineer, appointment time) where work order X creator belongs
 
 employee1 logs in, views work order list, opens corresponding work order X, can see engineer and appointment time, clicks confirm
 

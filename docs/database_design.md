@@ -95,7 +95,7 @@
 | id | UUID | 主键 |
 | tenant_id | UUID | 租户 ID |
 | order_no | VARCHAR(30) | 工单号（唯一） |
-| status | SMALLINT | 状态：1-PENDING 2-DISPATCHED 3-RESERVED 4-ARRIVED 5-WORKING 6-FINISHED 7-OBSERVING 8-CLOSED |
+| status | SMALLINT | 状态：1-PENDING 2-DISPATCHED 3-ACCEPTED 4-RESERVED 5-ARRIVED 6-WORKING 7-FINISHED 8-OBSERVING 9-CLOSED |
 | store_id | UUID | 分公司 ID（组织 ID） |
 | vendor_id | UUID | 供应商 ID（组织 ID，可空） |
 | engineer_id | UUID | 工程师 ID（用户 ID，可空） |
@@ -229,26 +229,31 @@
 ### 工单状态流转
 
 ```
-PENDING (1)     → DISPATCHED (2)   → RESERVED (3)    → ARRIVED (4)
-    │                    │                  │                 │
-    │                    │                  │                 ▼
-    ▼                    ▼                  ▼            WORKING (5)
-    │                    │                  │                 │
-    │                    │                  │                 ▼
-    └────────────────────┴──────────────────┘            FINISHED (6)
-                                                          │
-                                                          ▼
-                                                    OBSERVING (7)
-                                                          │
-                                                          ▼
-                                                      CLOSED (8)
+PENDING (1) → DISPATCHED (2) → ACCEPTED (3) → RESERVED (4) → ARRIVED (5)
+                                                             │
+                                                             ▼
+                                                        WORKING (6)
+                                                             │
+                                                             ▼
+                                                        FINISHED (7)
+                                                             │
+                                                             ▼
+                                                       OBSERVING (8)
+                                                             │
+                                                             ▼
+                                                         CLOSED (9)
 ```
 
 ### 验收不通过回流
 
 ```
-FINISHED (6) / OBSERVING (7) → REJECTED → DISPATCHED (2)
+FINISHED (7) / OBSERVING (8) → REJECTED → DISPATCHED (2)
 ```
+
+### 二次握手逻辑
+
+- **ACCEPTED (3)**: 工程师接单后设置预约时间，等待分公司确认
+- **RESERVED (4)**: 分公司确认预约时间后正式进入预约状态
 
 ---
 

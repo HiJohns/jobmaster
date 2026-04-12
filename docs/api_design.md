@@ -73,6 +73,13 @@
 
 **端点**: `POST /api/v1/auth/impersonate`
 
+**请求体**:
+```json
+{
+  "tenant_id": "uuid"
+}
+```
+
 **请求头**: `Authorization: Bearer {token}`
 
 **响应**:
@@ -85,6 +92,8 @@
   }
 }
 ```
+
+**说明**: 用户可能属于多个租户，提权时需指定目标租户。
 
 ### 1.5 退出提权
 
@@ -417,9 +426,9 @@
 
 **适用角色**: MAIN_CONTRACTOR
 
-### 3.5 接单/拒单
+### 3.5 工程师响应（接单/拒单）
 
-**端点**: `POST /api/v1/orders/respond`
+**端点**: `POST /api/v1/orders/acknowledge`
 
 **请求体**:
 ```json
@@ -438,9 +447,28 @@
 }
 ```
 
-**适用角色**: VENDOR（状态 = DISPATCHED）
+**适用角色**: VENDOR / ENGINEER（状态 = DISPATCHED）
 
-### 3.6 预约时间
+**状态变更**: DISPATCHED → ACCEPTED（接单）/ 保持 DISPATCHED（拒单）
+
+### 3.6 分公司确认预约时间
+
+**端点**: `POST /api/v1/orders/confirm-time`
+
+**请求体**:
+```json
+{
+  "order_id": "uuid"
+}
+```
+
+**适用角色**: BRANCH（状态 = ACCEPTED）
+
+**状态变更**: ACCEPTED → RESERVED
+
+**说明**: 工程师接单后设置预约时间，分公司确认后正式进入预约状态（二次握手逻辑）。
+
+### 3.7 预约时间（工程师设置）
 
 **端点**: `POST /api/v1/orders/reserve`
 
@@ -452,9 +480,11 @@
 }
 ```
 
-**适用角色**: VENDOR / ENGINEER（状态 = DISPATCHED）
+**适用角色**: VENDOR / ENGINEER（状态 = ACCEPTED）
 
-### 3.7 生成进场二维码
+**说明**: 仅设置预约时间，需分公司确认后才转为 RESERVED。
+
+### 3.8 生成进场二维码
 
 **端点**: `POST /api/v1/orders/qrcode`
 
@@ -471,14 +501,23 @@
   "code": 0,
   "data": {
     "qrcode_url": "string",
-    "qrcode_token": "string"
+    "qrcode_token": "string",
+    "geofencing": {
+      "center_lat": "float",
+      "center_lng": "float",
+      "radius_meters": 500
+    }
   }
 }
 ```
 
-**适用角色**: STORE（状态 = RESERVED/ARRIVED）
+**适用角色**: BRANCH（状态 = RESERVED/ARRIVED）
 
-### 3.8 进场确认
+**安全说明**: 
+- qrcode_token 为一次性使用，进场确认后立即失效
+- 工程师签到位置需在分公司地址 500 米范围内，否则标记为"异地签到"
+
+### 3.9 进场确认
 
 **端点**: `POST /api/v1/orders/arrive`
 
@@ -716,7 +755,7 @@
 
 | 端点 | action 值 | 说明 |
 |------|-----------|------|
-| `POST /api/v1/orders/respond` | `accept` / `reject` | 接单或拒单 |
+| `POST /api/v1/orders/acknowledge` | `accept` / `reject` | 工程师响应接单或拒单 |
 | `POST /api/v1/orders/verify` | `approve` / `disprove` | 验收通过或不通过 |
 
 ### 8.3 响应格式

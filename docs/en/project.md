@@ -50,6 +50,8 @@ PENDING (Repair Request)
     ↓
 DISPATCHED (Assigned)
     ↓
+ACCEPTED (Accepted, Pending Time Confirmation)
+    ↓
 RESERVED (Scheduled)
     ↓
 ARRIVED (Arrival Confirmed)
@@ -69,14 +71,23 @@ CLOSED (Accepted / Enter Manual Settlement)
 |-------|---------|-------------------|--------------|
 | Repair Request | PENDING | Branch submits repair ticket | Create work order, record equipment info, urgency level |
 | Assigned | DISPATCHED | Main Contractor assigns vendor | Bind Vendor/Engineer |
-| Scheduled | RESERVED | Vendor confirms available time | Record scheduled_at |
+| Accepted | ACCEPTED | Engineer acknowledges order | Record appointed_at (pending confirmation) |
+| Scheduled | RESERVED | Branch confirms appointment time | Confirm scheduled_at |
 | Arrival Confirmed | ARRIVED | Engineer GPS check-in + photo verification | Record arrived_at, location |
 | In Progress | WORKING | Engineer starts work | Record started_at |
 | Departure Confirmed | FINISHED | Engineer submits departure | Record finished_at, work summary |
 | Observation Period | OBSERVING | System automatically enters | Set observing_deadline |
 | Closed | CLOSED | Branch accepts work | Record closed_at, settlement amount |
 
-### 2.3 Rollback Logic (Critical)
+### 2.3 Double Handshake Logic
+
+**Engineer Order Acceptance Flow**:
+1. Engineer acknowledges order → Status becomes ACCEPTED, engineer sets appointment time
+2. Branch confirms appointment time → Status becomes RESERVED
+
+**Business Value**: Branch needs to confirm whether the engineer's proposed time affects normal store operations, meeting high-value maintenance scenario requirements.
+
+### 2.4 Rollback Logic (Critical)
 
 **Acceptance Failed Scenario**:
 - Trigger: OBSERVING phase, Branch clicks "Acceptance Failed"

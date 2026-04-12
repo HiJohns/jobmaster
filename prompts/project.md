@@ -50,6 +50,8 @@ PENDING (报修)
     ↓
 DISPATCHED (已指派)
     ↓
+ACCEPTED (已接单，待确认时间)
+    ↓
 RESERVED (已预约进场时间)
     ↓
 ARRIVED (已到场确认)
@@ -69,14 +71,23 @@ CLOSED (验收通过/进入手动结算)
 |------|------|----------|----------|
 | 报修 | PENDING | 分公司提交报修单 | 创建工单，记录设备信息、紧急程度 |
 | 已指派 | DISPATCHED | 工程公司分配供应商 | 绑定 Vendor/Engineer |
-| 已预约 | RESERVED | 供应商确认可进场时间 | 记录 scheduled_at |
+| 已接单 | ACCEPTED | 工程师响应接单 | 记录 appointed_at（待确认） |
+| 已预约 | RESERVED | 分公司确认预约时间 | 确认 scheduled_at |
 | 已到场 | ARRIVED | 工程师 GPS 打卡+照片验证 | 记录 arrived_at, location |
 | 施工中 | WORKING | 工程师开始作业 | 记录 started_at |
 | 离场确认 | FINISHED | 工程师提交离场 | 记录 finished_at, 施工总结 |
 | 观察期 | OBSERVING | 系统自动进入 | 设置 observing_deadline |
 | 已关闭 | CLOSED | 分公司验收通过 | 记录 closed_at, 结算金额 |
 
-### 2.3 回流逻辑 (Critical)
+### 2.3 二次握手逻辑 (Double Handshake)
+
+**工程师接单流程**：
+1. 工程师响应接单（acknowledge）→ 状态变为 ACCEPTED，工程师设置预约时间
+2. 分公司确认预约时间（confirm-time）→ 状态变为 RESERVED
+
+**业务价值**：分公司需要确认工程师给出的时间是否影响门店正常营业，符合高价值维保场景的需求。
+
+### 2.4 回流逻辑 (Critical)
 
 **验收不通过场景**：
 - 触发条件：OBSERVING 阶段，分公司点击"验收不通过"

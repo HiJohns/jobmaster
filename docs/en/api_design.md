@@ -73,6 +73,13 @@ This document describes all API interface designs for the JobMaster system.
 
 **Endpoint**: `POST /api/v1/auth/impersonate`
 
+**Request Body**:
+```json
+{
+  "tenant_id": "uuid"
+}
+```
+
 **Request Header**: `Authorization: Bearer {token}`
 
 **Response**:
@@ -85,6 +92,8 @@ This document describes all API interface designs for the JobMaster system.
   }
 }
 ```
+
+**Note**: User may belong to multiple tenants, must specify target tenant when elevating.
 
 ### 1.5 Exit Impersonate
 
@@ -417,9 +426,9 @@ This document describes all API interface designs for the JobMaster system.
 
 **Applicable Role**: MAIN_CONTRACTOR
 
-### 3.5 Accept/Reject Order
+### 3.5 Engineer Acknowledge (Accept/Reject)
 
-**Endpoint**: `POST /api/v1/orders/respond`
+**Endpoint**: `POST /api/v1/orders/acknowledge`
 
 **Request Body**:
 ```json
@@ -438,9 +447,28 @@ Or
 }
 ```
 
-**Applicable Role**: VENDOR (status = DISPATCHED)
+**Applicable Role**: VENDOR / ENGINEER (status = DISPATCHED)
 
-### 3.6 Reserve Time
+**Status Change**: DISPATCHED → ACCEPTED (accept) / remain DISPATCHED (reject)
+
+### 3.6 Branch Confirm Appointment Time
+
+**Endpoint**: `POST /api/v1/orders/confirm-time`
+
+**Request Body**:
+```json
+{
+  "order_id": "uuid"
+}
+```
+
+**Applicable Role**: BRANCH (status = ACCEPTED)
+
+**Status Change**: ACCEPTED → RESERVED
+
+**Note**: After engineer accepts and sets appointment time, branch confirms to formally enter reserved status (double handshake logic).
+
+### 3.7 Set Appointment Time (Engineer)
 
 **Endpoint**: `POST /api/v1/orders/reserve`
 
@@ -452,9 +480,11 @@ Or
 }
 ```
 
-**Applicable Role**: VENDOR / ENGINEER (status = DISPATCHED)
+**Applicable Role**: VENDOR / ENGINEER (status = ACCEPTED)
 
-### 3.7 Generate Arrival QR Code
+**Note**: Only sets appointment time, requires branch confirmation to transition to RESERVED.
+
+### 3.8 Generate Arrival QR Code
 
 **Endpoint**: `POST /api/v1/orders/qrcode`
 
@@ -471,14 +501,23 @@ Or
   "code": 0,
   "data": {
     "qrcode_url": "string",
-    "qrcode_token": "string"
+    "qrcode_token": "string",
+    "geofencing": {
+      "center_lat": "float",
+      "center_lng": "float",
+      "radius_meters": 500
+    }
   }
 }
 ```
 
 **Applicable Role**: BRANCH (status = RESERVED/ARRIVED)
 
-### 3.8 Arrival Confirmation
+**Security Notes**: 
+- qrcode_token is single-use, invalidates immediately after arrival confirmation
+- Engineer check-in location must be within 500m of branch address, otherwise marked as "remote check-in"
+
+### 3.9 Arrival Confirmation
 
 **Endpoint**: `POST /api/v1/orders/arrive`
 
@@ -716,7 +755,7 @@ Similar operations are merged into a single endpoint, differentiated by `action`
 
 | Endpoint | action Value | Description |
 |----------|--------------|-------------|
-| `POST /api/v1/orders/respond` | `accept` / `reject` | Accept or reject order |
+| `POST /api/v1/orders/acknowledge` | `accept` / `reject` | Engineer accept or reject order |
 | `POST /api/v1/orders/verify` | `approve` / `disprove` | Acceptance pass or fail |
 
 ### 8.3 Response Format
