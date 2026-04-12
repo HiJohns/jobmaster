@@ -96,7 +96,7 @@ This document describes the database structure design for the JobMaster system. 
 | tenant_id | UUID | Tenant ID |
 | order_no | VARCHAR(30) | Work order number (unique) |
 | status | SMALLINT | Status: 1-PENDING 2-DISPATCHED 3-RESERVED 4-ARRIVED 5-WORKING 6-FINISHED 7-OBSERVING 8-CLOSED |
-| store_id | UUID | Store ID (organization ID) |
+| store_id | UUID | Branch ID (organization ID) |
 | vendor_id | UUID | Vendor ID (organization ID, nullable) |
 | engineer_id | UUID | Engineer ID (user ID, nullable) |
 | category_path | VARCHAR(100) | Category path (e.g., Interior/Showroom/Fire Door) |
@@ -254,18 +254,24 @@ FINISHED (6) / OBSERVING (7) → REJECTED → DISPATCHED (2)
 
 ## 4. Permission Matrix
 
-| Role | Can Create Tenant | Can Create Org | Can Create Order | Can Assign Order | Can Execute | Can Accept |
-|------|-------------------|-----------------|-------------------|------------------|--------------|-------------|
-| SUPER_ADMIN | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| MAIN_ADMIN | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| TENANT_ADMIN | ❌ | ✅ (Branch) | ❌ | ❌ | ❌ | ❌ |
-| BRANCH_ADMIN | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
-| EMPLOYEE | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| CONTRACTOR_ADMIN | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| CONTRACTOR_EMPLOYEE | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| ENGINEER | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| VENDOR_ADMIN | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| VENDOR_EMPLOYEE | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Role | Can Create Tenant | Can Create Org | Can Create Order | Can Assign Order | Can Execute | Can Accept | Can Associate Org |
+|------|-------------------|-----------------|-------------------|------------------|--------------|------------|-------------------|
+| SUPER_ADMIN | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| MAIN_ADMIN | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| TENANT_ADMIN | ❌ | ✅ (Branch) | ❌ | ❌ | ❌ | ❌ | ✅ (requires impersonation) |
+| BRANCH_ADMIN | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ | ✅ (requires impersonation) |
+| EMPLOYEE | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| CONTRACTOR_ADMIN | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ (requires impersonation) |
+| CONTRACTOR_EMPLOYEE | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| ENGINEER | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| VENDOR_ADMIN | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ (requires impersonation) |
+| VENDOR_EMPLOYEE | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+
+**Association Notes**:
+- Tenant Admin: Assign contractors to branches (requires impersonation)
+- Branch Admin: Assign contractors to own branch (requires impersonation)
+- Contractor Admin: Add vendors to contractor (requires impersonation)
+- Vendor Admin: Can perform vendor-related association (requires impersonation)
 
 ---
 

@@ -137,11 +137,21 @@ This document describes all API interface designs for the JobMaster system.
 
 #### 2.1.4 Update Tenant
 
-**Endpoint**: `PUT /api/v1/tenants/:id`
+**Endpoint**: `PUT /api/v1/tenants`
+
+**Request Body**:
+```json
+{
+  "id": "uuid",
+  "name": "string",
+  "code": "string",
+  "logo_url": "string"
+}
+```
 
 #### 2.1.5 Delete Tenant
 
-**Endpoint**: `DELETE /api/v1/tenants/:id`
+**Endpoint**: `DELETE /api/v1/tenants?id={uuid}`
 
 ### 2.2 Contractor Management
 
@@ -170,12 +180,29 @@ This document describes all API interface designs for the JobMaster system.
 
 #### 2.2.4 Add External Vendor
 
-**Endpoint**: `POST /api/v1/contractors/:id/vendors`
+**Endpoint**: `POST /api/v1/contractors/vendors`
 
 **Request Body**:
 ```json
 {
+  "contractor_id": "uuid",
   "vendor_id": "uuid"
+}
+```
+
+#### 2.2.5 Vendor List
+
+**Endpoint**: `GET /api/v1/contractors/:id/vendors`
+
+#### 2.3.4 Assign Contractor to Branch
+
+**Endpoint**: `POST /api/v1/branches/contractors`
+
+**Request Body**:
+```json
+{
+  "branch_id": "uuid",
+  "contractor_id": "uuid"
 }
 ```
 
@@ -251,11 +278,22 @@ This document describes all API interface designs for the JobMaster system.
 
 #### 2.4.4 Update User
 
-**Endpoint**: `PUT /api/v1/users/:id`
+**Endpoint**: `PUT /api/v1/users`
+
+**Request Body**:
+```json
+{
+  "id": "uint64",
+  "email": "string",
+  "display_name": "string",
+  "phone": "string",
+  "role": "string"
+}
+```
 
 #### 2.4.5 Delete User
 
-**Endpoint**: `DELETE /api/v1/users/:id`
+**Endpoint**: `DELETE /api/v1/users?id={uint64}`
 
 ---
 
@@ -367,11 +405,12 @@ This document describes all API interface designs for the JobMaster system.
 
 ### 3.4 Dispatch Order
 
-**Endpoint**: `POST /api/v1/orders/:id/dispatch`
+**Endpoint**: `POST /api/v1/orders/dispatch`
 
 **Request Body**:
 ```json
 {
+  "order_id": "uuid",
   "vendor_id": "uuid"
 }
 ```
@@ -380,27 +419,51 @@ This document describes all API interface designs for the JobMaster system.
 
 ### 3.5 Accept/Reject Order
 
-**Endpoint**: `POST /api/v1/orders/:id/accept` (Accept)
-**Endpoint**: `POST /api/v1/orders/:id/reject` (Reject)
-
-**Applicable Role**: VENDOR
-
-### 3.6 Reserve Time
-
-**Endpoint**: `POST /api/v1/orders/:id/reserve`
+**Endpoint**: `POST /api/v1/orders/respond`
 
 **Request Body**:
 ```json
 {
+  "order_id": "uuid",
+  "action": "accept"
+}
+```
+
+Or
+
+```json
+{
+  "order_id": "uuid",
+  "action": "reject"
+}
+```
+
+**Applicable Role**: VENDOR (status = DISPATCHED)
+
+### 3.6 Reserve Time
+
+**Endpoint**: `POST /api/v1/orders/reserve`
+
+**Request Body**:
+```json
+{
+  "order_id": "uuid",
   "appointed_at": "timestamp"
 }
 ```
 
-**Applicable Role**: VENDOR
+**Applicable Role**: VENDOR / ENGINEER (status = DISPATCHED)
 
 ### 3.7 Generate Arrival QR Code
 
-**Endpoint**: `POST /api/v1/orders/:id/generate-qrcode`
+**Endpoint**: `POST /api/v1/orders/qrcode`
+
+**Request Body**:
+```json
+{
+  "order_id": "uuid"
+}
+```
 
 **Response**:
 ```json
@@ -413,15 +476,16 @@ This document describes all API interface designs for the JobMaster system.
 }
 ```
 
-**Applicable Role**: STORE (status = RESERVED/ARRIVED)
+**Applicable Role**: BRANCH (status = RESERVED/ARRIVED)
 
 ### 3.8 Arrival Confirmation
 
-**Endpoint**: `POST /api/v1/orders/:id/arrive`
+**Endpoint**: `POST /api/v1/orders/arrive`
 
 **Request Body**:
 ```json
 {
+  "order_id": "uuid",
   "qrcode_token": "string",
   "location": {
     "lat": "float",
@@ -435,11 +499,12 @@ This document describes all API interface designs for the JobMaster system.
 
 ### 3.9 Submit Construction Record
 
-**Endpoint**: `POST /api/v1/orders/:id/record`
+**Endpoint**: `POST /api/v1/orders/record`
 
 **Request Body**:
 ```json
 {
+  "order_id": "uuid",
   "message": "string",
   "photos": ["string"]
 }
@@ -449,11 +514,12 @@ This document describes all API interface designs for the JobMaster system.
 
 ### 3.10 Finish Work
 
-**Endpoint**: `POST /api/v1/orders/:id/finish`
+**Endpoint**: `POST /api/v1/orders/finish`
 
 **Request Body**:
 ```json
 {
+  "order_id": "uuid",
   "labor_fee": "decimal",
   "material_fee": "decimal",
   "other_fee": "decimal",
@@ -463,32 +529,37 @@ This document describes all API interface designs for the JobMaster system.
 
 **Applicable Role**: ENGINEER (status = WORKING)
 
-### 3.11 Accept (Pass Acceptance)
+### 3.11 Verify (Acceptance)
 
-**Endpoint**: `POST /api/v1/orders/:id/accept`
+**Endpoint**: `POST /api/v1/orders/verify`
 
-**Applicable Role**: STORE (status = FINISHED/OBSERVING)
-
-### 3.12 Reject (Fail Acceptance)
-
-**Endpoint**: `POST /api/v1/orders/:id/reject`
-
-**Request Body**:
+**Request Body (Approve)**:
 ```json
 {
+  "order_id": "uuid",
+  "action": "approve"
+}
+```
+
+**Request Body (Disprove)**:
+```json
+{
+  "order_id": "uuid",
+  "action": "disprove",
   "reason": "string"
 }
 ```
 
-**Applicable Role**: STORE (status = FINISHED/OBSERVING)
+**Applicable Role**: BRANCH (status = FINISHED/OBSERVING)
 
-### 3.13 Assign Engineer
+### 3.12 Assign Engineer
 
-**Endpoint**: `POST /api/v1/orders/:id/assign-engineer`
+**Endpoint**: `POST /api/v1/orders/assign-engineer`
 
 **Request Body**:
 ```json
 {
+  "order_id": "uuid",
   "engineer_id": "uuid"
 }
 ```
@@ -620,3 +691,52 @@ This document describes all API interface designs for the JobMaster system.
 | `X-Tenant-ID` | Tenant ID (multi-tenant scenario) |
 | `X-Impersonator-ID` | Impersonator ID (impersonation scenario) |
 | `Content-Type` | application/json |
+
+---
+
+## 8. API Design Principles
+
+### 8.1 URL Conventions
+
+1. **GET Requests**: ID can appear in URL path
+   - `GET /api/v1/orders/:id`
+   - `GET /api/v1/tenants/:id`
+
+2. **POST/PUT/PATCH Requests**: ID moved to request body to avoid high-cardinality issues
+   - `POST /api/v1/orders/dispatch` → body: `{ "order_id": "...", "vendor_id": "..." }`
+   - `PUT /api/v1/tenants` → body: `{ "id": "...", "name": "..." }`
+
+3. **DELETE Requests**: ID passed via query parameter
+   - `DELETE /api/v1/tenants?id={uuid}`
+   - `DELETE /api/v1/users?id={uint64}`
+
+### 8.2 Action Consolidation Principle
+
+Similar operations are merged into a single endpoint, differentiated by `action` field:
+
+| Endpoint | action Value | Description |
+|----------|--------------|-------------|
+| `POST /api/v1/orders/respond` | `accept` / `reject` | Accept or reject order |
+| `POST /api/v1/orders/verify` | `approve` / `disprove` | Acceptance pass or fail |
+
+### 8.3 Response Format
+
+All APIs use the following unified format:
+
+**Success**:
+```json
+{
+  "code": 0,
+  "data": {},
+  "message": "success"
+}
+```
+
+**Failure**:
+```json
+{
+  "code": 400,
+  "data": null,
+  "message": "Error description"
+}
+```

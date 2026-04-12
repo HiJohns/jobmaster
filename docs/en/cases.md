@@ -209,7 +209,7 @@ System automatically notifies branch branch1 (engineer, appointment time) where 
 
 employee1 logs in, views work order list, opens corresponding work order X, can see engineer and appointment time, clicks confirm
 
-Server changes work order X status to accepted (generates log)
+Server changes work order X status to reserved (RESERVED) (generates log)
 
 employee1 logs in, opens work order X, clicks generate arrival confirmation QR code, server generates QR code and returns to frontend for display
 

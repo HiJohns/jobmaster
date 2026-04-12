@@ -12,10 +12,10 @@ This document describes the UI design planning for JobMaster system on PC and We
 |------|-------------|-------------------|-------------|
 | Super Admin | System Config | N/A | Global system config |
 | Main Tenant Admin | Tenant Management | N/A | Create tenants, contractors |
-| Tenant Admin | Tenant Overview | N/A | View tenants, branches |
-| Store Admin | Order List/Detail | Store Admin Backend | Create orders, generate QR, accept |
-| Store Employee | Order List/Detail | N/A | Create orders |
-| Contractor Admin | Order List/Detail | Contractor Admin Backend | Assign orders, add vendors |
+| Tenant Admin | Tenant Overview | N/A | View tenants, branches, **associate contractors (requires impersonation)** |
+| Branch Admin | Order List/Detail | Branch Admin Backend | Create orders, **associate contractors (requires impersonation)**, generate QR, accept |
+| Branch Employee | Order List/Detail | N/A | Create orders |
+| Contractor Admin | Order List/Detail | Contractor Admin Backend | Assign orders, **associate vendors (requires impersonation)** |
 | Contractor Employee | Order List/Detail | N/A | Assign orders |
 | Vendor Admin | Order List/Detail | Vendor Admin Backend | Receive orders, assign engineers |
 | Vendor Employee | Order List/Detail | N/A | Assign orders |
@@ -126,9 +126,9 @@ This document describes the UI design planning for JobMaster system on PC and We
 - Branch list
 - Create branch → Modal
 - Branch details (related contractors)
-- Assign contractors to branch
+- **Assign contractors to branch (requires impersonation)**
 
-### 2.7 Store Admin UI
+### 2.7 Branch Admin UI
 
 #### 2.7.1 Normal View: Order List
 
@@ -155,9 +155,9 @@ This document describes the UI design planning for JobMaster system on PC and We
 - **Accept button** (status = FINISHED)
 - **Reject button** (status = FINISHED)
 
-#### 2.7.3 Impersonated View: Store Admin Backend
+#### 2.7.3 Impersonated View: Branch Admin Backend
 
-**Route**: `/store-admin`
+**Route**: `/branch-admin`
 
 **Features**:
 - Employee list
@@ -175,9 +175,9 @@ This document describes the UI design planning for JobMaster system on PC and We
 - Photo upload (multiple)
 - Urgency toggle
 
-### 2.8 Store Employee UI
+### 2.8 Branch Employee UI
 
-Same as Store Admin normal view, differences:
+Same as Branch Admin normal view, differences:
 - No impersonation entry
 - No accept button
 - No generate QR button

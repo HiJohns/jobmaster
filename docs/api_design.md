@@ -137,11 +137,21 @@
 
 #### 2.1.4 更新租户
 
-**端点**: `PUT /api/v1/tenants/:id`
+**端点**: `PUT /api/v1/tenants`
+
+**请求体**:
+```json
+{
+  "id": "uuid",
+  "name": "string",
+  "code": "string",
+  "logo_url": "string"
+}
+```
 
 #### 2.1.5 删除租户
 
-**端点**: `DELETE /api/v1/tenants/:id`
+**端点**: `DELETE /api/v1/tenants?id={uuid}`
 
 ### 2.2 工程公司管理
 
@@ -170,12 +180,29 @@
 
 #### 2.2.4 添加外部供应商
 
-**端点**: `POST /api/v1/contractors/:id/vendors`
+**端点**: `POST /api/v1/contractors/vendors`
 
 **请求体**:
 ```json
 {
+  "contractor_id": "uuid",
   "vendor_id": "uuid"
+}
+```
+
+#### 2.2.5 供应商列表
+
+**端点**: `GET /api/v1/contractors/:id/vendors`
+
+#### 2.3.4 分配工程公司给分公司
+
+**端点**: `POST /api/v1/branches/contractors`
+
+**请求体**:
+```json
+{
+  "branch_id": "uuid",
+  "contractor_id": "uuid"
 }
 ```
 
@@ -251,11 +278,22 @@
 
 #### 2.4.4 更新用户
 
-**端点**: `PUT /api/v1/users/:id`
+**端点**: `PUT /api/v1/users`
+
+**请求体**:
+```json
+{
+  "id": "uint64",
+  "email": "string",
+  "display_name": "string",
+  "phone": "string",
+  "role": "string"
+}
+```
 
 #### 2.4.5 删除用户
 
-**端点**: `DELETE /api/v1/users/:id`
+**端点**: `DELETE /api/v1/users?id={uint64}`
 
 ---
 
@@ -367,11 +405,12 @@
 
 ### 3.4 分配工单
 
-**端点**: `POST /api/v1/orders/:id/dispatch`
+**端点**: `POST /api/v1/orders/dispatch`
 
 **请求体**:
 ```json
 {
+  "order_id": "uuid",
   "vendor_id": "uuid"
 }
 ```
@@ -380,27 +419,51 @@
 
 ### 3.5 接单/拒单
 
-**端点**: `POST /api/v1/orders/:id/accept` (接单)
-**端点**: `POST /api/v1/orders/:id/reject` (拒单)
-
-**适用角色**: VENDOR
-
-### 3.6 预约时间
-
-**端点**: `POST /api/v1/orders/:id/reserve`
+**端点**: `POST /api/v1/orders/respond`
 
 **请求体**:
 ```json
 {
+  "order_id": "uuid",
+  "action": "accept"
+}
+```
+
+或
+
+```json
+{
+  "order_id": "uuid",
+  "action": "reject"
+}
+```
+
+**适用角色**: VENDOR（状态 = DISPATCHED）
+
+### 3.6 预约时间
+
+**端点**: `POST /api/v1/orders/reserve`
+
+**请求体**:
+```json
+{
+  "order_id": "uuid",
   "appointed_at": "timestamp"
 }
 ```
 
-**适用角色**: VENDOR
+**适用角色**: VENDOR / ENGINEER（状态 = DISPATCHED）
 
 ### 3.7 生成进场二维码
 
-**端点**: `POST /api/v1/orders/:id/generate-qrcode`
+**端点**: `POST /api/v1/orders/qrcode`
+
+**请求体**:
+```json
+{
+  "order_id": "uuid"
+}
+```
 
 **响应**:
 ```json
@@ -417,11 +480,12 @@
 
 ### 3.8 进场确认
 
-**端点**: `POST /api/v1/orders/:id/arrive`
+**端点**: `POST /api/v1/orders/arrive`
 
 **请求体**:
 ```json
 {
+  "order_id": "uuid",
   "qrcode_token": "string",
   "location": {
     "lat": "float",
@@ -435,11 +499,12 @@
 
 ### 3.9 提交施工记录
 
-**端点**: `POST /api/v1/orders/:id/record`
+**端点**: `POST /api/v1/orders/record`
 
 **请求体**:
 ```json
 {
+  "order_id": "uuid",
   "message": "string",
   "photos": ["string"]
 }
@@ -449,11 +514,12 @@
 
 ### 3.10 完工离场
 
-**端点**: `POST /api/v1/orders/:id/finish`
+**端点**: `POST /api/v1/orders/finish`
 
 **请求体**:
 ```json
 {
+  "order_id": "uuid",
   "labor_fee": "decimal",
   "material_fee": "decimal",
   "other_fee": "decimal",
@@ -463,32 +529,37 @@
 
 **适用角色**: ENGINEER（状态 = WORKING）
 
-### 3.11 验收通过
+### 3.11 验收
 
-**端点**: `POST /api/v1/orders/:id/accept`
+**端点**: `POST /api/v1/orders/verify`
 
-**适用角色**: STORE（状态 = FINISHED/OBSERVING）
-
-### 3.12 验收不通过
-
-**端点**: `POST /api/v1/orders/:id/reject`
-
-**请求体**:
+**请求体（通过）**:
 ```json
 {
+  "order_id": "uuid",
+  "action": "approve"
+}
+```
+
+**请求体（不通过）**:
+```json
+{
+  "order_id": "uuid",
+  "action": "disprove",
   "reason": "string"
 }
 ```
 
 **适用角色**: STORE（状态 = FINISHED/OBSERVING）
 
-### 3.13 分配工程师
+### 3.12 分配工程师
 
-**端点**: `POST /api/v1/orders/:id/assign-engineer`
+**端点**: `POST /api/v1/orders/assign-engineer`
 
 **请求体**:
 ```json
 {
+  "order_id": "uuid",
   "engineer_id": "uuid"
 }
 ```
@@ -620,3 +691,52 @@
 | `X-Tenant-ID` | 租户 ID（多租户场景） |
 | `X-Impersonator-ID` | 提权者 ID（提权场景） |
 | `Content-Type` | application/json |
+
+---
+
+## 8. API 设计原则
+
+### 8.1 URL 规范
+
+1. **GET 请求**：ID 可出现在 URL 路径中
+   - `GET /api/v1/orders/:id`
+   - `GET /api/v1/tenants/:id`
+
+2. **POST/PUT/PATCH 请求**：ID 移至请求体，避免高基数问题
+   - `POST /api/v1/orders/dispatch` → body: `{ "order_id": "...", "vendor_id": "..." }`
+   - `PUT /api/v1/tenants` → body: `{ "id": "...", "name": "..." }`
+
+3. **DELETE 请求**：ID 通过 query parameter 传递
+   - `DELETE /api/v1/tenants?id={uuid}`
+   - `DELETE /api/v1/users?id={uint64}`
+
+### 8.2 动作合并原则
+
+相似操作合并为单一端点，通过 `action` 字段区分：
+
+| 端点 | action 值 | 说明 |
+|------|-----------|------|
+| `POST /api/v1/orders/respond` | `accept` / `reject` | 接单或拒单 |
+| `POST /api/v1/orders/verify` | `approve` / `disprove` | 验收通过或不通过 |
+
+### 8.3 响应格式
+
+所有 API 统一使用以下格式：
+
+**成功**:
+```json
+{
+  "code": 0,
+  "data": {},
+  "message": "success"
+}
+```
+
+**失败**:
+```json
+{
+  "code": 400,
+  "data": null,
+  "message": "错误描述"
+}
+```

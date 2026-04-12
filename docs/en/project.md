@@ -16,13 +16,13 @@ Business logic reference:
 
 Based on cases.md analysis, the complete arrival and construction flow is as follows:
 
-1. **Store Employee Generates QR Code**: Employee opens work order detail, clicks "Generate Arrival Confirmation QR Code"
+1. **Branch Employee Generates QR Code**: Employee opens work order detail, clicks "Generate Arrival Confirmation QR Code"
 2. **Engineer Scans to Arrive**: Engineer uses WeChat to scan QR code, clicks "Arrival", status changes to "Working"
 3. **Engineer Construction Records**:
    - Submit text messages
    - Upload construction photos
    - Submit departure confirmation
-4. **Store Acceptance**: Store employee clicks "Acceptance Passed", status changes to "Completed"
+4. **Branch Acceptance**: Branch employee clicks "Acceptance Passed", status changes to "Completed"
 
 > **Note**: Engineer construction message and photo records during construction is a missing feature in the current version that needs to be implemented.
 
@@ -31,7 +31,7 @@ Based on cases.md analysis, the complete arrival and construction flow is as fol
 | Role | Identifier | Core Responsibilities |
 |------|------------|----------------------|
 | Brand HQ | Brand HQ | Global configuration, standard setting, cross-region coordination |
-| Store | Store | Repair request initiation, on-site cooperation, final acceptance |
+| Branch | Branch | Repair request initiation, on-site cooperation, final acceptance |
 | Main Contractor | Main Contractor | Work order assessment, vendor assignment, quality control |
 | Vendor | Vendor | Specific execution, arrival check-in, construction records |
 | Engineer | Engineer | On-site operations, progress reporting, departure confirmation |
@@ -67,19 +67,19 @@ CLOSED (Accepted / Enter Manual Settlement)
 
 | State | English | Trigger Condition | Data Changes |
 |-------|---------|-------------------|--------------|
-| Repair Request | PENDING | Store submits repair ticket | Create work order, record equipment info, urgency level |
+| Repair Request | PENDING | Branch submits repair ticket | Create work order, record equipment info, urgency level |
 | Assigned | DISPATCHED | Main Contractor assigns vendor | Bind Vendor/Engineer |
 | Scheduled | RESERVED | Vendor confirms available time | Record scheduled_at |
 | Arrival Confirmed | ARRIVED | Engineer GPS check-in + photo verification | Record arrived_at, location |
 | In Progress | WORKING | Engineer starts work | Record started_at |
 | Departure Confirmed | FINISHED | Engineer submits departure | Record finished_at, work summary |
 | Observation Period | OBSERVING | System automatically enters | Set observing_deadline |
-| Closed | CLOSED | Store accepts work | Record closed_at, settlement amount |
+| Closed | CLOSED | Branch accepts work | Record closed_at, settlement amount |
 
 ### 2.3 Rollback Logic (Critical)
 
 **Acceptance Failed Scenario**:
-- Trigger: OBSERVING phase, Store clicks "Acceptance Failed"
+- Trigger: OBSERVING phase, Branch clicks "Acceptance Failed"
 - Target State: **DISPATCHED** (NOT PENDING)
 - Side Effects:
   - Notify Main Contractor for reassessment
@@ -291,32 +291,66 @@ All features implemented in this project revolve around the 8 core user scenario
 
 ### 9.1 Role Hierarchy & Permission Matrix
 
-| Level | Role | Can Impersonate | Can Manage | Can Create Order | Can Assign Order | Can Execute |
-|-------|------|-----------------|------------|-------------------|-------------------|--------------|
-| System | Super Admin | ❌ | Global | ❌ | ❌ | ❌ |
-| Main Tenant | Main Tenant Admin | ❌ | Main Tenant | ❌ | ❌ | ❌ |
-| Tenant | Tenant Admin | ✅ | Tenant | ❌ | ❌ | ❌ |
-| Branch | Branch Admin | ✅ | Branch | ✅ | ✅ | ❌ |
-| Branch | Employee | ❌ | ❌ | ✅ | ❌ | ❌ |
-| Main Contractor | Main Contractor Admin | ✅ | Main Contractor | ❌ | ✅ | ❌ |
-| Main Contractor | Employee | ❌ | ❌ | ❌ | ✅ | ❌ |
-| Main Contractor | Engineer | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Vendor | Vendor Admin | ✅ | Vendor | ❌ | ✅ | ❌ |
-| Vendor | Employee | ❌ | ❌ | ❌ | ✅ | ❌ |
-| Vendor | Engineer | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Level | Role | Can Impersonate | Can Manage | Can Create Order | Can Assign Order | Can Execute | Can Associate Org |
+|-------|------|-----------------|------------|-------------------|-------------------|--------------|-------------------|
+| System | Super Admin | ❌ | Global | ❌ | ❌ | ❌ | ❌ |
+| Main Tenant | Main Tenant Admin | ❌ | Main Tenant | ❌ | ❌ | ❌ | ❌ |
+| Tenant | Tenant Admin | ✅ | Tenant | ❌ | ❌ | ❌ | ✅ (requires impersonation) |
+| Branch | Branch Admin | ✅ | Branch | ✅ | ✅ | ❌ | ✅ (requires impersonation) |
+| Branch | Employee | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Main Contractor | Main Contractor Admin | ✅ | Main Contractor | ❌ | ✅ | ❌ | ✅ (requires impersonation) |
+| Main Contractor | Employee | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Main Contractor | Engineer | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| Vendor | Vendor Admin | ✅ | Vendor | ❌ | ✅ | ❌ | ✅ (requires impersonation) |
+| Vendor | Employee | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Vendor | Engineer | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
+
+**Association Notes**:
+- Tenant Admin: Assign contractors to branches (requires impersonation)
+- Branch Admin: Assign contractors to own branch (requires impersonation)
+- Contractor Admin: Add vendors to contractor (requires impersonation)
+- Vendor Admin: Can perform vendor-related association (requires impersonation)
 
 ### 9.2 Arrival & Construction Flow (Supplement)
 
 Based on cases.md Use Case 08 complete flow:
 
 ```
-Store Generates QR Code → Engineer Scans to Arrive → Engineer Constructs (Message + Photos) → Engineer Departs → Store Accepts
+Branch Generates QR Code → Engineer Scans to Arrive → Engineer Constructs (Message + Photos) → Engineer Departs → Branch Accepts
 ```
 
 **Engineer Construction Record Features**:
 - Text Messages: Engineer can submit text explanations during construction
 - Construction Photos: Engineer can upload multiple on-site photos as evidence
 - Departure Confirmation: Engineer submits departure, work order enters acceptance stage
+
+---
+
+## 10. Core Documents
+
+This document is the core design document for the JobMaster project, and all team members must follow the specifications defined in the documents.
+
+### 10.1 Document List
+
+| Document | Path | Description |
+|----------|------|-------------|
+| Test Case Flow | `docs/cases.md` | 8 core user scenario end-to-end test flows |
+| UI Design | `docs/ui_design.md` | PC and WeChat UI design planning |
+| API Design | `docs/api_design.md` | All API interface design specifications |
+| Database Design | `docs/database_design.md` | Database structure design (excluding IAM user management) |
+| Business Architecture | `docs/business_architecture.md` | Business logic architecture description |
+
+### 10.2 Document Synchronization Requirements
+
+- All core documents must be synchronized in both Chinese and English versions
+- Any document modification must simultaneously update corresponding files in `docs/` and `docs/en/` directories
+- Document version numbers are uniformly managed, with change records at the end of each document
+
+### 10.3 Document Maintenance
+
+- Document updates need to be tracked via Issues
+- Major changes need to be reviewed before merging
+- Regularly check document consistency (using `/analyze` command)
 
 ---
 

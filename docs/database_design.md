@@ -96,7 +96,7 @@
 | tenant_id | UUID | 租户 ID |
 | order_no | VARCHAR(30) | 工单号（唯一） |
 | status | SMALLINT | 状态：1-PENDING 2-DISPATCHED 3-RESERVED 4-ARRIVED 5-WORKING 6-FINISHED 7-OBSERVING 8-CLOSED |
-| store_id | UUID | 分店 ID（组织 ID） |
+| store_id | UUID | 分公司 ID（组织 ID） |
 | vendor_id | UUID | 供应商 ID（组织 ID，可空） |
 | engineer_id | UUID | 工程师 ID（用户 ID，可空） |
 | category_path | VARCHAR(100) | 分类路径（如：内装/卖场/消防门） |
@@ -254,18 +254,24 @@ FINISHED (6) / OBSERVING (7) → REJECTED → DISPATCHED (2)
 
 ## 4. 权限矩阵
 
-| 角色 | 可创建租户 | 可创建组织 | 可创建工单 | 可分配工单 | 可施工 | 可验收 |
-|------|------------|------------|------------|------------|--------|--------|
-| SUPER_ADMIN | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| MAIN_ADMIN | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| TENANT_ADMIN | ❌ | ✅ (分公司) | ❌ | ❌ | ❌ | ❌ |
-| BRANCH_ADMIN | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
-| EMPLOYEE | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| CONTRACTOR_ADMIN | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| CONTRACTOR_EMPLOYEE | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| ENGINEER | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| VENDOR_ADMIN | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| VENDOR_EMPLOYEE | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| 角色 | 可创建租户 | 可创建组织 | 可创建工单 | 可分配工单 | 可施工 | 可验收 | 可关联组织 |
+|------|------------|------------|------------|------------|--------|--------|------------|
+| SUPER_ADMIN | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| MAIN_ADMIN | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| TENANT_ADMIN | ❌ | ✅ (分公司) | ❌ | ❌ | ❌ | ❌ | ✅ (需提权) |
+| BRANCH_ADMIN | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ | ✅ (需提权) |
+| EMPLOYEE | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| CONTRACTOR_ADMIN | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ (需提权) |
+| CONTRACTOR_EMPLOYEE | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| ENGINEER | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| VENDOR_ADMIN | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ (需提权) |
+| VENDOR_EMPLOYEE | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+
+**关联组织说明**：
+- 租户管理员：给分公司指定工程公司（需提权）
+- 分公司管理员：给自己所属分公司指定工程公司（需提权）
+- 工程公司管理员：给工程公司指定供应商（需提权）
+- 供应商管理员：可进行供应商相关关联操作（需提权）
 
 ---
 
