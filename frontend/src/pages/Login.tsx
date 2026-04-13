@@ -1,10 +1,23 @@
 import { useState, useEffect } from 'react'
-import { Form, Input, Button, Card, message, Checkbox } from 'antd'
+import { Form, Input, Button, Card, Checkbox, Space, Tag, message } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
-import { authApi } from '../api/auth'
 import { useAuthStore } from '../store/useAuthStore'
+import { localAuthApi, initializeMockData } from '../api/local'
 import Logo from '../components/Logo'
+
+const DEMO_ACCOUNTS = [
+  { username: 'admin@branch1', displayName: 'Branch Admin', role: 'BRANCH_ADMIN', password: 'demo123' },
+  { username: 'employee1@branch1', displayName: 'Branch Employee', role: 'EMPLOYEE', password: 'demo123' },
+  { username: 'admin@contractor1', displayName: 'Contractor Admin', role: 'CONTRACTOR_ADMIN', password: 'demo123' },
+  { username: 'employee1@contractor1', displayName: 'Contractor Employee', role: 'CONTRACTOR_EMPLOYEE', password: 'demo123' },
+  { username: 'engineer1@contractor1', displayName: 'Engineer 1', role: 'ENGINEER', password: 'demo123' },
+  { username: 'engineer2@contractor1', displayName: 'Engineer 2', role: 'ENGINEER', password: 'demo123' },
+  { username: 'admin@vendor1', displayName: 'Vendor Admin', role: 'VENDOR_ADMIN', password: 'demo123' },
+  { username: 'employee1@vendor1', displayName: 'Vendor Employee', role: 'VENDOR_EMPLOYEE', password: 'demo123' },
+  { username: 'engineer1@vendor1', displayName: 'Vendor Engineer', role: 'ENGINEER', password: 'demo123' },
+  { username: 'admin@contractor2', displayName: 'Contractor 2 Admin', role: 'CONTRACTOR_ADMIN', password: 'demo123' },
+]
 
 const REMEMBER_USERNAME_KEY = 'remember_username'
 
@@ -14,6 +27,7 @@ function Login() {
   const { login } = useAuthStore()
   const [loading, setLoading] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
+  const [selectedDemo, setSelectedDemo] = useState<string | null>(null)
 
   useEffect(() => {
     const savedUsername = localStorage.getItem(REMEMBER_USERNAME_KEY)
@@ -23,37 +37,47 @@ function Login() {
     }
   }, [form])
 
+  const handleSelectDemo = (username: string) => {
+    setSelectedDemo(username)
+    form.setFieldsValue({ username, password: 'demo123' })
+  }
+
   const handleSubmit = async (values: { username: string; password: string; remember?: boolean }) => {
     setLoading(true)
     try {
-      const response = await authApi.login(values)
+      initializeMockData()
+      const response = await localAuthApi.login(values.username, values.password)
       
-      if (response.code === 200) {
-        const { token, user_id, username, role, org_id, tenant_id, display_name, is_impersonated } = response.data
-        
-        // Store auth data
-        login(token, {
-          userId: user_id,
-          username,
-          displayName: display_name,
-          role,
-          orgId: org_id,
-          tenantId: tenant_id,
-        }, undefined, is_impersonated)
-        
-        // Remember username
-        if (values.remember) {
-          localStorage.setItem(REMEMBER_USERNAME_KEY, values.username)
-        } else {
-          localStorage.removeItem(REMEMBER_USERNAME_KEY)
-        }
-        
-        message.success('登录成功')
+      login(response.token, {
+        userId: response.user_id,
+        username: response.username,
+        displayName: response.display_name,
+        role: response.role,
+        orgId: response.org_id,
+        orgName: response.display_name,
+        tenantId: response.tenant_id,
+      })
+
+      if (values.remember) {
+        localStorage.setItem(REMEMBER_USERNAME_KEY, values.username)
+      } else {
+        localStorage.removeItem(REMEMBER_USERNAME_KEY)
+      }
+
+      message.success('登录成功')
+
+      if (response.role === 'ENGINEER') {
+        navigate('/engineer')
+      } else if (response.role === 'CONTRACTOR_ADMIN' || response.role === 'CONTRACTOR_EMPLOYEE') {
+        navigate('/contractor')
+      } else if (response.role === 'VENDOR_ADMIN' || response.role === 'VENDOR_EMPLOYEE') {
+        navigate('/vendor')
+      } else {
         navigate('/')
       }
     } catch (error) {
-      // Error is already handled and displayed by axios interceptor
       console.error('Login failed:', error)
+      message.error(error instanceof Error ? error.message : '登录失败')
     } finally {
       setLoading(false)
     }
@@ -78,6 +102,22 @@ function Login() {
         >
           <div style={{ marginBottom: '24px' }} />
           
+          <div className="mb-4">
+            <div className="text-sm text-gray-500 mb-2">快速选择演示账户:</div>
+            <Space wrap size={4}>
+              {DEMO_ACCOUNTS.map((account) => (
+                <Tag
+                  key={account.username}
+                  color={selectedDemo === account.username ? 'blue' : 'default'}
+                  style={{ cursor: 'pointer', marginBottom: '4px' }}
+                  onClick={() => handleSelectDemo(account.username)}
+                >
+                  {account.displayName}
+                </Tag>
+              ))}
+            </Space>
+          </div>
+
           <Form
             form={form}
             name="login"

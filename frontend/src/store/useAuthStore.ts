@@ -15,6 +15,7 @@ export interface UserInfo {
   displayName: string
   role: string
   orgId: string
+  orgName?: string
   tenantId: string
 }
 

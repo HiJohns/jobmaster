@@ -4,8 +4,9 @@ import { Table, Checkbox, Tag, Space } from 'antd'
 import { CameraOutlined, EnvironmentOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
-import { workorderApi, WorkOrder } from '../api/workorder'
+import { api } from '../api/factory'
 import { useAuthStore } from '../store/useAuthStore'
+import { WorkOrder } from '../api/local'
 import WeekCalendar from '../components/Calendar'
 import EmptyStateIllustration from '../components/EmptyStateIllustration'
 
@@ -46,9 +47,10 @@ function WorkOrderList() {
         page_size: 20,
       }
 
-      const response = await workorderApi.list(params)
-      if (response.code === 200) {
-        setOrders(response.data.list)
+      const response = await api.workorder.list(params)
+      const res = response as { code: number; data: { list: WorkOrder[] } }
+      if (res.code === 200) {
+        setOrders(res.data.list)
       }
     } catch (error) {
       console.error('Failed to fetch orders:', error)

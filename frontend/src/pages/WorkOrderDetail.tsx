@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { Card, Button, Modal, TextArea, SpinLoading, Toast } from 'antd-mobile'
 import dayjs from 'dayjs'
-import { workorderApi } from '../api/workorder'
+import { api } from '../api/factory'
 import type { WorkOrderDetail } from '../api/workorder'
 import { useAuthStore } from '../store/useAuthStore'
 import { getStatusConfig, canPerformAction, WorkOrderStatus } from '../config/status'
@@ -22,7 +22,7 @@ function WorkOrderDetail() {
     if (!id) return
     setLoading(true)
     try {
-      const response = await workorderApi.get(id)
+      const response = await api.workorder.get(id) as any
       if (response.code === 200) {
         setOrder(response.data)
       }
@@ -67,7 +67,7 @@ function WorkOrderDetail() {
     if (!id || !reserveTime) return
     setActionLoading(true)
     try {
-      const response = await workorderApi.reserve(id, new Date(reserveTime).toISOString())
+      const response = await api.workorder.reserve(id, new Date(reserveTime).toISOString()) as any
       if (response.code === 200) {
         Toast.show('预约成功')
         setReserveModalVisible(false)
@@ -86,7 +86,7 @@ function WorkOrderDetail() {
     setActionLoading(true)
     try {
       const position = await getCurrentPosition()
-      const response = await workorderApi.arrive(id, position.latitude, position.longitude)
+      const response = await api.workorder.arrive(id, position.latitude, position.longitude) as any
       if (response.code === 200) {
         Toast.show('签到成功')
         fetchOrderDetail()
@@ -102,14 +102,14 @@ function WorkOrderDetail() {
     if (!id || !finishDescription) return
     setActionLoading(true)
     try {
-      const response = await workorderApi.finish(
+      const response = await api.workorder.finish(
         id,
         finishDescription,
         [],
         order?.labor_fee || 0,
         order?.material_fee || 0,
         order?.other_fee || 0
-      )
+      ) as any
       if (response.code === 200) {
         Toast.show('完工提交成功')
         setFinishModalVisible(false)

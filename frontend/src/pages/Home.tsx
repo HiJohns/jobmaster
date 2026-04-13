@@ -19,7 +19,8 @@ import dayjs, { Dayjs } from 'dayjs'
 import WeekCalendar from '../components/WeekCalendar'
 import WorkOrderCard from '../components/WorkOrderCard'
 import EmptyStateIllustration from '../components/EmptyStateIllustration'
-import { workorderApi, WorkOrder } from '../api/workorder'
+import { api } from '../api/factory'
+import { WorkOrder } from '../api/local'
 import { STATUS_GROUPS } from '../config/status'
 import { useAuthStore } from '../store/useAuthStore'
 
@@ -93,10 +94,11 @@ function Home() {
         sort_order: 'desc' as const,
       }
 
-      const response = await workorderApi.myTasks(params)
+      const response = await api.workorder.myTasks(params)
+      const res = response as { code: number; data: { list: WorkOrder[]; total: number } }
       
-      if (response.code === 200) {
-        const { list, total } = response.data
+      if (res.code === 200) {
+        const { list, total } = res.data
         
         if (isRefresh || currentPage === 1) {
           setOrders(list)
@@ -312,7 +314,7 @@ function Home() {
                 {orders.map((order) => (
                   <WorkOrderCard
                     key={order.id}
-                    order={order}
+                    order={order as any}
                     onClick={handleOrderClick}
                   />
                 ))}
