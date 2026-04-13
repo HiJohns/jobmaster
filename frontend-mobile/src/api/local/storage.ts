@@ -1,4 +1,4 @@
-import { STORAGE_KEYS, mockTenants, mockOrganizations, mockUsers, mockWorkOrders, mockWorkRecords } from './mockData'
+import { STORAGE_KEYS, mockTenants, mockOrganizations, mockUsers, mockWorkOrders, mockWorkRecords, mockReservations } from './mockData'
 
 export const storage = {
   get: <T>(key: string): T | null => {
@@ -46,6 +46,9 @@ export const initializeMockData = (): void => {
   }
   if (!storage.get(STORAGE_KEYS.WORK_RECORDS)) {
     storage.set(STORAGE_KEYS.WORK_RECORDS, mockWorkRecords)
+  }
+  if (!storage.get(STORAGE_KEYS.RESERVATIONS)) {
+    storage.set(STORAGE_KEYS.RESERVATIONS, mockReservations)
   }
 }
 

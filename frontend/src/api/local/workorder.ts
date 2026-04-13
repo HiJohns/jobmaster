@@ -532,6 +532,157 @@ export const localWorkorderApi = {
 
     return { qr_url: `jobmaster://order/${id}?token=${token}` }
   },
+
+  acceptOrder: async (id: string, comment?: string, photoUrls?: string[]) => {
+    const user = getCurrentUser()
+    if (!user) {
+      throw new Error('未登录')
+    }
+
+    const workorders = storage.get<WorkOrder[]>(STORAGE_KEYS.WORKORDERS) || []
+    const idx = workorders.findIndex((wo) => wo.id === id)
+
+    if (idx === -1) {
+      throw new Error('工单不存在')
+    }
+
+    if (workorders[idx].status !== 'FINISHED' && workorders[idx].status !== 'OBSERVING') {
+      throw new Error('当前状态无法验收')
+    }
+
+    const now = new Date().toISOString()
+    const oldStatus = workorders[idx].status
+    workorders[idx] = {
+      ...workorders[idx],
+      status: 'CLOSED',
+      updated_at: now,
+    }
+
+    storage.set(STORAGE_KEYS.WORKORDERS, workorders)
+
+    const records = storage.get<WorkRecord[]>(STORAGE_KEYS.WORK_RECORDS) || []
+    records.push({
+      id: generateId('wr'),
+      user_id: user.id,
+      user_name: user.display_name,
+      action: 'ACCEPTED',
+      details: comment || '验收通过',
+      old_status: oldStatus,
+      new_status: 'CLOSED',
+      created_at: now,
+    })
+    storage.set(STORAGE_KEYS.WORK_RECORDS, records)
+
+    return {
+      work_order_id: id,
+      old_status: oldStatus,
+      new_status: 'CLOSED',
+      accepted_at: now,
+      comment,
+      photo_urls: photoUrls,
+    }
+  },
+
+  rejectOrder: async (id: string, comment: string, photoUrls?: string[]) => {
+    const user = getCurrentUser()
+    if (!user) {
+      throw new Error('未登录')
+    }
+
+    const workorders = storage.get<WorkOrder[]>(STORAGE_KEYS.WORKORDERS) || []
+    const idx = workorders.findIndex((wo) => wo.id === id)
+
+    if (idx === -1) {
+      throw new Error('工单不存在')
+    }
+
+    if (workorders[idx].status !== 'FINISHED' && workorders[idx].status !== 'OBSERVING') {
+      throw new Error('当前状态无法拒单')
+    }
+
+    const now = new Date().toISOString()
+    const oldStatus = workorders[idx].status
+    workorders[idx] = {
+      ...workorders[idx],
+      status: 'REJECTED',
+      updated_at: now,
+    }
+
+    storage.set(STORAGE_KEYS.WORKORDERS, workorders)
+
+    const records = storage.get<WorkRecord[]>(STORAGE_KEYS.WORK_RECORDS) || []
+    records.push({
+      id: generateId('wr'),
+      user_id: user.id,
+      user_name: user.display_name,
+      action: 'REJECTED',
+      details: comment,
+      old_status: oldStatus,
+      new_status: 'REJECTED',
+      created_at: now,
+    })
+    storage.set(STORAGE_KEYS.WORK_RECORDS, records)
+
+    return {
+      work_order_id: id,
+      old_status: oldStatus,
+      new_status: 'REJECTED',
+      rejected_at: now,
+      comment,
+      photo_urls: photoUrls,
+    }
+  },
+
+  rejectHandle: async (id: string, action: 'accept' | 'reassign', reason: string) => {
+    const user = getCurrentUser()
+    if (!user) {
+      throw new Error('未登录')
+    }
+
+    const workorders = storage.get<WorkOrder[]>(STORAGE_KEYS.WORKORDERS) || []
+    const idx = workorders.findIndex((wo) => wo.id === id)
+
+    if (idx === -1) {
+      throw new Error('工单不存在')
+    }
+
+    if (workorders[idx].status !== 'REJECTED') {
+      throw new Error('当前状态无法处理拒单')
+    }
+
+    const now = new Date().toISOString()
+    const oldStatus = workorders[idx].status
+    const newStatus = action === 'accept' ? 'CLOSED' : 'DISPATCHED'
+
+    workorders[idx] = {
+      ...workorders[idx],
+      status: newStatus,
+      updated_at: now,
+    }
+
+    storage.set(STORAGE_KEYS.WORKORDERS, workorders)
+
+    const records = storage.get<WorkRecord[]>(STORAGE_KEYS.WORK_RECORDS) || []
+    records.push({
+      id: generateId('wr'),
+      user_id: user.id,
+      user_name: user.display_name,
+      action: 'REJECT_HANDLE',
+      details: `${action === 'accept' ? '接受拒单' : '重新分配'}: ${reason}`,
+      old_status: oldStatus,
+      new_status: newStatus,
+      created_at: now,
+    })
+    storage.set(STORAGE_KEYS.WORK_RECORDS, records)
+
+    return {
+      work_order_id: id,
+      old_status: oldStatus,
+      new_status: newStatus,
+      handled_at: now,
+      action,
+    }
+  },
 }
 
 export default localWorkorderApi

@@ -41,7 +41,7 @@ export interface User {
 export interface WorkOrder {
   id: string
   order_no: string
-  status: 'PENDING' | 'DISPATCHED' | 'ACCEPTED' | 'RESERVED' | 'ARRIVED' | 'WORKING' | 'FINISHED' | 'OBSERVING' | 'CLOSED'
+  status: 'PENDING' | 'DISPATCHED' | 'ACCEPTED' | 'RESERVED' | 'ARRIVED' | 'WORKING' | 'FINISHED' | 'OBSERVING' | 'CLOSED' | 'REJECTED'
   store_id: string
   store_name: string
   vendor_id?: string
@@ -85,6 +85,21 @@ export interface QRToken {
   expired_at: string
 }
 
+export interface Reservation {
+  id: string
+  work_order_id: string
+  work_order_title: string
+  proposer_id: string
+  proposer_name: string
+  proposer_role: string
+  proposed_time: string
+  status: 'pending' | 'confirmed' | 'rejected' | 'expired'
+  reject_reason?: string
+  comment?: string
+  created_at: string
+  updated_at: string
+}
+
 export const STORAGE_KEYS = {
   TENANTS: 'jm_tenants',
   ORGANIZATIONS: 'jm_organizations',
@@ -93,6 +108,7 @@ export const STORAGE_KEYS = {
   WORK_RECORDS: 'jm_work_records',
   SESSION: 'jm_session',
   QR_TOKENS: 'jm_qr_tokens',
+  RESERVATIONS: 'jm_reservations',
 }
 
 export const mockTenants: Tenant[] = [
@@ -528,5 +544,32 @@ export const mockWorkRecords: WorkRecord[] = [
     old_status: 'DISPATCHED',
     new_status: 'ACCEPTED',
     created_at: now,
+  },
+]
+
+export const mockReservations: Reservation[] = [
+  {
+    id: 'jm-res-1',
+    work_order_id: 'jm-wo-6',
+    work_order_title: '空调不制冷',
+    proposer_id: 'jm-user-5',
+    proposer_name: 'Engineer 1',
+    proposer_role: 'ENGINEER',
+    proposed_time: new Date(Date.now() + 86400000).toISOString(),
+    status: 'pending',
+    created_at: now,
+    updated_at: now,
+  },
+  {
+    id: 'jm-res-2',
+    work_order_id: 'jm-wo-7',
+    work_order_title: '水管漏水',
+    proposer_id: 'jm-user-5',
+    proposer_name: 'Engineer 1',
+    proposer_role: 'ENGINEER',
+    proposed_time: new Date(Date.now() + 172800000).toISOString(),
+    status: 'confirmed',
+    created_at: yesterday,
+    updated_at: now,
   },
 ]
