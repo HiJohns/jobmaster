@@ -48,3 +48,12 @@ postgres_data/
 frontend/node_modules/
 frontend/dist/
 frontend/.env.local
+frontend/.env.local-api
+frontend/.env.mobile
+frontend/.env.remote
+
+# Mobile Frontend
+frontend-mobile/node_modules/
+frontend-mobile/dist/
+frontend-mobile/.env.local
+frontend-mobile/package-lock.json
