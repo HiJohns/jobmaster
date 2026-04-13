@@ -64,7 +64,7 @@ export const STATUS_ID_REVERSE_MAP: Record<WorkOrderStatus, number> = {
 export const STATUS_CONFIG: Record<WorkOrderStatus, StatusConfig> = {
   PENDING: {
     text: '待服务',
-    color: 'orange',
+    color: 'default',
     icon: 'clock-circle',
     description: '工单已创建，等待工程公司指派',
     actions: [],
@@ -96,7 +96,7 @@ export const STATUS_CONFIG: Record<WorkOrderStatus, StatusConfig> = {
   },
   WORKING: {
     text: '施工中',
-    color: 'processing',
+    color: 'purple',
     icon: 'tool',
     description: '工程师正在施工中',
     actions: ['finish'],
@@ -104,7 +104,7 @@ export const STATUS_CONFIG: Record<WorkOrderStatus, StatusConfig> = {
   },
   FINISHED: {
     text: '待验收',
-    color: 'purple',
+    color: 'green',
     icon: 'check-circle',
     description: '工程师已提交完工，等待验收',
     actions: ['approve', 'reject'],

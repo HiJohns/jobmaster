@@ -6,6 +6,7 @@ import { api } from '../api/factory'
 import type { WorkOrderDetail } from '../api/workorder'
 import { useAuthStore } from '../store/useAuthStore'
 import { getStatusConfig, canPerformAction, WorkOrderStatus } from '../config/status'
+import { StepFlow } from '../components/StepFlow'
 
 function WorkOrderDetail() {
   const { id } = useParams<{ id: string }>()
@@ -186,6 +187,7 @@ function WorkOrderDetail() {
 
   return (
     <div style={{ padding: 12, paddingBottom: 80 }}>
+      <StepFlow currentStatus={order.status} />
       <Card style={{ marginBottom: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <span style={{ fontSize: 18, fontWeight: 'bold' }}>{order.order_no}</span>

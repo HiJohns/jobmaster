@@ -1,0 +1,56 @@
+/**
+ * WorkOrderCenter styles
+ * Dual-column layout for work order center
+ */
+
+.workorder-center {
+  display: flex;
+  gap: 16px;
+  height: calc(100vh - 200px);
+}
+
+.master-list {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.detail-view {
+  flex: 1;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.workorder-card {
+  transition: all 0.2s ease;
+}
+
+.workorder-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.workorder-card.selected {
+  border-color: #0033FF;
+  background-color: #f0f8ff;
+}
+
+@media (max-width: 768px) {
+  .workorder-center {
+    flex-direction: column;
+    gap: 12px;
+    height: auto;
+  }
+  
+  .master-list,
+  .detail-view {
+    flex: none;
+    max-height: 50vh;
+  }
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
