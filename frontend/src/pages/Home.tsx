@@ -336,11 +336,11 @@ function Home() {
                   borderRadius: '0 0 8px 8px',
                   boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
                 }}>
-                  <EmptyStateIllustration
-                    message="暂无待处理工单，去派发新任务吧"
-                    showAction={userInfo?.role === 'STORE'}
-                    onAction={handleCreateOrder}
-                  />
+                   <EmptyStateIllustration
+                     message="暂无待处理工单，去派发新任务吧"
+                     showAction={userInfo?.role === 'STORE' || userInfo?.role === 'EMPLOYEE'}
+                     onAction={handleCreateOrder}
+                   />
                 </div>
               ) : (
                 <div style={{
@@ -368,8 +368,8 @@ function Home() {
         )}
       </div>
 
-      {/* Create Order Button (for STORE role) */}
-      {userInfo?.role === 'STORE' && (
+      {/* Create Order Button (for STORE and EMPLOYEE roles) */}
+      {(userInfo?.role === 'STORE' || userInfo?.role === 'EMPLOYEE') && (
         <FloatingBubble
           onClick={handleCreateOrder}
           style={{
