@@ -1,4 +1,4 @@
-.PHONY: build run test docker-up docker-down clean help
+.PHONY: build run test docker-up docker-down clean help web-dev web-dev-remote
 
 # 变量定义
 APP_NAME := jobmaster
@@ -15,10 +15,23 @@ help: ## 显示帮助信息
 	@echo "可用的命令:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
-web: ## 编译前端资源
-	@echo "正在编译前端项目..."
+web: ## 编译 PC 端前端资源
+	@echo "正在编译 PC 端前端项目..."
 	@cd frontend && npm install && npm run build
-	@echo "前端编译完成: ./frontend/dist"
+	@echo "PC 端编译完成: ./frontend/dist"
+
+web-dev: ## 调试模式：PC 端前端 (端口 5550 → proxy → 5555)
+	@echo "正在启动 PC 端前端开发服务器 (端口 5550)..."
+	@cd frontend && npm run dev
+
+mobile: ## 编译 Mobile 端前端资源
+	@echo "正在编译 Mobile 端前端项目..."
+	@cd frontend-mobile && npm install && npm run build
+	@echo "Mobile 端编译完成: ./frontend-mobile/dist"
+
+mobile-dev: ## 调试模式：Mobile 端前端 (端口 5551 → proxy → 5555)
+	@echo "正在启动 Mobile 端前端开发服务器 (端口 5551)..."
+	@cd frontend-mobile && npm run dev
 
 build: ## 编译主程序
 	@echo "正在编译 $(APP_NAME)..."
@@ -26,14 +39,22 @@ build: ## 编译主程序
 	$(GO) build -ldflags="-w -s" -o $(BUILD_DIR)/$(APP_NAME) $(CMD_DIR)
 	@echo "编译完成: $(BUILD_DIR)/$(APP_NAME)"
 
-run: ## 运行程序 (跳过迁移，秒开模式)
+demo: ## 本地演示模式 (跳过认证)
+	@echo "正在以演示模式启动 $(APP_NAME) ..."
+	@if [ ! -f $(CONFIG_FILE) ]; then \
+		echo "错误: 未找到 $(CONFIG_FILE)，请复制 config.yaml.example 并配置"; \
+		exit 1; \
+	fi
+	DEMO_MODE=true $(GO) run $(CMD_DIR)/main.go
+
+run: ## 正常运行模式 (监听 5555 + 5558)
 	@echo "正在编译 $(APP_NAME) ..."
 	@if [ ! -f $(CONFIG_FILE) ]; then \
 		echo "错误: 未找到 $(CONFIG_FILE)，请复制 config.yaml.example 并配置"; \
 		exit 1; \
 	fi
 	$(GO) build -ldflags="-w -s" -o $(BUILD_DIR)/$(APP_NAME) $(CMD_DIR)
-	@echo "编译完成要，正在启动 $(APP_NAME) (跳过迁移)..."
+	@echo "编译完成，正在启动 $(APP_NAME) (正常模式，端口 5555 + 5558)..."
 	$(BUILD_DIR)/$(APP_NAME)
 
 dev: ## 开发模式：先迁移，再热重载

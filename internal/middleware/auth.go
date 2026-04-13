@@ -10,8 +10,24 @@ import (
 )
 
 // AuthMiddleware validates JWT token and injects user info into context
+// Supports DEMO_MODE for local testing without real authentication
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Check for demo mode bypass (local development only)
+		if utils.GetEnv("DEMO_MODE", "false") == "true" {
+			demoUserID, _ := uuid.Parse("00000000-0000-0000-0000-000000000001")
+			demoTenantID, _ := uuid.Parse("00000000-0000-0000-0000-000000000001")
+			demoOrgID, _ := uuid.Parse("00000000-0000-0000-0000-000000000001")
+			c.Set(utils.ContextKeyUserID, demoUserID)
+			c.Set(utils.ContextKeyOrgID, demoOrgID)
+			c.Set(utils.ContextKeyTenantID, demoTenantID)
+			c.Set(utils.ContextKeyRole, "BRAND_HQ")
+			c.Set(utils.ContextKeyIsImpersonated, false)
+			c.Next()
+			return
+		}
+
+		// Require authorization header in normal mode
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			response.Unauthorized(c, "missing authorization header")

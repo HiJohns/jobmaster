@@ -19,6 +19,11 @@ import (
 // SetupRouter configures the API routes with middleware pipeline
 // Middleware execution order: Recovery -> Logger -> Auth -> Impersonation -> Tenant
 func SetupRouter() *gin.Engine {
+	return SetupRouterWithFrontend("./frontend/dist")
+}
+
+// SetupRouterWithFrontend configures the API routes with custom frontend static files
+func SetupRouterWithFrontend(frontendDist string) *gin.Engine {
 	r := gin.New()
 
 	// Global middleware - system level
@@ -133,7 +138,6 @@ func SetupRouter() *gin.Engine {
 	}
 
 	// Serve frontend static files
-	frontendDist := "./frontend/dist"
 	if _, err := os.Stat(frontendDist); err == nil {
 		r.NoRoute(func(c *gin.Context) {
 			path := c.Request.URL.Path

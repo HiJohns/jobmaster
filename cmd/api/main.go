@@ -23,8 +23,9 @@ import (
 // Config holds the application configuration
 type Config struct {
 	Server struct {
-		Port int    `mapstructure:"port"`
-		Mode string `mapstructure:"mode"`
+		Port       int    `mapstructure:"port"`
+		PortMobile int    `mapstructure:"port_mobile"`
+		Mode       string `mapstructure:"mode"`
 	} `mapstructure:"server"`
 
 	Database struct {
@@ -96,22 +97,38 @@ func main() {
 		os.Setenv("JWT_SECRET", config.JWT.Secret)
 	}
 
-	// Setup router
-	router := setupRouter(config)
-
-	// Create HTTP server
-	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", config.Server.Port),
-		Handler: router,
+	// Setup routers with different static file paths
+	// Primary router (PC frontend)
+	routerPC := api.SetupRouterWithFrontend("./frontend/dist")
+	port1 := config.Server.Port
+	srv1 := &http.Server{
+		Addr:    fmt.Sprintf(":%d", port1),
+		Handler: routerPC,
 	}
 
-	// Start server in a goroutine
+	// Start primary server
 	go func() {
-		log.Printf("Server starting on port %d...", config.Server.Port)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Failed to start server: %v", err)
+		log.Printf("PC server starting on port %d...", port1)
+		if err := srv1.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Failed to start server on port %d: %v", port1, err)
 		}
 	}()
+
+	// Mobile server (mobile frontend static files)
+	portMobile := config.Server.PortMobile
+	if portMobile > 0 {
+		routerMobile := api.SetupRouterWithFrontend("./frontend-mobile/dist")
+		srvMobile := &http.Server{
+			Addr:    fmt.Sprintf(":%d", portMobile),
+			Handler: routerMobile,
+		}
+		go func() {
+			log.Printf("Mobile server starting on port %d...", portMobile)
+			if err := srvMobile.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				log.Fatalf("Failed to start mobile server on port %d: %v", portMobile, err)
+			}
+		}()
+	}
 
 	// Wait for interrupt signal to gracefully shutdown
 	quit := make(chan os.Signal, 1)
@@ -124,7 +141,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := srv1.Shutdown(ctx); err != nil {
 		log.Printf("Server forced to shutdown: %v", err)
 	}
 
@@ -246,11 +263,4 @@ func runSeeder() error {
 	}
 
 	return seeder.SeedAll()
-}
-
-// setupRouter configures the Gin router
-func setupRouter(config *Config) *gin.Engine {
-	// Use the centralized router setup from internal/api package
-	router := api.SetupRouter()
-	return router
 }

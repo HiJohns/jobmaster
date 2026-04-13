@@ -3,7 +3,8 @@
 
 # 服务器配置
 server:
-  port: 8080
+  port: 5555         # PC 端口 (PC 前端 + API)
+  port_mobile: 5558   # Mobile 端口 (Mobile 前端 + API)
   mode: debug
 
 # 数据库配置
