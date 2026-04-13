@@ -1,4 +1,4 @@
-import { Layout as AntLayout, Menu, Avatar, Dropdown, Breadcrumb, Button, message } from 'antd'
+import { Layout as AntLayout, Menu, Avatar, Dropdown, Breadcrumb, Button } from 'antd'
 import {
   HomeTwoTone,
   FileTextTwoTone,
@@ -16,6 +16,7 @@ import { useAuthStore } from '../store/useAuthStore'
 import Logo from './Logo'
 import TabBar from './TabBar'
 import '../styles/sidebar.css'
+import { useEffect, useState } from 'react'
 
 const { Header, Sider, Content } = AntLayout
 
@@ -24,11 +25,26 @@ function AppLayout() {
   const location = useLocation()
   const { userInfo, logout, isImpersonated, exitImpersonation } = useAuthStore()
   const isMobile = useMediaQuery({ query: '(max-width: 768px)' })
+  const [collapsed, setCollapsed] = useState(false)
+  const [logoText, setLogoText] = useState('JobMaster')
+  const [logoColor, setLogoColor] = useState('#0033FF')
 
-  const handleExitImpersonation = () => {
+  // Load brand config on mount
+  useEffect(() => {
+    const brandConfig = localStorage.getItem('brand_config')
+    if (brandConfig) {
+      try {
+        const config = JSON.parse(brandConfig)
+        setLogoText(config.brand_name || 'JobMaster')
+        setLogoColor(config.primary_color || '#0033FF')
+      } catch (err) {
+        console.warn('Failed to parse brand config:', err)
+      }
+    }
+  }, [])
+
+  function handleExitImpersonation(): void {
     exitImpersonation()
-    message.success('已退出代入模式')
-    window.location.reload()
   }
 
   const ImpersonationBanner = () => {
@@ -62,35 +78,44 @@ function AppLayout() {
     )
   }
 
-  const menuItems: MenuProps['items'] = [
-    {
-      key: '/',
-      icon: <HomeTwoTone twoToneColor="#0033FF" />,
-      label: '首页',
-    },
-    {
+  // Filter menu based on role (hide unrelated menus for engineers)
+  const isEngineer = userInfo?.role === 'ENGINEER'
+  const menuItems: MenuProps['items'] = []
+  
+  menuItems.push({
+    key: '/',
+    icon: <HomeTwoTone twoToneColor={logoColor} />,
+    label: '首页',
+  })
+  
+  if (!isEngineer) {
+    menuItems.push({
       key: '/assets',
-      icon: <AppstoreTwoTone twoToneColor="#0033FF" />,
+      icon: <AppstoreTwoTone twoToneColor={logoColor} />,
       label: '资产监控',
-    },
-    {
-      key: '/workorders',
-      icon: <FileTextTwoTone twoToneColor="#0033FF" />,
-      label: '工单管理',
-    },
-    {
+    })
+  }
+  
+  menuItems.push({
+    key: '/workorders',
+    icon: <FileTextTwoTone twoToneColor={logoColor} />,
+    label: '工单管理',
+  })
+  
+  if (!isEngineer) {
+    menuItems.push({
       key: '/settings',
-      icon: <SettingTwoTone twoToneColor="#0033FF" />,
+      icon: <SettingTwoTone twoToneColor={logoColor} />,
       label: '系统设置',
-      children: [
+      children: collapsed ? undefined : [
         {
           key: '/admin/tenants',
           label: '租户管理',
           icon: <BankOutlined />,
         },
       ],
-    },
-  ]
+    })
+  }
 
   const userMenuItems: MenuProps['items'] = [
     {
@@ -122,17 +147,41 @@ function AppLayout() {
   // Breadcrumb logic
   const getBreadcrumbItems = () => {
     const path = location.pathname
-    const items = [{ title: '首页' }]
+    type BreadcrumbItem = {
+      title: string
+      onClick?: (e: React.MouseEvent) => void
+    }
+    const items: BreadcrumbItem[] = [
+      { 
+        title: '首页',
+        onClick: (e: React.MouseEvent) => {
+          e.preventDefault()
+          navigate('/')
+        }
+      }
+    ]
     
     if (path.startsWith('/workorders')) {
       items.push({ title: '工单管理' })
     } else if (path.startsWith('/workorder/')) {
-      items.push({ title: '工单管理' })
+      items.push({ 
+        title: '工单管理',
+        onClick: (e: React.MouseEvent) => {
+          e.preventDefault()
+          navigate('/workorders')
+        }
+      })
       items.push({ title: '工单详情' })
     } else if (path.startsWith('/assets')) {
       items.push({ title: '资产监控' })
     } else if (path.startsWith('/admin/tenants')) {
-      items.push({ title: '系统设置' })
+      items.push({ 
+        title: '系统设置',
+        onClick: (e: React.MouseEvent) => {
+          e.preventDefault()
+          navigate('/settings')
+        }
+      })
       items.push({ title: '租户管理' })
     } else if (path.startsWith('/settings')) {
       items.push({ title: '系统设置' })
@@ -141,13 +190,29 @@ function AppLayout() {
     return items
   }
 
-  // Semantic tenant name
-  const getTenantDisplayName = () => {
-    if (userInfo?.role === 'SYSTEM_ADMIN' || userInfo?.role === 'Brand HQ' || userInfo?.role === 'BRAND_HQ') {
-      return '系统管理后台'
-    }
-    return userInfo?.displayName || '分店'
-  }
+  // Collapsed sidebar user info (only avatar)
+  const SidebarUserInfoCollapsed = () => (
+    <div
+      style={{
+        padding: '16px 8px',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        cursor: 'pointer',
+        borderTop: '1px solid rgba(255,255,255,0.1)',
+      }}
+      onClick={(e) => e.preventDefault()}
+    >
+      <Avatar
+        icon={<UserOutlined />}
+        size="large"
+        style={{
+          backgroundColor: 'rgba(255,255,255,0.15)',
+          color: '#fff',
+        }}
+      />
+    </div>
+  )
 
   // Sidebar footer user info component
   const SidebarUserInfo = () => (
@@ -178,22 +243,20 @@ function AppLayout() {
             flexShrink: 0,
           }}
         />
-        <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            color: '#fff',
+            color: '#ffffff',
             fontSize: '14px',
             fontWeight: 500,
-            lineHeight: '20px',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
           }}>
-            {getTenantDisplayName()}
+            {userInfo?.displayName || 'User'}
           </div>
           <div style={{
-            color: 'rgba(255,255,255,0.5)',
+            color: 'rgba(255,255,255,0.7)',
             fontSize: '12px',
-            lineHeight: '18px',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -213,7 +276,8 @@ function AppLayout() {
           theme="dark"
           className="shadow-md"
           breakpoint="lg"
-          collapsedWidth="0"
+          collapsedWidth="60"
+          collapsed={collapsed}
           style={{
             display: 'flex',
             flexDirection: 'column',
@@ -226,9 +290,38 @@ function AppLayout() {
             alignItems: 'center',
             justifyContent: 'center',
             borderBottom: '1px solid rgba(255,255,255,0.1)',
-            padding: '0 16px',
+            padding: '0 8px',
           }}>
-            <Logo size={36} theme="light" showText={true} layout="horizontal" />
+            {collapsed ? (
+              <Logo size={24} theme="light" showText={false} layout="horizontal" />
+            ) : (
+              <Logo size={36} theme="light" showText={true} layout="horizontal" />
+            )}
+          </div>
+
+          {/* Toggle Button */}
+          <div style={{
+            position: 'absolute',
+            top: '90px',
+            right: collapsed ? '-12px' : '-12px',
+            zIndex: 10,
+          }}>
+            <Button
+              type="primary"
+              shape="circle"
+              size="small"
+              icon={collapsed ? '＞' : '＜'}
+              onClick={() => setCollapsed(!collapsed)}
+              style={{
+                width: '24px',
+                height: '24px',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: logoColor,
+                border: 'none',
+              }}
+            />
           </div>
 
           {/* Menu Section - flex: 1 to take remaining space */}
@@ -245,11 +338,25 @@ function AppLayout() {
                 borderRight: 'none',
                 padding: '16px 0',
               }}
+              inlineCollapsed={collapsed}
             />
           </div>
 
           {/* User Info at Sidebar Bottom */}
-          <SidebarUserInfo />
+          {collapsed ? <SidebarUserInfoCollapsed /> : <SidebarUserInfo />}
+          
+          {/* Logo Text in collapsed mode */}
+          {collapsed && (
+            <div style={{
+              padding: '16px 8px',
+              textAlign: 'center',
+              fontSize: '12px',
+              color: 'rgba(255,255,255,0.7)',
+              borderTop: '1px solid rgba(255,255,255,0.1)',
+            }}>
+              {logoText}
+            </div>
+          )}
         </Sider>
       )}
       
