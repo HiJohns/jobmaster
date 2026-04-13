@@ -130,7 +130,40 @@
 
 ---
 
-### 2.5 work_order_logs (工单审计日志表)
+### 2.5 reservations (预约表)
+
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| id | UUID | 主键 |
+| work_order_id | UUID | 关联工单 ID |
+| proposer_id | BIGINT | 预约发起人 ID（用户 ID） |
+| proposed_time | TIMESTAMP | 预约时间 |
+| status | VARCHAR(20) | 预约状态：pending/confirmed/rejected/expired |
+| reject_reason | TEXT | 拒绝原因 |
+| created_at | TIMESTAMP | 创建时间 |
+| updated_at | TIMESTAMP | 更新时间 |
+
+**预约状态说明**:
+- `pending` (待确认): 等待分公司确认
+- `confirmed` (已确认): 分公司已确认，工单转入 RESERVED
+- `rejected` (已拒绝): 分公司拒绝预约
+- `expired` (已过期): 预约时间已过
+
+**索引**:
+- `idx_reservation_work_order`: (work_order_id, created_at)
+- `idx_reservation_proposer`: (proposer_id, created_at)
+- `idx_reservation_status`: (status, proposed_time)
+- `idx_reservation_time`: (proposed_at)
+
+**业务逻辑**:
+- 一个工单可以有多个预约提议（历史记录）
+- 只有最新且 status = confirmed 的预约才有效
+- 预约确认后，工单状态自动转为 RESERVED（二次握手）
+- 预约拒绝后，工单状态保持不变（仍为 ACCEPTED），需要重新发起预约
+
+---
+
+### 2.6 work_order_logs (工单审计日志表)
 
 | 字段名 | 类型 | 说明 |
 |--------|------|------|

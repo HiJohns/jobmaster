@@ -484,7 +484,287 @@
 
 **说明**: 仅设置预约时间，需分公司确认后才转为 RESERVED。
 
-### 3.8 生成进场二维码
+### 3.8 预约列表
+
+**端点**: `GET /api/v1/reservations`
+
+**查询参数**:
+- `status` (可选): 预约状态 (pending/confirmed/rejected/expired)
+- `work_order_id` (可选): 关联工单ID
+- `page` (可选): 页码，默认 1
+- `page_size` (可选): 每页数量，默认 20
+
+**响应**:
+```json
+{
+  "code": 0,
+  "data": {
+    "list": [
+      {
+        "id": "uuid",
+        "work_order_id": "uuid",
+        "work_order_title": "string",
+        "proposer_id": "uuid",
+        "proposer_name": "string",
+        "proposer_role": "string",
+        "proposed_time": "timestamp",
+        "status": "string",
+        "reject_reason": "string",
+        "created_at": "timestamp",
+        "updated_at": "timestamp"
+      }
+    ],
+    "total": "int",
+    "page": "int",
+    "page_size": "int"
+  }
+}
+```
+
+**适用角色**: BRANCH / ENGINEER
+
+**说明**: 分公司员工查看本公司的所有预约，工程师查看与自己相关的预约。
+
+### 3.9 预约详情
+
+**端点**: `GET /api/v1/reservations/:id`
+
+**响应**:
+```json
+{
+  "code": 0,
+  "data": {
+    "id": "uuid",
+    "work_order_id": "uuid",
+    "work_order_title": "string",
+    "proposer_id": "uuid",
+    "proposer_name": "string",
+    "proposer_role": "string",
+    "proposed_time": "timestamp",
+    "status": "string",
+    "reject_reason": "string",
+    "created_at": "timestamp",
+    "updated_at": "timestamp"
+  }
+}
+```
+
+**适用角色**: BRANCH / ENGINEER
+
+### 3.10 确认预约
+
+**端点**: `POST /api/v1/reservations/:id/confirm`
+
+**请求体**:
+```json
+{
+  "comment": "string"  // 可选
+}
+```
+
+**响应**:
+```json
+{
+  "code": 0,
+  "data": {
+    "reservation_id": "uuid",
+    "work_order_id": "uuid",
+    "new_status": "confirmed",
+    "confirmed_at": "timestamp"
+  }
+}
+```
+
+**适用角色**: BRANCH（分公司员工）
+
+**说明**: 分公司确认预约后，相应工单转入 RESERVED 状态（二次握手完成）。
+
+### 3.11 拒绝预约
+
+**端点**: `POST /api/v1/reservations/:id/reject`
+
+**请求体** (必需):
+```json
+{
+  "reason": "string"  // 拒绝原因，必填
+}
+```
+
+**响应**:
+```json
+{
+  "code": 0,
+  "data": {
+    "reservation_id": "uuid",
+    "work_order_id": "uuid",
+    "new_status": "rejected",
+    "reject_reason": "string",
+    "rejected_at": "timestamp"
+  }
+}
+```
+
+**适用角色**: BRANCH（分公司员工）
+
+**说明**: 拒绝预约后，工单状态保持不变（仍为 ACCEPTED），工程师需要重新发起预约。
+
+### 3.12 改期预约
+
+**端点**: `POST /api/v1/reservations/:id/reschedule`
+
+**请求体**:
+```json
+{
+  "new_time": "timestamp",
+  "comment": "string"  // 可选
+}
+```
+
+**响应**:
+```json
+{
+  "code": 0,
+  "data": {
+    "reservation_id": "uuid",
+    "work_order_id": "uuid",
+    "old_time": "timestamp",
+    "new_time": "timestamp",
+    "status": "confirmed",
+    "updated_at": "timestamp"
+  }
+}
+```
+
+**适用角色**: ENGINEER / BRANCH
+
+**说明**: 已确认的预约可以改期，需要双方协商同意。
+
+### 3.13 工单预约日志
+
+**端点**: `GET /api/v1/workorders/:id/reservations`
+
+**查询参数**:
+- `include_rejected` (可选): 是否包含被拒绝的预约，默认 false
+
+**响应**:
+```json
+{
+  "code": 0,
+  "data": {
+    "list": [
+      {
+        "id": "uuid",
+        "proposed_time": "timestamp",
+        "status": "string",
+        "proposer_name": "string",
+        "proposer_role": "string",
+        "reject_reason": "string",
+        "created_at": "timestamp"
+      }
+    ],
+    "total": "int"
+  }
+}
+```
+
+**适用角色**: BRANCH / ENGINEER
+
+**说明**: 查看工单的所有预约历史记录，包括提议、拒绝、确认、改期等。
+
+### 3.14 验收工单
+
+**端点**: `POST /api/v1/workorders/:id/accept`
+
+**请求体**:
+```json
+{
+  "comment": "string",      // 验收评论
+  "photo_urls": ["string"]  // 验收图片
+}
+```
+
+**响应**:
+```json
+{
+  "code": 0,
+  "data": {
+    "work_order_id": "uuid",
+    "old_status": "FINISHED",
+    "new_status": "CLOSED",
+    "accepted_at": "timestamp",
+    "comment": "string",
+    "photo_urls": ["string"]
+  }
+}
+```
+
+**适用角色**: BRANCH（分公司员工）
+
+**说明**: 分公司验收通过后，工单状态转为 CLOSED 或 OBSERVING。
+
+### 3.15 拒绝工单（拒单）
+
+**端点**: `POST /api/v1/workorders/:id/reject`
+
+**请求体** (必需):
+```json
+{
+  "comment": "string",      // 拒单原因，必填
+  "photo_urls": ["string"]  // 拒单依据图片
+}
+```
+
+**响应**:
+```json
+{
+  "code": 0,
+  "data": {
+    "work_order_id": "uuid",
+    "old_status": "FINISHED",
+    "new_status": "REJECTED",
+    "rejected_at": "timestamp",
+    "comment": "string",
+    "photo_urls": ["string"]
+  }
+}
+```
+
+**适用角色**: BRANCH（分公司员工）
+
+**说明**: 验收不通过时，工单状态转为 REJECTED（拒单），回转给工程公司重新处理。
+
+### 3.16 工单拒单/拒收处理
+
+**端点**: `POST /api/v1/workorders/:id/reject-handle`
+
+**请求体**:
+```json
+{
+  "action": "string",  // "accept" (接受拒单) 或 "reassign" (重新分配)
+  "reason": "string"   // 处理原因
+}
+```
+
+**响应**:
+```json
+{
+  "code": 0,
+  "data": {
+    "work_order_id": "uuid",
+    "old_status": "REJECTED",
+    "new_status": "DISPATCHED",
+    "handled_at": "timestamp",
+    "action": "string"
+  }
+}
+```
+
+**适用角色**: CONTRACTOR / VENDOR
+
+**说明**: 工程公司处理分公司拒单，可选择接受（工单关闭）或重新分配工程师。
+
+### 3.17 生成进场二维码
+
 
 **端点**: `POST /api/v1/orders/qrcode`
 
