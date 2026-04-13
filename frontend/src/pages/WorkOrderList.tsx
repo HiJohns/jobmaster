@@ -3,11 +3,11 @@ import { Tabs, SearchBar, PullToRefresh, SpinLoading, Button } from 'antd-mobile
 import { Table, Checkbox, Tag, Space } from 'antd'
 import { CameraOutlined, EnvironmentOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
-import dayjs from 'dayjs'
+import dayjs, { Dayjs } from 'dayjs'
 import { api } from '../api/factory'
 import { useAuthStore } from '../store/useAuthStore'
 import { WorkOrder } from '../api/local'
-import WeekCalendar from '../components/Calendar'
+import WeeklyCalendar from '../components/WeeklyCalendar'
 import EmptyStateIllustration from '../components/EmptyStateIllustration'
 
 const STATUS_TABS = [
@@ -165,7 +165,7 @@ function WorkOrderList() {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <WeekCalendar onDateChange={(date) => setSelectedDate(date)} selectedDate={selectedDate} />
+      <WeeklyCalendar onDateChange={(date: Dayjs) => setSelectedDate(date)} selectedDate={selectedDate} />
 
       <SearchBar
         placeholder="搜索单号、网点、品牌、工程师姓名..."
