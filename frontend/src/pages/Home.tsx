@@ -18,7 +18,9 @@ import { useNavigate } from 'react-router-dom'
 import dayjs, { Dayjs } from 'dayjs'
 import WeekCalendar from '../components/WeekCalendar'
 import WorkOrderCard from '../components/WorkOrderCard'
+import { WorkOrderCenter } from '../components/WorkOrderCenter'
 import EmptyStateIllustration from '../components/EmptyStateIllustration'
+import { CreateWorkOrderModal } from '../components/CreateWorkOrderModal'
 import { api } from '../api/factory'
 import { WorkOrder } from '../api/local'
 import { STATUS_GROUPS } from '../config/status'
@@ -67,6 +69,8 @@ function Home() {
     review: 0,
     completed: 0,
   })
+  const [useDualColumn, setUseDualColumn] = useState(false)
+  const [createModalVisible, setCreateModalVisible] = useState(false)
   const PAGE_SIZE = 10
 
   const badgeStyle = {
@@ -162,7 +166,16 @@ function Home() {
    * Handle create new order
    */
   const handleCreateOrder = () => {
-    navigate('/workorders')
+    setCreateModalVisible(true)
+  }
+
+  /**
+   * Handle modal success
+   */
+  const handleCreateSuccess = () => {
+    // Refresh orders after successful creation
+    setPage(1)
+    fetchOrders(1, true)
   }
 
   /**
@@ -285,48 +298,74 @@ function Home() {
         })}
       </div>
 
+      {/* Layout Toggle */}
+      <div style={{ padding: '0 16px', marginBottom: 12, display: 'flex', justifyContent: 'flex-end' }}>
+        <button
+          onClick={() => setUseDualColumn(!useDualColumn)}
+          style={{
+            padding: '6px 12px',
+            borderRadius: '4px',
+            border: '1px solid #0033FF',
+            backgroundColor: useDualColumn ? '#0033FF' : '#fff',
+            color: useDualColumn ? '#fff' : '#0033FF',
+            fontSize: '12px',
+            cursor: 'pointer',
+          }}
+        >
+          {useDualColumn ? '切换为卡片视图' : '切换为双栏视图'}
+        </button>
+      </div>
+
       {/* Order List */}
       <div style={{ flex: 1, overflow: 'auto', background: '#f5f5f5', padding: '16px' }}>
-        <PullToRefresh onRefresh={handleRefresh}>
-          <div>
-            {/* Persistent Table Header - always visible */}
-            <TableHeader />
-            
-            {orders.length === 0 && !loading ? (
-              <div style={{
-                backgroundColor: '#fff',
-                borderRadius: '0 0 8px 8px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-              }}>
-                <EmptyStateIllustration
-                  message="暂无待处理工单，去派发新任务吧"
-                  showAction={userInfo?.role === 'STORE'}
-                  onAction={handleCreateOrder}
-                />
-              </div>
-            ) : (
-              <div style={{
-                backgroundColor: '#fff',
-                borderRadius: '0 0 8px 8px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                padding: '16px',
-              }}>
-                {orders.map((order) => (
-                  <WorkOrderCard
-                    key={order.id}
-                    order={order as any}
-                    onClick={handleOrderClick}
+        {useDualColumn ? (
+          <WorkOrderCenter
+            orders={orders}
+            loading={loading}
+            hasMore={hasMore}
+          />
+        ) : (
+          <PullToRefresh onRefresh={handleRefresh}>
+            <div>
+              {/* Persistent Table Header - always visible */}
+              <TableHeader />
+              
+              {orders.length === 0 && !loading ? (
+                <div style={{
+                  backgroundColor: '#fff',
+                  borderRadius: '0 0 8px 8px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                }}>
+                  <EmptyStateIllustration
+                    message="暂无待处理工单，去派发新任务吧"
+                    showAction={userInfo?.role === 'STORE'}
+                    onAction={handleCreateOrder}
                   />
-                ))}
-                <InfiniteScroll
-                  loadMore={handleLoadMore}
-                  hasMore={hasMore}
-                  threshold={100}
-                />
-              </div>
-            )}
-          </div>
-        </PullToRefresh>
+                </div>
+              ) : (
+                <div style={{
+                  backgroundColor: '#fff',
+                  borderRadius: '0 0 8px 8px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                  padding: '16px',
+                }}>
+                  {orders.map((order) => (
+                    <WorkOrderCard
+                      key={order.id}
+                      order={order as any}
+                      onClick={handleOrderClick}
+                    />
+                  ))}
+                  <InfiniteScroll
+                    loadMore={handleLoadMore}
+                    hasMore={hasMore}
+                    threshold={100}
+                  />
+                </div>
+              )}
+            </div>
+          </PullToRefresh>
+        )}
       </div>
 
       {/* Create Order Button (for STORE role) */}
@@ -341,6 +380,13 @@ function Home() {
           <AddOutline fontSize={24} color="#fff" />
         </FloatingBubble>
       )}
+
+      {/* Create Work Order Modal */}
+      <CreateWorkOrderModal
+        visible={createModalVisible}
+        onClose={() => setCreateModalVisible(false)}
+        onSuccess={handleCreateSuccess}
+      />
     </div>
   )
 }
