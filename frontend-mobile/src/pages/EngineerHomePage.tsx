@@ -5,6 +5,7 @@ import { AddOutline } from 'antd-mobile-icons'
 import WorkOrderCard from '../components/WorkOrderCard'
 import TabBar from '../components/TabBar'
 import { useAuthStore } from '../store/useAuthStore'
+import { theme } from '../styles/theme'
 
 interface WorkOrderStats {
   total: number
@@ -140,12 +141,12 @@ export default function EngineerHomePage() {
   }
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#f5f5f5' }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: theme.background }}>
       {/* 顶部统计栏 */}
       <Card
         style={{
           margin: '16px',
-          borderRadius: '12px',
+          borderRadius: theme.borderRadius,
           background: '#fff',
         }}
       >

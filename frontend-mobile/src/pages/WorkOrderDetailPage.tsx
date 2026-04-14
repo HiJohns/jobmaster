@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Card, Toast, NavBar, Steps, Loading } from 'antd-mobile'
 import { LeftOutline } from 'antd-mobile-icons'
 import { localReservationApi } from '../api/local/reservation'
+import { theme } from '../styles/theme'
 import ForwardDialog from '../components/ForwardDialog'
 import QRCodeDisplay from '../components/QRCodeDisplay'
 
@@ -222,7 +223,7 @@ export default function WorkOrderDetailPage() {
                 marginBottom: '16px'
               }}
               onClick={handleStepAction}
-            >
+             style={{ height: theme.buttonHeight }}>
               {STATUS_STEPS[currentStepIndex].title}
               <div style={{ fontSize: '14px', fontWeight: 'normal', marginTop: '4px' }}>
                 {STATUS_STEPS[currentStepIndex].description}
@@ -253,7 +254,7 @@ export default function WorkOrderDetailPage() {
               fontSize: '16px',
               marginBottom: '16px'
             }}
-            onClick={() => setForwardDialogVisible(true)}
+            onClick={() = style={{ height: theme.buttonHeight }}> setForwardDialogVisible(true)}
           >
             转发工单
           </Button>
@@ -281,7 +282,7 @@ export default function WorkOrderDetailPage() {
               height: '48px',
               fontSize: '16px'
             }}
-            onClick={() => navigate(`/wechat/orders/${orderId}/record`)}
+            onClick={() = style={{ height: theme.buttonHeight }}> navigate(`/wechat/orders/${orderId}/record`)}
           >
             施工记录
           </Button>
