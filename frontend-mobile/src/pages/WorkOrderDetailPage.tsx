@@ -204,6 +204,13 @@ export default function WorkOrderDetailPage() {
           workOrder.status === 'RESERVED' || 
           workOrder.status === 'WORKING') && (
           <Card title="扫码确认" style={{ marginBottom: '16px' }}>
+            <Button 
+              block 
+              style={{ marginBottom: '12px', height: '48px' }}
+              onClick={() => navigate('/wechat/scan-arrive')}
+            >
+              扫码进场
+            </Button>
             <QRCodeDisplay workOrderId={workOrder.id} />
           </Card>
         )}

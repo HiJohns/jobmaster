@@ -9,6 +9,7 @@ import CreateOrderPage from './pages/CreateOrderPage'
 import VerifyOrderPage from './pages/VerifyOrderPage'
 import ProfilePage from './pages/ProfilePage'
 import LoginPage from './pages/Login'
+import QRScanHandlerPage from './pages/QRScanHandlerPage'
 import { useAuthStore } from './store/useAuthStore'
 import { initializeMockData } from './api/local'
 
