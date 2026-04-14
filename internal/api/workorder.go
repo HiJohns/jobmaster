@@ -368,36 +368,6 @@ func ListWorkOrders(c *gin.Context) {
 	}
 	tenantID, ok := middleware.GetTenantID(c)
 
-	// Check urgent quota for the month (if applicable)
-	if req.IsUrgent {
-		currentMonth := time.Now().Format("2006-01")
-		var quota model.BranchQuota
-		err := db.Where("branch_id = ? AND month = ?", orgID, currentMonth).First(&quota).Error
-		
-		if err == nil {
-			// Quota record exists
-			if !quota.HasQuota() {
-				response.BadRequest(c, "加急配额不足，请联系管理员或等待下月额度")
-				return
-			}
-		} else if err == gorm.ErrRecordNotFound {
-			// No quota record exists, create one with default value
-			quota = model.BranchQuota{
-				ID:        uuid.New(),
-				BranchID: orgID,
-				Month:    currentMonth,
-				UrgentQuota: 5,
-				UrgentUsed: 0,
-			}
-			if err := db.Create(&quota).Error; err != nil {
-				response.InternalServerError(c, "failed to initialize quota")
-				return
-			}
-		} else {
-			response.InternalServerError(c, "failed to check quota")
-			return
-		}
-	}
 
 	if !ok {
 		response.Unauthorized(c, "invalid token: tenant not found")
@@ -492,36 +462,6 @@ func GetWorkOrder(c *gin.Context) {
 	}
 	tenantID, ok := middleware.GetTenantID(c)
 
-	// Check urgent quota for the month (if applicable)
-	if req.IsUrgent {
-		currentMonth := time.Now().Format("2006-01")
-		var quota model.BranchQuota
-		err := db.Where("branch_id = ? AND month = ?", orgID, currentMonth).First(&quota).Error
-		
-		if err == nil {
-			// Quota record exists
-			if !quota.HasQuota() {
-				response.BadRequest(c, "加急配额不足，请联系管理员或等待下月额度")
-				return
-			}
-		} else if err == gorm.ErrRecordNotFound {
-			// No quota record exists, create one with default value
-			quota = model.BranchQuota{
-				ID:        uuid.New(),
-				BranchID: orgID,
-				Month:    currentMonth,
-				UrgentQuota: 5,
-				UrgentUsed: 0,
-			}
-			if err := db.Create(&quota).Error; err != nil {
-				response.InternalServerError(c, "failed to initialize quota")
-				return
-			}
-		} else {
-			response.InternalServerError(c, "failed to check quota")
-			return
-		}
-	}
 
 	if !ok {
 		response.Unauthorized(c, "invalid token: tenant not found")
@@ -548,15 +488,6 @@ func GetWorkOrder(c *gin.Context) {
 
 	
 
-	// If urgent, increment quota usage
-	if req.IsUrgent {
-		currentMonth := time.Now().Format("2006-01")
-		var quota model.BranchQuota
-		if err := db.Where("branch_id = ? AND month = ?", orgID, currentMonth).First(&quota).Error; err == nil {
-			quota.UseQuota()
-			db.Save(&quota)
-		}
-	}
 
 	response.Success(c, toWorkOrderResponse(&workOrder))
 }
@@ -747,36 +678,6 @@ func ListMyTasks(c *gin.Context) {
 	}
 	tenantID, ok := middleware.GetTenantID(c)
 
-	// Check urgent quota for the month (if applicable)
-	if req.IsUrgent {
-		currentMonth := time.Now().Format("2006-01")
-		var quota model.BranchQuota
-		err := db.Where("branch_id = ? AND month = ?", orgID, currentMonth).First(&quota).Error
-		
-		if err == nil {
-			// Quota record exists
-			if !quota.HasQuota() {
-				response.BadRequest(c, "加急配额不足，请联系管理员或等待下月额度")
-				return
-			}
-		} else if err == gorm.ErrRecordNotFound {
-			// No quota record exists, create one with default value
-			quota = model.BranchQuota{
-				ID:        uuid.New(),
-				BranchID: orgID,
-				Month:    currentMonth,
-				UrgentQuota: 5,
-				UrgentUsed: 0,
-			}
-			if err := db.Create(&quota).Error; err != nil {
-				response.InternalServerError(c, "failed to initialize quota")
-				return
-			}
-		} else {
-			response.InternalServerError(c, "failed to check quota")
-			return
-		}
-	}
 
 	if !ok {
 		response.Unauthorized(c, "invalid token: tenant not found")
@@ -891,36 +792,6 @@ func GetTaskStatistics(c *gin.Context) {
 	}
 	tenantID, ok := middleware.GetTenantID(c)
 
-	// Check urgent quota for the month (if applicable)
-	if req.IsUrgent {
-		currentMonth := time.Now().Format("2006-01")
-		var quota model.BranchQuota
-		err := db.Where("branch_id = ? AND month = ?", orgID, currentMonth).First(&quota).Error
-		
-		if err == nil {
-			// Quota record exists
-			if !quota.HasQuota() {
-				response.BadRequest(c, "加急配额不足，请联系管理员或等待下月额度")
-				return
-			}
-		} else if err == gorm.ErrRecordNotFound {
-			// No quota record exists, create one with default value
-			quota = model.BranchQuota{
-				ID:        uuid.New(),
-				BranchID: orgID,
-				Month:    currentMonth,
-				UrgentQuota: 5,
-				UrgentUsed: 0,
-			}
-			if err := db.Create(&quota).Error; err != nil {
-				response.InternalServerError(c, "failed to initialize quota")
-				return
-			}
-		} else {
-			response.InternalServerError(c, "failed to check quota")
-			return
-		}
-	}
 
 	if !ok {
 		response.Unauthorized(c, "invalid token: tenant not found")
@@ -1136,36 +1007,6 @@ func GetWorkOrderDetail(c *gin.Context) {
 	}
 	tenantID, ok := middleware.GetTenantID(c)
 
-	// Check urgent quota for the month (if applicable)
-	if req.IsUrgent {
-		currentMonth := time.Now().Format("2006-01")
-		var quota model.BranchQuota
-		err := db.Where("branch_id = ? AND month = ?", orgID, currentMonth).First(&quota).Error
-		
-		if err == nil {
-			// Quota record exists
-			if !quota.HasQuota() {
-				response.BadRequest(c, "加急配额不足，请联系管理员或等待下月额度")
-				return
-			}
-		} else if err == gorm.ErrRecordNotFound {
-			// No quota record exists, create one with default value
-			quota = model.BranchQuota{
-				ID:        uuid.New(),
-				BranchID: orgID,
-				Month:    currentMonth,
-				UrgentQuota: 5,
-				UrgentUsed: 0,
-			}
-			if err := db.Create(&quota).Error; err != nil {
-				response.InternalServerError(c, "failed to initialize quota")
-				return
-			}
-		} else {
-			response.InternalServerError(c, "failed to check quota")
-			return
-		}
-	}
 
 	if !ok {
 		response.Unauthorized(c, "invalid token: tenant not found")
