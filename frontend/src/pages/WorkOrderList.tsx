@@ -10,6 +10,7 @@ import { WorkOrder } from '../api/local'
 import WeeklyCalendar from '../components/WeeklyCalendar'
 import EmptyStateIllustration from '../components/EmptyStateIllustration'
 import WorkOrderCard from '../components/WorkOrderCard'
+import KPIHeader from '../components/KPIHeader'
 import { theme } from '../styles/theme'
 
 const STATUS_TABS = [
@@ -30,6 +31,29 @@ function WorkOrderList() {
   const [orders, setOrders] = useState<WorkOrder[]>([])
   const [loading, setLoading] = useState(false)
   const [, setRefreshing] = useState(false)
+
+  const [loading, setLoading] = useState(false)
+  const [, setRefreshing] = useState(false)
+
+  // Calculate KPI stats from orders
+  const stats = {
+    total: orders.length,
+    pending: orders.filter(o => ['PENDING', 'DISPATCHED'].includes(o.status)).length,
+    working: orders.filter(o => ['RESERVED', 'WORKING'].includes(o.status)).length,
+    abnormal: orders.filter(o => o.is_urgent && new Date(o.created_at).getTime() + 4*60*60*1000 < Date.now()).length,
+  }
+
+  const handleKPIswitch = (key: string) => {
+    const tabMap: Record<string, string> = {
+      total: 'pending',  // Default to first tab for total
+      pending: 'pending',
+      working: 'working',
+      abnormal: 'review',  // Show finished orders for reviewing abnormalities
+    }
+    if (tabMap[key]) {
+      setActiveTab(tabMap[key])
+    }
+  }
 
   const fetchOrders = async () => {
     const tab = STATUS_TABS.find((t) => t.key === activeTab)
@@ -92,6 +116,8 @@ function WorkOrderList() {
         onChange={setSearchText}
         style={{ background: theme.cardBackground }}
       />
+
+      <KPIHeader stats={stats} onTabChange={handleKPIswitch} />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: theme.cardBackground }}>
         <span style={{ fontSize: 12, color: '#666' }}>共 {orders.length} 条</span>
