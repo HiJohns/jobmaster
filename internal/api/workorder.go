@@ -218,14 +218,17 @@ type WorkRecordResponse struct {
 
 // CreateWorkOrder creates a new work order (STORE role only)
 func CreateWorkOrder(c *gin.Context) {
-	// Check permission - only STORE can create work orders
+	// Check permission - STORE and STAFF can create work orders
 	userRole, ok := middleware.GetRole(c)
 	if !ok {
 		response.Unauthorized(c, "invalid token: role not found")
 		return
 	}
-	if model.UserRole(userRole) != model.UserRoleStore {
-		response.Forbidden(c, "only store can create work orders")
+
+	// Support both STORE and STAFF roles for creating work orders
+	role := model.UserRole(userRole)
+	if role != model.UserRoleStore && role != model.UserRoleStaff {
+		response.Forbidden(c, "insufficient permissions to create work orders")
 		return
 	}
 
