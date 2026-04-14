@@ -1,4 +1,5 @@
 import { Card } from 'antd-mobile'
+import { theme } from '../styles/theme'
 
 export interface WorkOrder {
   id: string
@@ -42,7 +43,7 @@ export default function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
         marginBottom: '12px',
         cursor: 'pointer',
         border: '1px solid #e8e8e8',
-        borderRadius: '12px',
+        borderRadius: theme.borderRadius,
         overflow: 'hidden',
         boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
       }}
@@ -69,22 +70,13 @@ export default function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
           </div>
         </div>
 
-        {/* 工单内容 */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ fontSize: '14px', color: '#666' }}>
-            <strong>网点：</strong>{order.store_name}
+        {/* 工单内容 - 优先级：地址 > 网点 */}
+        <div style={{ marginTop: '8px' }}>
+          <div style={{ fontSize: '14px', color: theme.textSecondary, marginBottom: '8px' }}>
+            {order.address_detail}
           </div>
-          <div style={{ fontSize: '14px', color: '#666' }}>
-            <strong>地址：</strong>{order.address_detail}
-          </div>
-          <div style={{ fontSize: '14px', color: '#666' }}>
-            <strong>分类：</strong>{order.category_path}
-          </div>
-          <div style={{ fontSize: '14px', color: '#666' }}>
-            <strong>品牌：</strong>{order.brand_name}
-          </div>
-          <div style={{ fontSize: '14px', color: '#666', lineHeight: '1.5' }}>
-            <strong>描述：</strong>{order.description}
+          <div style={{ fontSize: '13px', color: theme.textDisabled }}>
+            {order.store_name}
           </div>
           {order.is_urgent && (
             <div
