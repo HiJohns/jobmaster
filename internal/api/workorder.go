@@ -377,7 +377,7 @@ func ListWorkOrders(c *gin.Context) {
 	// Paginate
 	var workOrders []model.WorkOrder
 	offset := (req.Page - 1) * req.PageSize
-	if err := query.Order("created_at DESC").Offset(offset).Limit(req.PageSize).Find(&workOrders).Error; err != nil {
+	if err := query.Order("priority DESC, created_at DESC").Offset(offset).Limit(req.PageSize).Find(&workOrders).Error; err != nil {
 		response.InternalServerError(c, fmt.Errorf("failed to fetch work orders: %w", err).Error())
 		return
 	}

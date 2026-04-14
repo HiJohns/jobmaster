@@ -245,10 +245,6 @@ func (w *WorkOrder) MarkUrgent() {
 }
 
 // SetPriority sets the priority level
-func (w *WorkOrder) SetPriority(p Priority) {
-	w.Priority = p
-	w.CalculateSLA()
-}
 
 // IsValidTransition checks if a state transition is valid
 func (w *WorkOrder) IsValidTransition(newStatus WorkOrderStatus) bool {
@@ -381,4 +377,18 @@ func (w *WorkOrder) CalculateSLA() {
 		w.SLADeadline = &deadline
 		w.PriorityFee = 100.00
 	}
+}
+
+// SetPriority sets priority and adjusts hop limit for urgent orders
+func (w *WorkOrder) SetPriority(p Priority, maxHops int) {
+	w.Priority = p
+	if p > PriorityNormal {
+		// Compress hop limit for urgent orders
+		if maxHops > 1 {
+			w.HopLimit = maxHops - 1
+		} else {
+			w.HopLimit = 1
+		}
+	}
+	w.CalculateSLA()
 }
