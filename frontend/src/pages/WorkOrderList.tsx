@@ -51,7 +51,13 @@ function WorkOrderList() {
       const response = await api.workorder.list(params)
       const res = response as { code: number; data: { list: WorkOrder[] } }
       if (res.code === 200) {
-        setOrders(res.data.list)
+        // Sort: urgent orders first, then by created_at desc
+        const sortedOrders = [...res.data.list].sort((a, b) => {
+          if (a.is_urgent && !b.is_urgent) return -1
+          if (!a.is_urgent && b.is_urgent) return 1
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        })
+        setOrders(sortedOrders)
       }
     } catch (error) {
       console.error('Failed to fetch orders:', error)
