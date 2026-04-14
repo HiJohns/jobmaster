@@ -168,7 +168,7 @@ export default function WorkOrderDetailPage() {
   }
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#f5f5f5' }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#f5f5f5', paddingBottom: '80px' }}>
       {/* 导航栏 */}
       <NavBar
         backArrow={<LeftOutline />}
@@ -216,39 +216,51 @@ export default function WorkOrderDetailPage() {
         )}
 
         {/* Step Flow - 当前步骤大按钮 */}
+                {/* 操作步骤 */}
         <Card title="操作步骤" style={{ marginBottom: '16px' }}>
-          {currentStepIndex < STATUS_STEPS.length && (
-            <Button
-              block
-              size="large"
-              style={{
-                '--background-color': '#0033FF',
-                '--border-radius': '12px',
-                height: '60px',
-                fontSize: '18px',
-                fontWeight: 600,
-                marginBottom: '16px'
-              }}
-              onClick={handleStepAction}
-             style={{ height: theme.buttonHeight }}>
-              {STATUS_STEPS[currentStepIndex].title}
-              <div style={{ fontSize: '14px', fontWeight: 'normal', marginTop: '4px' }}>
-                {STATUS_STEPS[currentStepIndex].description}
-              </div>
-            </Button>
-          )}
-
-          {/* 状态时间轴 */}
-          <Steps current={currentStepIndex} direction="vertical">
+          {/* 状态流程 - 水平显示 */}
+          <Steps current={currentStepIndex} direction="horizontal" style={{ overflowX: 'auto' }}>
             {STATUS_STEPS.map((step, index) => (
-              <Steps.Step
-                key={step.status}
+              <Steps.Step 
+                key={step.status} 
                 title={step.title}
                 status={index < currentStepIndex ? 'finish' : index === currentStepIndex ? 'process' : 'wait'}
               />
             ))}
           </Steps>
         </Card>
+        
+        {/* 固定底部主操作按钮 */}
+        {currentStepIndex < STATUS_STEPS.length && (
+          <div style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            padding: '16px',
+            background: '#fff',
+            boxShadow: '0 -2px 8px rgba(0,0,0,0.1)',
+            zIndex: 1000,
+          }}>
+            <Button
+              block
+              size="large"
+              style={{
+                height: '48px',
+                fontSize: '18px',
+                fontWeight: 600,
+                '--background-color': '#0033FF',
+                '--border-radius': '12px',
+              }}
+              onClick={handleStepAction}
+            >
+              {STATUS_STEPS[currentStepIndex].title}
+              <div style={{ fontSize: '14px', fontWeight: 'normal', marginTop: '4px' }}>
+                {STATUS_STEPS[currentStepIndex].description}
+              </div>
+            </Button>
+          </div>
+        )}
 
         {/* 转发工单按钮 */}
         {(workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED') && (
@@ -261,7 +273,7 @@ export default function WorkOrderDetailPage() {
               fontSize: '16px',
               marginBottom: '16px'
             }}
-            onClick={() = style={{ height: theme.buttonHeight }}> setForwardDialogVisible(true)}
+            onClick={() => setForwardDialogVisible(true)}
           >
             转发工单
           </Button>
