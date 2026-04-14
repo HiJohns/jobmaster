@@ -34,7 +34,7 @@ export default function KPIHeader({ stats, onTabChange }: Props) {
               border: '1px solid #E5E7EB',
               transition: 'all 0.3s ease',
             }}
-            bodyStyle={{ padding: '20px' }}
+            styles={{ body: { padding: "20px" } }}
           >
             <div style={{ fontSize: '24px', fontWeight: 'bold', color: theme.primary }}>
               {stats[item.value]}

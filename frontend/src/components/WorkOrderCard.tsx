@@ -126,7 +126,7 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
             animation: 'urgent-pulse 2s ease-in-out infinite',
           } : {}),
         }}
-        bodyStyle={{ padding: 0 }}
+        styles={{ body: { padding: 0 } }}
       >
       {/* Left color bar */}
       {!order.is_urgent && (
