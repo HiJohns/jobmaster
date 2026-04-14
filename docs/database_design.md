@@ -24,6 +24,7 @@
 | code | VARCHAR(50) | 租户代码（唯一） |
 | logo_url | VARCHAR(500) | Logo URL |
 | status | SMALLINT | 状态：0-禁用 1-启用 |
+| max_hops | SMALLINT | 最大跳数（由租户设定，默认 3） |
 | created_at | TIMESTAMP | 创建时间 |
 | updated_at | TIMESTAMP | 更新时间 |
 | deleted_at | TIMESTAMP | 软删除时间 |

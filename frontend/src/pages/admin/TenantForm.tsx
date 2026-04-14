@@ -183,6 +183,24 @@ const TenantForm: React.FC<TenantFormProps> = ({ form, onFinish, isEditMode = fa
       )}
 
       <Form.Item
+        name="max_hops"
+        label="最大转派跳数"
+        initialValue={3}
+        rules={[
+          { required: true, message: '请输入最大转派跳数' },
+          {
+            validator: (_, value) => {
+              const num = Number(value)
+              if (num >= 1 && num <= 10) return Promise.resolve()
+              return Promise.reject(new Error('跳数必须在1-10之间'))
+            }
+          }
+        ]}
+      >
+        <Input type="number" min={1} max={10} placeholder="1-10" size="large" />
+      </Form.Item>
+
+      <Form.Item
         name="status"
         label="状态"
         initialValue={1}

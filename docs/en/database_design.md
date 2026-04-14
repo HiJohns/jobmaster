@@ -24,6 +24,7 @@ This document describes the database structure design for the JobMaster system. 
 | code | VARCHAR(50) | Tenant code (unique) |
 | logo_url | VARCHAR(500) | Logo URL |
 | status | SMALLINT | Status: 0-disabled 1-enabled |
+| max_hops | SMALLINT | Max hops (set by tenant admin, default 3) |
 | created_at | TIMESTAMP | Creation time |
 | updated_at | TIMESTAMP | Update time |
 | deleted_at | TIMESTAMP | Soft delete time |

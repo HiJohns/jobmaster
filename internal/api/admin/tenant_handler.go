@@ -67,6 +67,7 @@ type UpdateTenantRequest struct {
 	Name          string      `json:"name"`
 	ContactPerson string      `json:"contact_person"`
 	Config        interface{} `json:"config"`
+	MaxHops       FlexibleInt `json:"max_hops"`
 }
 
 // UpdateTenantStatusRequest represents the request payload for updating tenant status
@@ -334,6 +335,13 @@ func (h *TenantHandler) Update(c *gin.Context) {
 	}
 	if req.ContactPerson != "" {
 		tenant.ContactPerson = req.ContactPerson
+	}
+	if req.MaxHops > 0 {
+		if req.MaxHops < 1 || req.MaxHops > 10 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "max_hops must be between 1 and 10"})
+			return
+		}
+		tenant.MaxHops = int(req.MaxHops)
 	}
 	if req.Config != nil {
 		switch v := req.Config.(type) {
