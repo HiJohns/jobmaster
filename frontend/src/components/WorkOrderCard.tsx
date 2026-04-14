@@ -241,9 +241,37 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
               {renderCategoryPath(order.category_path)}
             </span>
           </div>
-        )}
-      </div>
 
+        {/* 责任主体和跳数 */}
+        <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {order.owner_org_name && (
+            <span style={{
+              background: '#3B82F6',
+              color: '#fff',
+              padding: '2px 8px',
+              borderRadius: '4px',
+              fontSize: '12px',
+              fontWeight: 500,
+            }}>
+              @{order.owner_org_name}
+            </span>
+          )}
+          {typeof order.current_hop === 'number' && typeof order.hop_limit === 'number' && order.hop_limit > 0 && (
+            <span style={{
+              fontSize: '12px',
+              color: getHopColor(order.current_hop, order.hop_limit),
+              fontWeight: 500,
+              backgroundColor: order.current_hop >= order.hop_limit * 0.8 ? '#FEF3C7' : 'transparent',
+              padding: order.current_hop >= order.hop_limit * 0.8 ? '2px 8px' : '2px 0px',
+              borderRadius: 4,
+            }}>
+              Hop: {order.current_hop}/{order.hop_limit}
+            </span>
+          )}
+        </div>
+      </div>
+        
+        {/* Right side thumbnail */}
       </div>
         
         {/* Right side thumbnail */}
@@ -263,6 +291,7 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
         )}
       </div>
       </Card>
+    </>
   )
 }
 
