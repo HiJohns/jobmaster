@@ -29,7 +29,7 @@ export function Dashboard({ orders }: DashboardProps) {
       const todayOrders = orders.filter(order => 
         dayjs(order.created_at).format('YYYY-MM-DD') === today
       )
-      const pendingReview = orders.filter(order => order.status === 'FINISHED' || order.status === 'OBSERVING')
+      const pendingReview = orders.filter(order => order.status === 'FINISHED')
       const delayed = orders.filter(order => {
         if (order.status === 'PENDING' || order.status === 'DISPATCHED') {
           const created = dayjs(order.created_at)
@@ -41,7 +41,7 @@ export function Dashboard({ orders }: DashboardProps) {
 
       return [
         { title: '今日报修', value: todayOrders.length, color: '#0033FF', action: () => navigate('/workorders?date=today') },
-        { title: '待验收', value: pendingReview.length, color: '#FF8F1F', action: () => navigate('/workorders?status=FINISHED,OBSERVING') },
+        { title: '待验收', value: pendingReview.length, color: '#FF8F1F', action: () => navigate('/workorders?status=FINISHED') },
         { title: '异常延迟', value: delayed.length, color: '#FF4D4F', action: () => navigate('/workorders?status=PENDING,DISPATCHED') },
       ]
     } else if (role === 'MAIN_CONTRACTOR') {

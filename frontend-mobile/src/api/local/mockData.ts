@@ -41,13 +41,15 @@ export interface User {
 export interface WorkOrder {
   id: string
   order_no: string
-  status: 'PENDING' | 'DISPATCHED' | 'ACCEPTED' | 'RESERVED' | 'ARRIVED' | 'WORKING' | 'FINISHED' | 'OBSERVING' | 'CLOSED' | 'REJECTED'
+  status: 'PENDING' | 'DISPATCHED' | 'ACCEPTED' | 'RESERVED' | 'WORKING' | 'FINISHED' | 'CLOSED'
   store_id: string
   store_name: string
   vendor_id?: string
   vendor_name?: string
   engineer_id?: string
   engineer_name?: string
+  owner_org_id?: string
+  owner_org_name?: string
   category_path: string
   brand_name: string
   description: string
@@ -60,9 +62,10 @@ export interface WorkOrder {
   address_detail: string
   coordinates?: { lat: number; lng: number }
   appointed_at?: string
-  arrived_at?: string
   started_at?: string
   finished_at?: string
+  hop_count?: number
+  max_hops?: number
   created_at: string
   updated_at: string
 }
@@ -360,7 +363,6 @@ export const mockWorkOrders: WorkOrder[] = [
     is_urgent: false,
     address_detail: '北京市朝阳区建国路88号',
     appointed_at: undefined,
-    arrived_at: undefined,
     started_at: undefined,
     finished_at: undefined,
     created_at: yesterday,
@@ -383,7 +385,6 @@ export const mockWorkOrders: WorkOrder[] = [
     is_urgent: true,
     address_detail: '北京市朝阳区建国路88号',
     appointed_at: undefined,
-    arrived_at: undefined,
     started_at: undefined,
     finished_at: undefined,
     created_at: twoDaysAgo,
@@ -406,7 +407,6 @@ export const mockWorkOrders: WorkOrder[] = [
     is_urgent: false,
     address_detail: '北京市朝阳区建国路88号',
     appointed_at: '2026-04-15T10:00:00Z',
-    arrived_at: undefined,
     started_at: undefined,
     finished_at: undefined,
     created_at: twoDaysAgo,
@@ -429,7 +429,6 @@ export const mockWorkOrders: WorkOrder[] = [
     is_urgent: true,
     address_detail: '北京市朝阳区建国路88号',
     appointed_at: '2026-04-14T14:00:00Z',
-    arrived_at: undefined,
     started_at: undefined,
     finished_at: undefined,
     created_at: twoDaysAgo,
@@ -452,7 +451,6 @@ export const mockWorkOrders: WorkOrder[] = [
     is_urgent: false,
     address_detail: '北京市朝阳区建国路88号',
     appointed_at: '2026-04-14T09:00:00Z',
-    arrived_at: '2026-04-14T09:05:00Z',
     started_at: '2026-04-14T09:10:00Z',
     finished_at: undefined,
     created_at: twoDaysAgo,
@@ -475,7 +473,6 @@ export const mockWorkOrders: WorkOrder[] = [
     is_urgent: false,
     address_detail: '北京市朝阳区建国路88号',
     appointed_at: '2026-04-13T15:00:00Z',
-    arrived_at: '2026-04-13T15:05:00Z',
     started_at: '2026-04-13T15:10:00Z',
     finished_at: '2026-04-13T16:30:00Z',
     labor_fee: 100,
@@ -502,7 +499,6 @@ export const mockWorkOrders: WorkOrder[] = [
     is_urgent: false,
     address_detail: '北京市朝阳区建国路88号',
     appointed_at: '2026-04-12T10:00:00Z',
-    arrived_at: '2026-04-12T10:05:00Z',
     started_at: '2026-04-12T10:10:00Z',
     finished_at: '2026-04-12T11:30:00Z',
     labor_fee: 80,

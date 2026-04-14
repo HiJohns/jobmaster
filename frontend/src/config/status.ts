@@ -4,16 +4,18 @@
  * 
  * Architecture Principle: No component should hardcode status values.
  * All status text, colors, icons, and permissions must come from this config.
+ * 
+ * Updated per Issue #95: 精简工单状态流程
+ * 新流程：等待 → 流转 → 已分配 → 已预约 → 施工中 → 验收 → 完成
  */
 
 export type WorkOrderStatus = 
-  | 'PENDING' 
-  | 'DISPATCHED' 
-  | 'RESERVED' 
-  | 'ARRIVED' 
-  | 'WORKING' 
-  | 'FINISHED' 
-  | 'OBSERVING' 
+  | 'PENDING'
+  | 'DISPATCHED'
+  | 'ACCEPTED'
+  | 'RESERVED'
+  | 'WORKING'
+  | 'FINISHED'
   | 'CLOSED'
 
 export interface StatusConfig {
@@ -38,23 +40,21 @@ export interface StatusConfig {
 export const STATUS_ID_MAP: Record<number, WorkOrderStatus> = {
   1: 'PENDING',
   2: 'DISPATCHED',
-  3: 'RESERVED',
-  4: 'ARRIVED',
+  3: 'ACCEPTED',
+  4: 'RESERVED',
   5: 'WORKING',
   6: 'FINISHED',
-  7: 'OBSERVING',
-  8: 'CLOSED',
+  7: 'CLOSED',
 }
 
 export const STATUS_ID_REVERSE_MAP: Record<WorkOrderStatus, number> = {
   PENDING: 1,
   DISPATCHED: 2,
-  RESERVED: 3,
-  ARRIVED: 4,
+  ACCEPTED: 3,
+  RESERVED: 4,
   WORKING: 5,
   FINISHED: 6,
-  OBSERVING: 7,
-  CLOSED: 8,
+  CLOSED: 7,
 }
 
 /**
@@ -63,68 +63,60 @@ export const STATUS_ID_REVERSE_MAP: Record<WorkOrderStatus, number> = {
  */
 export const STATUS_CONFIG: Record<WorkOrderStatus, StatusConfig> = {
   PENDING: {
-    text: '待服务',
+    text: '等待',
     color: 'default',
     icon: 'clock-circle',
-    description: '工单已创建，等待工程公司指派',
-    actions: [],
-    viewPermissions: ['STORE', 'BRAND_HQ', 'MAIN_CONTRACTOR'],
+    description: '工单已创建，等待指派',
+    actions: ['dispatch'],
+    viewPermissions: ['BRANCH_ADMIN', 'EMPLOYEE', 'CONTRACTOR_ADMIN', 'CONTRACTOR_EMPLOYEE'],
   },
   DISPATCHED: {
-    text: '已指派',
+    text: '流转',
     color: 'blue',
     icon: 'send',
-    description: '工程公司已指派供应商',
-    actions: ['accept', 'reject'],
-    viewPermissions: ['STORE', 'BRAND_HQ', 'MAIN_CONTRACTOR', 'VENDOR', 'ENGINEER'],
+    description: '工单已指派，等待接收',
+    actions: ['accept', 'dispatch'],
+    viewPermissions: ['BRANCH_ADMIN', 'EMPLOYEE', 'CONTRACTOR_ADMIN', 'CONTRACTOR_EMPLOYEE', 'ENGINEER'],
+  },
+  ACCEPTED: {
+    text: '已分配',
+    color: 'cyan',
+    icon: 'user',
+    description: '已分配工程师，等待预约',
+    actions: ['reserve'],
+    viewPermissions: ['BRANCH_ADMIN', 'EMPLOYEE', 'CONTRACTOR_ADMIN', 'CONTRACTOR_EMPLOYEE', 'ENGINEER'],
   },
   RESERVED: {
     text: '已预约',
-    color: 'cyan',
+    color: 'purple',
     icon: 'calendar',
-    description: '供应商已确认进场时间',
-    actions: ['arrive'],
-    viewPermissions: ['STORE', 'BRAND_HQ', 'MAIN_CONTRACTOR', 'VENDOR', 'ENGINEER'],
-  },
-  ARRIVED: {
-    text: '已到场',
-    color: 'green',
-    icon: 'environment',
-    description: '工程师已到场签到',
+    description: '已确认预约时间，等待施工',
     actions: ['start'],
-    viewPermissions: ['STORE', 'BRAND_HQ', 'MAIN_CONTRACTOR', 'VENDOR', 'ENGINEER'],
+    viewPermissions: ['BRANCH_ADMIN', 'EMPLOYEE', 'CONTRACTOR_ADMIN', 'CONTRACTOR_EMPLOYEE', 'ENGINEER'],
   },
   WORKING: {
     text: '施工中',
-    color: 'purple',
+    color: 'orange',
     icon: 'tool',
     description: '工程师正在施工中',
     actions: ['finish'],
-    viewPermissions: ['STORE', 'BRAND_HQ', 'MAIN_CONTRACTOR', 'VENDOR', 'ENGINEER'],
+    viewPermissions: ['BRANCH_ADMIN', 'EMPLOYEE', 'CONTRACTOR_ADMIN', 'CONTRACTOR_EMPLOYEE', 'ENGINEER'],
   },
   FINISHED: {
-    text: '待验收',
+    text: '验收',
     color: 'green',
     icon: 'check-circle',
-    description: '工程师已提交完工，等待验收',
+    description: '已提交完工，等待验收',
     actions: ['approve', 'reject'],
-    viewPermissions: ['STORE', 'BRAND_HQ', 'MAIN_CONTRACTOR', 'VENDOR', 'ENGINEER'],
-  },
-  OBSERVING: {
-    text: '观察期',
-    color: 'magenta',
-    icon: 'eye',
-    description: '进入观察期，等待最终验收',
-    actions: ['approve', 'reject'],
-    viewPermissions: ['STORE', 'BRAND_HQ', 'MAIN_CONTRACTOR'],
+    viewPermissions: ['BRANCH_ADMIN', 'EMPLOYEE', 'CONTRACTOR_ADMIN', 'CONTRACTOR_EMPLOYEE', 'ENGINEER'],
   },
   CLOSED: {
-    text: '已完成',
+    text: '完成',
     color: 'default',
     icon: 'file-done',
     description: '工单已关闭',
     actions: [],
-    viewPermissions: ['STORE', 'BRAND_HQ', 'MAIN_CONTRACTOR', 'VENDOR', 'ENGINEER'],
+    viewPermissions: ['BRANCH_ADMIN', 'EMPLOYEE', 'CONTRACTOR_ADMIN', 'CONTRACTOR_EMPLOYEE', 'ENGINEER'],
   },
 }
 
@@ -133,16 +125,24 @@ export const STATUS_CONFIG: Record<WorkOrderStatus, StatusConfig> = {
  */
 export const STATUS_GROUPS = {
   pending: {
-    title: '待服务',
-    statuses: ['PENDING', 'DISPATCHED'],
+    title: '待指派',
+    statuses: ['PENDING'],
+  },
+  dispatched: {
+    title: '流转中',
+    statuses: ['DISPATCHED', 'ACCEPTED'],
+  },
+  reserved: {
+    title: '已预约',
+    statuses: ['RESERVED'],
   },
   working: {
-    title: '服务中',
-    statuses: ['RESERVED', 'ARRIVED', 'WORKING'],
+    title: '施工中',
+    statuses: ['WORKING'],
   },
   review: {
-    title: '待修正',
-    statuses: ['FINISHED', 'OBSERVING'],
+    title: '待验收',
+    statuses: ['FINISHED'],
   },
   completed: {
     title: '已完成',

@@ -12,8 +12,8 @@ import EmptyStateIllustration from '../components/EmptyStateIllustration'
 
 const STATUS_TABS = [
   { key: 'pending', title: '待服务', status: ['PENDING', 'DISPATCHED'] },
-  { key: 'working', title: '服务中', status: ['RESERVED', 'ARRIVED', 'WORKING'] },
-  { key: 'review', title: '待修正', status: ['FINISHED', 'OBSERVING'] },
+  { key: 'working', title: '服务中', status: ['RESERVED', 'WORKING'] },
+  { key: 'review', title: '待修正', status: ['FINISHED'] },
   { key: 'completed', title: '已完成', status: ['CLOSED'] },
 ]
 

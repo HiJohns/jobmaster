@@ -299,7 +299,6 @@ export const localWorkorderApi = {
     workorders[idx] = {
       ...workorders[idx],
       appointed_at,
-      status: 'RESERVED',
       updated_at: now,
     }
 
@@ -311,9 +310,9 @@ export const localWorkorderApi = {
       user_id: user.id,
       user_name: user.display_name,
       action: 'RESERVE',
-      details: `确认预约时间 ${appointed_at}`,
+      details: `预约时间 ${appointed_at}`,
       old_status: 'ACCEPTED',
-      new_status: 'RESERVED',
+      new_status: 'ACCEPTED',
       created_at: now,
     })
     storage.set(STORAGE_KEYS.WORK_RECORDS, records)
@@ -338,15 +337,14 @@ export const localWorkorderApi = {
       throw new Error('工单不存在')
     }
 
-    if (workorders[idx].status !== 'RESERVED' && workorders[idx].status !== 'ARRIVED') {
+    if (workorders[idx].status !== 'RESERVED') {
       throw new Error('当前状态无法进场')
     }
 
     const now = new Date().toISOString()
     workorders[idx] = {
       ...workorders[idx],
-      status: 'ARRIVED',
-      arrived_at: now,
+      status: 'WORKING',
       coordinates: { lat: latitude, lng: longitude },
       updated_at: now,
     }
@@ -360,8 +358,8 @@ export const localWorkorderApi = {
       user_name: user.display_name,
       action: 'ARRIVE',
       details: `进场签到 (${latitude}, ${longitude})`,
-      old_status: workorders[idx].status === 'ARRIVED' ? 'WORKING' : 'RESERVED',
-      new_status: 'ARRIVED',
+      old_status: 'RESERVED',
+      new_status: 'WORKING',
       created_at: now,
     })
     storage.set(STORAGE_KEYS.WORK_RECORDS, records)
@@ -389,7 +387,7 @@ export const localWorkorderApi = {
       throw new Error('工单不存在')
     }
 
-    if (workorders[idx].status !== 'WORKING' && workorders[idx].status !== 'ARRIVED') {
+    if (workorders[idx].status !== 'WORKING') {
       throw new Error('当前状态无法完工')
     }
 
@@ -438,7 +436,7 @@ export const localWorkorderApi = {
       throw new Error('工单不存在')
     }
 
-    if (workorders[idx].status !== 'FINISHED' && workorders[idx].status !== 'OBSERVING') {
+    if (workorders[idx].status !== 'FINISHED') {
       throw new Error('当前状态无法验收')
     }
 
@@ -496,7 +494,7 @@ export const localWorkorderApi = {
       user_name: user.display_name,
       action: 'REJECT',
       details: reason,
-      old_status: 'OBSERVING',
+      old_status: 'FINISHED',
       new_status: 'DISPATCHED',
       created_at: now,
     })
@@ -546,7 +544,7 @@ export const localWorkorderApi = {
       throw new Error('工单不存在')
     }
 
-    if (workorders[idx].status !== 'FINISHED' && workorders[idx].status !== 'OBSERVING') {
+    if (workorders[idx].status !== 'FINISHED') {
       throw new Error('当前状态无法验收')
     }
 
@@ -596,15 +594,15 @@ export const localWorkorderApi = {
       throw new Error('工单不存在')
     }
 
-    if (workorders[idx].status !== 'FINISHED' && workorders[idx].status !== 'OBSERVING') {
-      throw new Error('当前状态无法拒单')
+    if (workorders[idx].status !== 'FINISHED') {
+      throw new Error('当前状态无法验收不通过')
     }
 
     const now = new Date().toISOString()
     const oldStatus = workorders[idx].status
     workorders[idx] = {
       ...workorders[idx],
-      status: 'REJECTED',
+      status: 'PENDING',
       updated_at: now,
     }
 
@@ -615,10 +613,10 @@ export const localWorkorderApi = {
       id: generateId('wr'),
       user_id: user.id,
       user_name: user.display_name,
-      action: 'REJECTED',
+      action: 'REJECT',
       details: comment,
       old_status: oldStatus,
-      new_status: 'REJECTED',
+      new_status: 'PENDING',
       created_at: now,
     })
     storage.set(STORAGE_KEYS.WORK_RECORDS, records)
@@ -626,7 +624,7 @@ export const localWorkorderApi = {
     return {
       work_order_id: id,
       old_status: oldStatus,
-      new_status: 'REJECTED',
+      new_status: 'PENDING',
       rejected_at: now,
       comment,
       photo_urls: photoUrls,
@@ -646,8 +644,8 @@ export const localWorkorderApi = {
       throw new Error('工单不存在')
     }
 
-    if (workorders[idx].status !== 'REJECTED') {
-      throw new Error('当前状态无法处理拒单')
+    if (workorders[idx].status !== 'PENDING') {
+      throw new Error('当前状态无法处理')
     }
 
     const now = new Date().toISOString()
@@ -668,7 +666,7 @@ export const localWorkorderApi = {
       user_id: user.id,
       user_name: user.display_name,
       action: 'REJECT_HANDLE',
-      details: `${action === 'accept' ? '接受拒单' : '重新分配'}: ${reason}`,
+      details: `${action === 'accept' ? '接受' : '重新分配'}: ${reason}`,
       old_status: oldStatus,
       new_status: newStatus,
       created_at: now,

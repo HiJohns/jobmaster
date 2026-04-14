@@ -26,8 +26,7 @@ interface StatusStep {
 const STATUS_STEPS: StatusStep[] = [
   { status: 'DISPATCHED', title: '接单', description: '点击接单', action: 'accept' },
   { status: 'ACCEPTED', title: '预约', description: '选择预约时间', action: 'reserve' },
-  { status: 'RESERVED', title: '到场', description: '扫码确认到场', action: 'arrive' },
-  { status: 'ARRIVED', title: '施工', description: '开始施工', action: 'work' },
+  { status: 'RESERVED', title: '施工', description: '开始施工', action: 'work' },
   { status: 'WORKING', title: '离场', description: '确认离场', action: 'finish' },
 ]
 
@@ -36,10 +35,8 @@ const STATUS_CONFIG: Record<string, { text: string; color: string }> = {
   DISPATCHED: { text: '已分配', color: '#0033FF' },
   ACCEPTED: { text: '已接单', color: '#00B578' },
   RESERVED: { text: '已预约', color: '#FF8F1F' },
-  ARRIVED: { text: '已到场', color: '#8B5CF6' },
   WORKING: { text: '施工中', color: '#6366F1' },
   FINISHED: { text: '已完成', color: '#10B981' },
-  OBSERVING: { text: '观察期', color: '#EAB308' },
   CLOSED: { text: '已关闭', color: '#1F2937' },
 }
 

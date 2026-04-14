@@ -11,31 +11,26 @@ interface StepFlowProps {
  * Shows the current step based on work order status
  */
 export function StepFlow({ currentStatus, className }: StepFlowProps) {
-  // Define the step flow sequence
   const stepSequence: WorkOrderStatus[] = [
     'PENDING',
     'DISPATCHED',
+    'ACCEPTED',
     'RESERVED',
-    'ARRIVED',
     'WORKING',
     'FINISHED',
-    'OBSERVING',
     'CLOSED',
   ]
 
-  // Get current step index
   const currentIndex = stepSequence.indexOf(currentStatus)
 
-  // Create step items with descriptions
   const stepItems = stepSequence.map((status) => {
     const statusMap: Record<WorkOrderStatus, { title: string; description: string }> = {
       PENDING: { title: '报修', description: '工单已创建' },
       DISPATCHED: { title: '已指派', description: '分配供应商' },
+      ACCEPTED: { title: '已接单', description: '供应商已接单' },
       RESERVED: { title: '已预约', description: '确认进场时间' },
-      ARRIVED: { title: '已到场', description: '工程师签到' },
       WORKING: { title: '施工中', description: '进行中' },
       FINISHED: { title: '待验收', description: '提交完工' },
-      OBSERVING: { title: '观察期', description: '等待最终验收' },
       CLOSED: { title: '已完成', description: '验收通过' },
     }
 

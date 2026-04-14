@@ -16,10 +16,8 @@ const STATUS_COLORS: Record<string, string> = {
   DISPATCHED: 'primary',
   ACCEPTED: 'success',
   RESERVED: 'warning',
-  ARRIVED: 'success',
   WORKING: 'danger',
   FINISHED: 'default',
-  OBSERVING: 'default',
   CLOSED: 'default',
 }
 
@@ -28,10 +26,8 @@ const STATUS_LABELS: Record<string, string> = {
   DISPATCHED: '已指派',
   ACCEPTED: '已接单',
   RESERVED: '已预约',
-  ARRIVED: '已到场',
   WORKING: '施工中',
   FINISHED: '待验收',
-  OBSERVING: '观察期',
   CLOSED: '已完成',
 }
 
@@ -108,8 +104,6 @@ function EngineerHome() {
       case 'ACCEPTED':
         return '预约时间'
       case 'RESERVED':
-        return '扫码进场'
-      case 'ARRIVED':
         return '开始施工'
       case 'WORKING':
         return '完工离场'

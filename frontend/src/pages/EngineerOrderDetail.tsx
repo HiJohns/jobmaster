@@ -15,10 +15,8 @@ const STATUS_COLORS: Record<string, string> = {
   DISPATCHED: 'primary',
   ACCEPTED: 'success',
   RESERVED: 'warning',
-  ARRIVED: 'success',
   WORKING: 'danger',
   FINISHED: 'default',
-  OBSERVING: 'default',
   CLOSED: 'default',
 }
 
@@ -27,10 +25,8 @@ const STATUS_LABELS: Record<string, string> = {
   DISPATCHED: '已指派',
   ACCEPTED: '已接单',
   RESERVED: '已预约',
-  ARRIVED: '已到场',
   WORKING: '施工中',
   FINISHED: '待验收',
-  OBSERVING: '观察期',
   CLOSED: '已完成',
 }
 
@@ -95,28 +91,6 @@ function EngineerOrderDetail() {
     } finally {
       setActionLoading(false)
     }
-  }
-
-  const handleArrive = async () => {
-    if (!id) return
-    Dialog.confirm({
-      content: '确认到场签到？',
-      onConfirm: async () => {
-        try {
-          setActionLoading(true)
-          const defaultLat = 39.9042
-          const defaultLng = 116.4074
-          await api.workorder.arrive(id, defaultLat, defaultLng)
-          Toast.show('签到成功')
-          navigate(-1)
-        } catch (error) {
-          console.error('Arrive failed:', error)
-          Toast.show('签到失败')
-        } finally {
-          setActionLoading(false)
-        }
-      },
-    })
   }
 
   const handleStartWork = async () => {
@@ -228,11 +202,6 @@ function EngineerOrderDetail() {
           </Button>
         )}
         {order.status === 'RESERVED' && (
-          <Button block color="primary" onClick={handleArrive} loading={actionLoading}>
-            扫码进场
-          </Button>
-        )}
-        {order.status === 'ARRIVED' && (
           <Button block color="primary" onClick={handleStartWork} loading={actionLoading}>
             开始施工
           </Button>
