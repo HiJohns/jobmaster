@@ -7,6 +7,7 @@ import ReservationListPage from './pages/ReservationListPage'
 import ReservationDetailPage from './pages/ReservationDetailPage'
 import CreateOrderPage from './pages/CreateOrderPage'
 import VerifyOrderPage from './pages/VerifyOrderPage'
+import ProfilePage from './pages/ProfilePage'
 import LoginPage from './pages/Login'
 import { useAuthStore } from './store/useAuthStore'
 import { initializeMockData } from './api/local'
@@ -90,6 +91,14 @@ export default function App() {
           element={
             <PrivateRoute>
               <VerifyOrderPage />
+            </PrivateRoute>
+          } 
+        />
+        <Route 
+          path="/wechat/profile" 
+          element={
+            <PrivateRoute>
+              <ProfilePage />
             </PrivateRoute>
           } 
         />
