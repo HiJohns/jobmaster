@@ -95,7 +95,7 @@
 | id | UUID | 主键 |
 | tenant_id | UUID | 租户 ID |
 | order_no | VARCHAR(30) | 工单号（唯一） |
-| status | SMALLINT | 状态：1-PENDING 2-DISPATCHED 3-ACCEPTED 4-RESERVED 5-ARRIVED 6-WORKING 7-FINISHED 8-OBSERVING 9-CLOSED |
+| status | SMALLINT | 状态：1-PENDING 2-DISPATCHED 3-ACCEPTED 4-RESERVED 5-WORKING 6-FINISHED 7-CLOSED |
 | store_id | UUID | 分公司 ID（组织 ID） |
 | vendor_id | UUID | 供应商 ID（组织 ID，可空） |
 | engineer_id | UUID | 工程师 ID（用户 ID，可空） |
@@ -108,11 +108,12 @@
 | material_fee | DECIMAL(10,2) | 材料费 |
 | other_fee | DECIMAL(10,2) | 其他费用 |
 | appointed_at | TIMESTAMP | 预约时间 |
-| arrived_at | TIMESTAMP | 到场时间 |
 | started_at | TIMESTAMP | 开始时间 |
 | finished_at | TIMESTAMP | 完工时间 |
 | closed_at | TIMESTAMP | 关闭时间 |
-| observing_deadline | TIMESTAMP | 观察期截止时间 |
+| owner_org_id | UUID | 所属单位（当前负责的组织 ID） |
+| hop_count | SMALLINT | 当前跳数 |
+| max_hops | SMALLINT | 最大跳数（由租户设定） |
 | created_by | BIGINT | 创建人 ID（用户映射表） |
 | created_at | TIMESTAMP | 创建时间 |
 | updated_at | TIMESTAMP | 更新时间 |
@@ -145,8 +146,10 @@
 
 **预约状态说明**:
 - `pending` (待确认): 等待分公司确认
-- `confirmed` (已确认): 分公司已确认，工单转入 RESERVED
+- `confirmed` (已确认): 分公司已确认
 - `rejected` (已拒绝): 分公司拒绝预约
+
+**说明**: 预约确认不影响工单状态，仅记录预约意向。工单状态由工程师确认预约后变为 RESERVED。
 - `expired` (已过期): 预约时间已过
 
 **索引**:
@@ -262,25 +265,31 @@
 ### 工单状态流转
 
 ```
-PENDING (1) → DISPATCHED (2) → ACCEPTED (3) → RESERVED (4) → ARRIVED (5)
-                                                             │
-                                                             ▼
-                                                        WORKING (6)
-                                                             │
-                                                             ▼
-                                                        FINISHED (7)
-                                                             │
-                                                             ▼
-                                                       OBSERVING (8)
-                                                             │
-                                                             ▼
-                                                         CLOSED (9)
+PENDING (1) → DISPATCHED (2) → ACCEPTED (3)
+                                      │
+                                      ▼ (预约确定)
+                                RESERVED (4)
+                                      │
+                                      ▼ (开工)
+                                  WORKING (5)
+                                      │
+                                      ▼ (完工)
+                                  FINISHED (6)
+                                      │
+                                      ▼ (验收通过)
+                                    CLOSED (7)
+```
+
+### 拒单回流
+
+```
+DISPATCHED (2) --拒单--> PENDING (1)
 ```
 
 ### 验收不通过回流
 
 ```
-FINISHED (7) / OBSERVING (8) → REJECTED → DISPATCHED (2)
+FINISHED (6) --验收拒绝--> DISPATCHED (2)
 ```
 
 ### 二次握手逻辑

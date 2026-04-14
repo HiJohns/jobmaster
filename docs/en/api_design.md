@@ -511,13 +511,10 @@ Or
 }
 ```
 
-**Applicable Role**: BRANCH (status = RESERVED/ARRIVED)
+**Applicable Role**: BRANCH (status = RESERVED)
+**Notes**: Reservation check-in no longer changes work order status, directly starts work
 
-**Security Notes**: 
-- qrcode_token is single-use, invalidates immediately after arrival confirmation
-- Engineer check-in location must be within 500m of branch address, otherwise marked as "remote check-in"
-
-### 3.9 Arrival Confirmation
+### 3.9 Start Work
 
 **Endpoint**: `POST /api/v1/orders/arrive`
 
@@ -589,7 +586,7 @@ Or
 }
 ```
 
-**Applicable Role**: BRANCH (status = FINISHED/OBSERVING)
+**Applicable Role**: BRANCH (status = FINISHED)
 
 ### 3.12 Assign Engineer
 

@@ -95,7 +95,7 @@ This document describes the database structure design for the JobMaster system. 
 | id | UUID | Primary key |
 | tenant_id | UUID | Tenant ID |
 | order_no | VARCHAR(30) | Work order number (unique) |
-| status | SMALLINT | Status: 1-PENDING 2-DISPATCHED 3-ACCEPTED 4-RESERVED 5-ARRIVED 6-WORKING 7-FINISHED 8-OBSERVING 9-CLOSED |
+| status | SMALLINT | Status: 1-PENDING 2-DISPATCHED 3-ACCEPTED 4-RESERVED 5-WORKING 6-FINISHED 7-CLOSED |
 | store_id | UUID | Branch ID (organization ID) |
 | vendor_id | UUID | Vendor ID (organization ID, nullable) |
 | engineer_id | UUID | Engineer ID (user ID, nullable) |
@@ -229,50 +229,19 @@ This document describes the database structure design for the JobMaster system. 
 ### Work Order State Flow
 
 ```
-PENDING (1) → DISPATCHED (2) → ACCEPTED (3) → RESERVED (4) → ARRIVED (5)
-                                                               │
-                                                               ▼
-                                                          WORKING (6)
-                                                               │
-                                                               ▼
-                                                          FINISHED (7)
-                                                               │
-                                                               ▼
-                                                         OBSERVING (8)
-                                                               │
-                                                               ▼
-                                                           CLOSED (9)
+PENDING (1) → DISPATCHED (2) → ACCEPTED (3) → RESERVED (4) → WORKING (5) → FINISHED (6) → CLOSED (7)
 ```
 
-### Acceptance Rejection Rollback
+### Reject Return Flow
 
 ```
-FINISHED (7) / OBSERVING (8) → REJECTED → DISPATCHED (2)
-```
-
-### Double Handshake Logic
-
-- **ACCEPTED (3)**: Engineer acknowledges and sets appointment time, waiting for branch confirmation
-- **RESERVED (4)**: Branch confirms appointment time, formally enters reserved status
-PENDING (1)     → DISPATCHED (2)   → RESERVED (3)    → ARRIVED (4)
-    │                    │                  │                 │
-    │                    │                  │                 ▼
-    ▼                    ▼                  ▼            WORKING (5)
-    │                    │                  │                 │
-    │                    │                  │                 ▼
-    └────────────────────┴──────────────────┘            FINISHED (6)
-                                                          │
-                                                          ▼
-                                                    OBSERVING (7)
-                                                          │
-                                                          ▼
-                                                      CLOSED (8)
+DISPATCHED (2) --reject--> PENDING (1)
 ```
 
 ### Acceptance Failed Return Flow
 
 ```
-FINISHED (6) / OBSERVING (7) → REJECTED → DISPATCHED (2)
+FINISHED (6) --reject--> DISPATCHED (2)
 ```
 
 ---

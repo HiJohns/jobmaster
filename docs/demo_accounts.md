@@ -108,7 +108,7 @@ Contractor B (jm-contractor2) [External vendor for Contractor A]
 | WO-20260413-C1-0007 | RESERVED | employee1@branch1 | Contractor A → Engineer1 |
 | WO-20260413-C1-0008 | WORKING | employee1@branch1 | Contractor A → Engineer1 |
 | WO-20260413-C1-0009 | FINISHED | employee1@branch1 | Contractor A → Engineer1 |
-| WO-20260413-C1-0010 | OBSERVING | employee1@branch1 | Contractor A → Engineer1 |
+| WO-20260413-C1-0010 | CLOSED | employee1@branch1 | Contractor A → Engineer1 |
 
 ---
 
