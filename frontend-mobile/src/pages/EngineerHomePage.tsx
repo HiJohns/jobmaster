@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Loading, PullToRefresh, InfiniteScroll } from 'antd-mobile'
+import { AddOutline } from 'antd-mobile-icons'
 import WorkOrderCard from '../components/WorkOrderCard'
 import TabBar from '../components/TabBar'
+import { useAuthStore } from '../store/useAuthStore'
 
 interface WorkOrderStats {
   total: number
@@ -30,11 +32,14 @@ interface WorkOrder {
  */
 export default function EngineerHomePage() {
   const navigate = useNavigate()
+  const { userInfo } = useAuthStore()
   const [stats, setStats] = useState<WorkOrderStats>({ total: 0, by_status: {} })
   const [orders, setOrders] = useState<WorkOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
+
+  const canCreateOrder = userInfo?.role === 'STORE' || userInfo?.role === 'STAFF'
 
   /**
    * 获取工单统计
@@ -202,7 +207,29 @@ export default function EngineerHomePage() {
         </PullToRefresh>
       </div>
 
-      {/* 底部 Tab 导航 */}
+      {canCreateOrder && (
+        <div
+          onClick={() => navigate('/wechat/orders/create')}
+          style={{
+            position: 'fixed',
+            right: '20px',
+            bottom: '80px',
+            width: '56px',
+            height: '56px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #0033FF 0%, #0066FF 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(0, 51, 255, 0.4)',
+            cursor: 'pointer',
+            zIndex: 1000,
+          }}
+        >
+          <AddOutline fontSize={28} color="#fff" />
+        </div>
+      )}
+
       <TabBar />
     </div>
   )
