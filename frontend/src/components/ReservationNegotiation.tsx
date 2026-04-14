@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Collapse, Timeline, Tag } from 'antd-mobile'
+import { Collapse, Tag } from 'antd-mobile'
+import { Timeline } from 'antd'
 import { localReservationApi } from '../api/local/reservation'
 import dayjs from 'dayjs'
 
