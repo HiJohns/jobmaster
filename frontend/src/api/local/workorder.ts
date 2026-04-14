@@ -23,7 +23,7 @@ const getCurrentUser = (): User | null => {
 
 export interface CreateWorkOrderRequest {
   store_id: string
-  category_path: string
+  category_path: string[]
   brand_name: string
   description: string
   photo_urls?: string[]

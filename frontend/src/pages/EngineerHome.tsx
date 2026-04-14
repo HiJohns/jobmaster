@@ -112,10 +112,9 @@ function EngineerHome() {
     }
   }
 
-  const getCategoryText = (categoryPath: string): string => {
-    if (!categoryPath) return ''
-    const parts = categoryPath.split('>').map(s => s.trim())
-    return parts[parts.length - 1] || categoryPath
+  const getCategoryText = (categoryPath: string[]): string => {
+    if (!categoryPath || categoryPath.length === 0) return ''
+    return categoryPath[categoryPath.length - 1]
   }
 
   return (

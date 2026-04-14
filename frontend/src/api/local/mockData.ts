@@ -50,7 +50,7 @@ export interface WorkOrder {
   engineer_name?: string
   owner_org_id?: string
   owner_org_name?: string
-  category_path: string
+  category_path: string[]
   brand_name: string
   description: string
   photo_urls: string[]
@@ -347,7 +347,6 @@ export const mockUsers: User[] = [
   },
 ]
 
-const now = new Date().toISOString()
 const yesterday = new Date(Date.now() - 86400000).toISOString()
 const twoDaysAgo = new Date(Date.now() - 172800000).toISOString()
 
@@ -358,7 +357,7 @@ export const mockWorkOrders: WorkOrder[] = [
     status: 'PENDING',
     store_id: 'jm-branch1',
     store_name: 'Branch 001',
-    category_path: '消防门 > 卖场 > 甲级防火门',
+    category_path: ['消防门', '卖场', '甲级防火门'],
     brand_name: '盼盼',
     description: '卖场消防门把手损坏，无法正常关闭',
     photo_urls: [],
@@ -373,7 +372,7 @@ export const mockWorkOrders: WorkOrder[] = [
     status: 'PENDING',
     store_id: 'jm-branch1',
     store_name: 'Branch 001',
-    category_path: '空调 > 家用 > 挂机',
+    category_path: ['空调', '家用', '挂机'],
     brand_name: '格力',
     description: '空调不制冷，需要加氟处理',
     photo_urls: [],
@@ -388,7 +387,7 @@ export const mockWorkOrders: WorkOrder[] = [
     status: 'PENDING',
     store_id: 'jm-branch2',
     store_name: 'Branch 002',
-    category_path: '电梯 > 货梯 > 三菱',
+    category_path: ['电梯', '货梯', '三菱'],
     brand_name: '三菱',
     description: '电梯运行时有异响，需要检查',
     photo_urls: [],
@@ -403,7 +402,7 @@ export const mockWorkOrders: WorkOrder[] = [
     status: 'PENDING',
     store_id: 'jm-branch3',
     store_name: 'Branch 003',
-    category_path: '消防设施 > 灭火器 > ABC干粉',
+    category_path: ['消防设施', '灭火器', 'ABC干粉'],
     brand_name: '消防设施',
     description: '灭火器压力不足，需要更换',
     photo_urls: [],

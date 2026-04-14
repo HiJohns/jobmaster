@@ -82,7 +82,7 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
       // Prepare request data
       const requestData: CreateWorkOrderRequest = {
         store_id: userInfo.orgId,
-        category_path: values.categoryPath,
+        category_path: values.categoryPath.split("/").map(s => s.trim()),
         brand_name: values.brandName,
         description: values.description,
         photo_urls: values.photoUrls || [],
