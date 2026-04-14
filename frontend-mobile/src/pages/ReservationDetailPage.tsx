@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Card, Button, Tag, Input, Dialog, Toast } from 'antd-mobile'
 import { localReservationApi } from '../api/local/reservation'
 import { Reservation } from '../api/local/mockData'
+import TabBar from '../components/TabBar'
 
 const STATUS_LABELS: Record<string, { text: string; color: string }> = {
   pending: { text: '待确认', color: '#FF8F1F' },
@@ -253,6 +254,7 @@ export default function ReservationDetailPage() {
             </div>
           </Card>
         )}
+        <TabBar />
       </div>
     </div>
   )
