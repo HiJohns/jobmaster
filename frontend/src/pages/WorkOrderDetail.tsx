@@ -9,6 +9,7 @@ import { getStatusConfig, canPerformAction, WorkOrderStatus } from '../config/st
 import { StepFlow } from '../components/StepFlow'
 import { theme } from '../styles/theme'
 import ImpersonationWarning from '../components/ImpersonationWarning'
+import ReservationNegotiation from '../components/ReservationNegotiation'
 
 function WorkOrderDetail() {
   const { id } = useParams<{ id: string }>()
@@ -245,25 +246,7 @@ function WorkOrderDetail() {
         )}
       </Card>
 
-      <Card title="时间轴" style={{ marginBottom: 12 }}>
-        <div className="timeline">
-          {order.logs?.map((log, index) => (
-            <div className="timeline-item"
-              key={index}
-              
-            >
-              <span style={{ fontWeight: 'bold' }}>{log.action}</span>
-              <br />
-              <span style={{ fontSize: 12, color: '#666' }}>{log.user_name}</span>
-              <br />
-              <span style={{ fontSize: 12, color: '#999' }}>
-                {dayjs(log.created_at).format('YYYY-MM-DD HH:mm')}
-              </span>
-              {log.details && <div style={{ marginTop: 4 }}>{log.details}</div>}
-            </div>
-          ))}
-        </div>
-      </Card>
+       <ReservationNegotiation workOrderId={order.id} />
 
       <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
         {getActionButtons()}
