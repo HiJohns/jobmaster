@@ -8,6 +8,7 @@ import { useAuthStore } from '../store/useAuthStore'
 import { getStatusConfig, canPerformAction, WorkOrderStatus } from '../config/status'
 import { StepFlow } from '../components/StepFlow'
 import { theme } from '../styles/theme'
+import ImpersonationWarning from '../components/ImpersonationWarning'
 
 function WorkOrderDetail() {
   const { id } = useParams<{ id: string }>()
@@ -188,6 +189,7 @@ function WorkOrderDetail() {
 
   return (
     <div style={{ padding: 12, paddingBottom: 80 }}>
+      <ImpersonationWarning />
       <StepFlow currentStatus={order.status} />
       <Card style={{ marginBottom: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
