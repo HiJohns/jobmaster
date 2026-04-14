@@ -241,6 +241,7 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
               {renderCategoryPath(order.category_path)}
             </span>
           </div>
+        )}
 
         {/* 责任主体和跳数 */}
         <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
