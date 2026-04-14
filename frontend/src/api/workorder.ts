@@ -32,6 +32,9 @@ export interface WorkOrder {
   finished_at?: string
   created_at: string
   updated_at: string
+  current_hop?: number
+  hop_limit?: number
+  owner_org_name?: string
 }
 
 export interface WorkRecord {
