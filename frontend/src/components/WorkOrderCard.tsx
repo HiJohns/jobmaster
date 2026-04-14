@@ -13,6 +13,31 @@ import { Card } from 'antd-mobile'
 import { FireFill } from 'antd-mobile-icons'
 import { WorkOrder } from '../api/workorder'
 import { getStatusConfig } from '../config/status'
+import { useState, useEffect } from 'react'
+import { theme } from '../styles/theme'
+import dayjs from 'dayjs'
+
+
+
+/**
+ * Calculate remaining SLA time
+ */
+const calculateSLA = (createdAt: string, isUrgent: boolean) => {
+  if (!isUrgent) return null
+  
+  // 4 hours SLA for urgent orders (in milliseconds)
+  const SLA_DURATION = 4 * 60 * 60 * 1000
+  const createdTime = new Date(createdAt).getTime()
+  const deadlineTime = createdTime + SLA_DURATION
+  const remaining = deadlineTime - Date.now()
+  
+  if (remaining <= 0) return { text: 'SLA: 已超时', isOverdue: true }
+  
+  const hours = Math.floor(remaining / (60 * 60 * 1000))
+  const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000))
+  
+  return { text: `SLA: ${hours}h ${minutes}m`, isOverdue: false }
+}
 
 interface WorkOrderCardProps {
   /** Work order data */
@@ -26,6 +51,22 @@ interface WorkOrderCardProps {
  */
 function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
   const statusConfig = getStatusConfig(order.status)
+  const [slaDisplay, setSlaDisplay] = useState<{ text: string; isOverdue: boolean } | null>(null)
+
+  // Update SLA countdown every minute
+  useEffect(() => {
+    if (order.is_urgent) {
+      const updateSLA = () => {
+        const sla = calculateSLA(order.created_at, order.is_urgent)
+        setSlaDisplay(sla)
+      }
+      
+      updateSLA()
+      const timer = setInterval(updateSLA, 60000) // Update every minute
+      
+      return () => clearInterval(timer)
+    }
+  }, [order.created_at, order.is_urgent])
 
   const handleClick = () => {
     if (onClick) {
@@ -43,20 +84,41 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
   }
 
   return (
-    <Card
-      onClick={handleClick}
-      className="card-layout transition-all active:scale-[0.98] hover:shadow-lg"
-      style={{
-        marginBottom: 16,
-        position: 'relative',
-        borderRadius: 12,
-        overflow: 'hidden',
-        border: 'none',
-      }}
-      bodyStyle={{ padding: 0 }}
-    >
+    <>
+      <style>
+        {`
+          @keyframes urgent-pulse {
+            0%, 100% { 
+              box-shadow: 0 0 0 1px #EF4444, 0 4px 12px rgba(239, 68, 68, 0.15); 
+            }
+            50% { 
+              box-shadow: 0 0 0 2px #EF4444, 0 4px 16px rgba(239, 68, 68, 0.3); 
+            }
+          }
+        `}
+      </style>
+      <Card
+        onClick={handleClick}
+        className={`card-layout transition-all active:scale-[0.98] hover:shadow-lg ${order.is_urgent ? 'urgent-card' : ''}`}
+        style={{
+          marginBottom: 16,
+          position: 'relative',
+          borderRadius: theme.borderRadius,
+          overflow: 'hidden',
+          border: 'none',
+          // Urgent order styling
+          ...(order.is_urgent ? {
+            borderLeft: '4px solid #EF4444',
+            boxShadow: '0 0 0 1px #EF4444, 0 4px 12px rgba(239, 68, 68, 0.15)',
+            animation: 'urgent-pulse 2s ease-in-out infinite',
+          } : {}),
+        }}
+        bodyStyle={{ padding: 0 }}
+      >
       {/* Left color bar */}
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 6, backgroundColor: statusConfig.color, zIndex: 10 }} />
+      {!order.is_urgent && (
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 6, backgroundColor: statusConfig.color, zIndex: 10 }} />
+      )}
       
       <div style={{ padding: '16px 16px 16px 20px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -66,7 +128,7 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
           style={{
             fontSize: 16,
             fontWeight: 'bold',
-            color: '#0033FF',
+            color: theme.primary,
           }}
         >
           {order.order_no}
@@ -86,12 +148,13 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
         </div>
       </div>
 
-      {/* Urgent badge */}
+      {/* Urgent badge with SLA countdown */}
       {order.is_urgent && (
         <div
           style={{
             display: "flex",
             alignItems: "center",
+            justifyContent: 'space-between',
             marginBottom: 12,
             padding: '6px 12px',
             backgroundColor: '#fff2f0',
@@ -99,10 +162,24 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
             borderRadius: 6,
           }}
         >
-          <FireFill style={{ color: '#ff4d4f', fontSize: 16, marginRight: 6 }} />
-          <span style={{ color: '#ff4d4f', fontSize: 13, fontWeight: 'bold' }}>
-            加急工单
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <FireFill style={{ color: '#ff4d4f', fontSize: 16, marginRight: 6 }} />
+            <span style={{ color: '#ff4d4f', fontSize: 13, fontWeight: 'bold' }}>
+              加急工单
+            </span>
+          </div>
+          {slaDisplay && (
+            <span style={{ 
+              color: slaDisplay.isOverdue ? '#DC2626' : '#F59E0B', 
+              fontSize: 12, 
+              fontWeight: 'bold',
+              backgroundColor: slaDisplay.isOverdue ? '#FEE2E2' : '#FEF3C7',
+              padding: '2px 6px',
+              borderRadius: 4,
+            }}>
+              {slaDisplay.text}
+            </span>
+          )}
         </div>
       )}
 
@@ -143,7 +220,7 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
             <span
               style={{
                 fontSize: 14,
-                color: '#0033FF',
+                color: theme.primary,
                 fontWeight: 500,
               }}
             >
