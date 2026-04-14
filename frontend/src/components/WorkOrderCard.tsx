@@ -39,6 +39,20 @@ const calculateSLA = (createdAt: string, isUrgent: boolean) => {
   return { text: `SLA: ${hours}h ${minutes}m`, isOverdue: false }
 }
 
+
+
+/**
+ * Calculate hop count color based on ratio
+ */
+const getHopColor = (currentHop?: number, hopLimit?: number) => {
+  if (!currentHop || !hopLimit || hopLimit <= 0) return '#9CA3AF'
+  
+  const ratio = currentHop / hopLimit
+  if (ratio >= 0.8) return '#F59E0B' // Warning: yellow
+  if (ratio >= 0.5) return '#3B82F6'  // Normal: blue
+  return '#10B981'  // Safe: green
+}
+
 interface WorkOrderCardProps {
   /** Work order data */
   order: WorkOrder
