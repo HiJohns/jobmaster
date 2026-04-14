@@ -4,6 +4,7 @@ import { Button, Card, Toast, NavBar, Steps, Loading } from 'antd-mobile'
 import { LeftOutline } from 'antd-mobile-icons'
 import { localReservationApi } from '../api/local/reservation'
 import ForwardDialog from '../components/ForwardDialog'
+import QRCodeDisplay from '../components/QRCodeDisplay'
 
 interface WorkOrder {
   id: string
@@ -196,6 +197,16 @@ export default function WorkOrderDetailPage() {
           </div>
         </Card>
 
+        {/* 二维码显示 */}
+        {(workOrder.status === 'DISPATCHED' || 
+          workOrder.status === 'ACCEPTED' || 
+          workOrder.status === 'RESERVED' || 
+          workOrder.status === 'WORKING') && (
+          <Card title="扫码确认" style={{ marginBottom: '16px' }}>
+            <QRCodeDisplay workOrderId={workOrder.id} />
+          </Card>
+        )}
+
         {/* Step Flow - 当前步骤大按钮 */}
         <Card title="操作步骤" style={{ marginBottom: '16px' }}>
           {currentStepIndex < STATUS_STEPS.length && (
@@ -246,6 +257,18 @@ export default function WorkOrderDetailPage() {
           >
             转发工单
           </Button>
+        )}
+
+        {/* 拒单查看 */}
+        {workOrder.status === 'PENDING' && (workOrder as any).rejection_reason && (
+          <Card title="拒单信息" style={{ marginBottom: '16px', borderColor: '#FF4D4F' }}>
+            <div style={{ color: '#FF4D4F', fontSize: '14px', lineHeight: 1.6 }}>
+              <div><strong>拒单理由：</strong>{(workOrder as any).rejection_reason}</div>
+              {(workOrder as any).rejection_comment && (
+                <div style={{ marginTop: '8px' }}><strong>详细说明：</strong>{(workOrder as any).rejection_comment}</div>
+              )}
+            </div>
+          </Card>
         )}
 
         {/* 施工记录入口 */}

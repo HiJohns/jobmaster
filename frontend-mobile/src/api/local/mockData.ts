@@ -64,6 +64,8 @@ export interface WorkOrder {
   appointed_at?: string
   started_at?: string
   finished_at?: string
+  rejection_reason?: string
+  rejection_comment?: string
   hop_count?: number
   max_hops?: number
   created_at: string
