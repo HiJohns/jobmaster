@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Card, Toast, NavBar, Steps, Loading } from 'antd-mobile'
 import { LeftOutline } from 'antd-mobile-icons'
+import { localReservationApi } from '../api/local/reservation'
 
 interface WorkOrder {
   id: string
@@ -243,7 +244,88 @@ export default function WorkOrderDetailPage() {
             施工记录
           </Button>
         )}
+
+        {/* 预约日志 */}
+        <Card title="预约日志" style={{ marginTop: '16px' }}>
+          <ReservationLogs workOrderId={orderId} />
+        </Card>
       </div>
+    </div>
+  )
+}
+
+/**
+ * ReservationLogs - 预约日志组件
+ */
+function ReservationLogs({ workOrderId }: { workOrderId: string }) {
+  const [logs, setLogs] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        const response = await localReservationApi.listByWorkOrder(workOrderId) as any
+        setLogs(response.list || [])
+      } catch (error) {
+        console.error('Failed to fetch reservation logs:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchLogs()
+  }, [workOrderId])
+
+  if (loading) {
+    return <div style={{ color: '#999', fontSize: '14px' }}>加载中...</div>
+  }
+
+  if (logs.length === 0) {
+    return <div style={{ color: '#999', fontSize: '14px' }}>暂无预约记录</div>
+  }
+
+  const formatTime = (time: string) => {
+    const date = new Date(time)
+    return date.toLocaleString('zh-CN', {
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  const statusLabels: Record<string, string> = {
+    pending: '待确认',
+    confirmed: '已确认',
+    rejected: '已拒绝',
+    expired: '已过期',
+  }
+
+  return (
+    <div>
+      {logs.map((log, index) => (
+        <div
+          key={log.id}
+          style={{
+            padding: '8px 0',
+            borderBottom: index < logs.length - 1 ? '1px solid #f0f0f0' : 'none',
+          }}
+        >
+          <div style={{ fontSize: '14px', fontWeight: 500 }}>
+            {formatTime(log.proposed_time)}
+          </div>
+          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+            状态：{statusLabels[log.status] || log.status}
+          </div>
+          <div style={{ fontSize: '12px', color: '#999', marginTop: '2px' }}>
+            申请人：{log.proposer_name}
+          </div>
+          {log.reject_reason && (
+            <div style={{ fontSize: '12px', color: '#FF4D4F', marginTop: '4px' }}>
+              拒绝原因：{log.reject_reason}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   )
 }

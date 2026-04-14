@@ -11,6 +11,7 @@ interface TabItem {
 
 const TAB_ITEMS: TabItem[] = [
   { key: 'home', title: '首页', icon: '🏠', path: '/wechat/orders' },
+  { key: 'reservation', title: '预约', icon: '📅', path: '/wechat/reservations' },
   { key: 'profile', title: '我的', icon: '👤', path: '/wechat/profile' },
 ]
 

@@ -3,6 +3,8 @@ import { useEffect } from 'react'
 import EngineerHomePage from './pages/EngineerHomePage'
 import WorkOrderDetailPage from './pages/WorkOrderDetailPage'
 import ConstructionRecordPage from './pages/ConstructionRecordPage'
+import ReservationListPage from './pages/ReservationListPage'
+import ReservationDetailPage from './pages/ReservationDetailPage'
 import LoginPage from './pages/Login'
 import { useAuthStore } from './store/useAuthStore'
 import { initializeMockData } from './api/local'
@@ -54,6 +56,22 @@ export default function App() {
           element={
             <PrivateRoute>
               <ConstructionRecordPage />
+            </PrivateRoute>
+          } 
+        />
+        <Route 
+          path="/wechat/reservations" 
+          element={
+            <PrivateRoute>
+              <ReservationListPage />
+            </PrivateRoute>
+          } 
+        />
+        <Route 
+          path="/wechat/reservations/:id" 
+          element={
+            <PrivateRoute>
+              <ReservationDetailPage />
             </PrivateRoute>
           } 
         />
