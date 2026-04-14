@@ -5,6 +5,8 @@ import WorkOrderDetailPage from './pages/WorkOrderDetailPage'
 import ConstructionRecordPage from './pages/ConstructionRecordPage'
 import ReservationListPage from './pages/ReservationListPage'
 import ReservationDetailPage from './pages/ReservationDetailPage'
+import CreateOrderPage from './pages/CreateOrderPage'
+import VerifyOrderPage from './pages/VerifyOrderPage'
 import LoginPage from './pages/Login'
 import { useAuthStore } from './store/useAuthStore'
 import { initializeMockData } from './api/local'
@@ -72,6 +74,22 @@ export default function App() {
           element={
             <PrivateRoute>
               <ReservationDetailPage />
+            </PrivateRoute>
+          } 
+        />
+        <Route 
+          path="/wechat/orders/create" 
+          element={
+            <PrivateRoute>
+              <CreateOrderPage />
+            </PrivateRoute>
+          } 
+        />
+        <Route 
+          path="/wechat/orders/:id/verify" 
+          element={
+            <PrivateRoute>
+              <VerifyOrderPage />
             </PrivateRoute>
           } 
         />

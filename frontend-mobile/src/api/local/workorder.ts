@@ -22,7 +22,8 @@ const getCurrentUser = (): User | null => {
 }
 
 export interface CreateWorkOrderRequest {
-  store_id: string
+  title?: string
+  store_id?: string
   category_path: string
   brand_name: string
   description: string
@@ -137,7 +138,8 @@ export const localWorkorderApi = {
     }
 
     const orgs = storage.get<Organization[]>(STORAGE_KEYS.ORGANIZATIONS) || []
-    const store = orgs.find((o) => o.id === data.store_id)
+    const storeId = data.store_id || user.org_id
+    const store = orgs.find((o) => o.id === storeId)
     if (!store) {
       throw new Error('分店不存在')
     }
@@ -149,7 +151,7 @@ export const localWorkorderApi = {
       id: generateId('jm-wo'),
       order_no: generateOrderNo(store.code),
       status: 'PENDING',
-      store_id: data.store_id,
+      store_id: storeId,
       store_name: store.name,
       category_path: data.category_path,
       brand_name: data.brand_name,
@@ -299,7 +301,6 @@ export const localWorkorderApi = {
     workorders[idx] = {
       ...workorders[idx],
       appointed_at,
-      status: 'RESERVED',
       updated_at: now,
     }
 
@@ -311,9 +312,9 @@ export const localWorkorderApi = {
       user_id: user.id,
       user_name: user.display_name,
       action: 'RESERVE',
-      details: `确认预约时间 ${appointed_at}`,
+      details: `预约时间 ${appointed_at}`,
       old_status: 'ACCEPTED',
-      new_status: 'RESERVED',
+      new_status: 'ACCEPTED',
       created_at: now,
     })
     storage.set(STORAGE_KEYS.WORK_RECORDS, records)
@@ -338,15 +339,14 @@ export const localWorkorderApi = {
       throw new Error('工单不存在')
     }
 
-    if (workorders[idx].status !== 'RESERVED' && workorders[idx].status !== 'ARRIVED') {
+    if (workorders[idx].status !== 'RESERVED') {
       throw new Error('当前状态无法进场')
     }
 
     const now = new Date().toISOString()
     workorders[idx] = {
       ...workorders[idx],
-      status: 'ARRIVED',
-      arrived_at: now,
+      status: 'WORKING',
       coordinates: { lat: latitude, lng: longitude },
       updated_at: now,
     }
@@ -360,8 +360,8 @@ export const localWorkorderApi = {
       user_name: user.display_name,
       action: 'ARRIVE',
       details: `进场签到 (${latitude}, ${longitude})`,
-      old_status: workorders[idx].status === 'ARRIVED' ? 'WORKING' : 'RESERVED',
-      new_status: 'ARRIVED',
+      old_status: 'RESERVED',
+      new_status: 'WORKING',
       created_at: now,
     })
     storage.set(STORAGE_KEYS.WORK_RECORDS, records)
@@ -389,7 +389,7 @@ export const localWorkorderApi = {
       throw new Error('工单不存在')
     }
 
-    if (workorders[idx].status !== 'WORKING' && workorders[idx].status !== 'ARRIVED') {
+    if (workorders[idx].status !== 'WORKING') {
       throw new Error('当前状态无法完工')
     }
 
@@ -425,7 +425,7 @@ export const localWorkorderApi = {
     return workorders[idx]
   },
 
-  verify: async (id: string) => {
+  verify: async (id: string, action: string = 'approve', comment?: string) => {
     const user = getCurrentUser()
     if (!user) {
       throw new Error('未登录')
@@ -438,14 +438,21 @@ export const localWorkorderApi = {
       throw new Error('工单不存在')
     }
 
-    if (workorders[idx].status !== 'FINISHED' && workorders[idx].status !== 'OBSERVING') {
+    if (workorders[idx].status !== 'FINISHED') {
       throw new Error('当前状态无法验收')
     }
 
     const now = new Date().toISOString()
+    const newStatus = action === 'approve' ? 'CLOSED' : 'DISPATCHED'
+    const details = action === 'approve' ? '验收通过' : `验收拒绝: ${comment || ''}`
+
     workorders[idx] = {
       ...workorders[idx],
-      status: 'CLOSED',
+      status: newStatus,
+      labor_fee: workorders[idx].labor_fee,
+      material_fee: workorders[idx].material_fee,
+      other_fee: workorders[idx].other_fee,
+      total_fee: workorders[idx].total_fee,
       updated_at: now,
     }
 
@@ -456,10 +463,10 @@ export const localWorkorderApi = {
       id: generateId('wr'),
       user_id: user.id,
       user_name: user.display_name,
-      action: 'VERIFY',
-      details: '验收通过',
+      action: action === 'approve' ? 'APPROVE' : 'REJECT',
+      details,
       old_status: 'FINISHED',
-      new_status: 'CLOSED',
+      new_status: newStatus,
       created_at: now,
     })
     storage.set(STORAGE_KEYS.WORK_RECORDS, records)
@@ -467,7 +474,7 @@ export const localWorkorderApi = {
     return workorders[idx]
   },
 
-  reject: async (id: string, reason: string) => {
+  rejectHandle: async (id: string, action: 'accept' | 'reassign', reason: string) => {
     const user = getCurrentUser()
     if (!user) {
       throw new Error('未登录')
@@ -480,10 +487,17 @@ export const localWorkorderApi = {
       throw new Error('工单不存在')
     }
 
+    if (workorders[idx].status !== 'PENDING') {
+      throw new Error('当前状态无法处理')
+    }
+
     const now = new Date().toISOString()
+    const oldStatus = workorders[idx].status
+    const newStatus = action === 'accept' ? 'CLOSED' : 'DISPATCHED'
+
     workorders[idx] = {
       ...workorders[idx],
-      status: 'DISPATCHED',
+      status: newStatus,
       updated_at: now,
     }
 
@@ -494,15 +508,21 @@ export const localWorkorderApi = {
       id: generateId('wr'),
       user_id: user.id,
       user_name: user.display_name,
-      action: 'REJECT',
-      details: reason,
-      old_status: 'OBSERVING',
-      new_status: 'DISPATCHED',
+      action: 'REJECT_HANDLE',
+      details: `${action === 'accept' ? '接受' : '重新分配'}: ${reason}`,
+      old_status: oldStatus,
+      new_status: newStatus,
       created_at: now,
     })
     storage.set(STORAGE_KEYS.WORK_RECORDS, records)
 
-    return workorders[idx]
+    return {
+      work_order_id: id,
+      old_status: oldStatus,
+      new_status: newStatus,
+      handled_at: now,
+      action,
+    }
   },
 
   generateQRCode: async (id: string) => {
@@ -546,7 +566,7 @@ export const localWorkorderApi = {
       throw new Error('工单不存在')
     }
 
-    if (workorders[idx].status !== 'FINISHED' && workorders[idx].status !== 'OBSERVING') {
+    if (workorders[idx].status !== 'FINISHED') {
       throw new Error('当前状态无法验收')
     }
 
@@ -596,15 +616,15 @@ export const localWorkorderApi = {
       throw new Error('工单不存在')
     }
 
-    if (workorders[idx].status !== 'FINISHED' && workorders[idx].status !== 'OBSERVING') {
-      throw new Error('当前状态无法拒单')
+    if (workorders[idx].status !== 'FINISHED') {
+      throw new Error('当前状态无法验收不通过')
     }
 
     const now = new Date().toISOString()
     const oldStatus = workorders[idx].status
     workorders[idx] = {
       ...workorders[idx],
-      status: 'REJECTED',
+      status: 'PENDING',
       updated_at: now,
     }
 
@@ -615,10 +635,10 @@ export const localWorkorderApi = {
       id: generateId('wr'),
       user_id: user.id,
       user_name: user.display_name,
-      action: 'REJECTED',
+      action: 'REJECT',
       details: comment,
       old_status: oldStatus,
-      new_status: 'REJECTED',
+      new_status: 'PENDING',
       created_at: now,
     })
     storage.set(STORAGE_KEYS.WORK_RECORDS, records)
@@ -626,61 +646,10 @@ export const localWorkorderApi = {
     return {
       work_order_id: id,
       old_status: oldStatus,
-      new_status: 'REJECTED',
+      new_status: 'PENDING',
       rejected_at: now,
       comment,
       photo_urls: photoUrls,
-    }
-  },
-
-  rejectHandle: async (id: string, action: 'accept' | 'reassign', reason: string) => {
-    const user = getCurrentUser()
-    if (!user) {
-      throw new Error('未登录')
-    }
-
-    const workorders = storage.get<WorkOrder[]>(STORAGE_KEYS.WORKORDERS) || []
-    const idx = workorders.findIndex((wo) => wo.id === id)
-
-    if (idx === -1) {
-      throw new Error('工单不存在')
-    }
-
-    if (workorders[idx].status !== 'REJECTED') {
-      throw new Error('当前状态无法处理拒单')
-    }
-
-    const now = new Date().toISOString()
-    const oldStatus = workorders[idx].status
-    const newStatus = action === 'accept' ? 'CLOSED' : 'DISPATCHED'
-
-    workorders[idx] = {
-      ...workorders[idx],
-      status: newStatus,
-      updated_at: now,
-    }
-
-    storage.set(STORAGE_KEYS.WORKORDERS, workorders)
-
-    const records = storage.get<WorkRecord[]>(STORAGE_KEYS.WORK_RECORDS) || []
-    records.push({
-      id: generateId('wr'),
-      user_id: user.id,
-      user_name: user.display_name,
-      action: 'REJECT_HANDLE',
-      details: `${action === 'accept' ? '接受拒单' : '重新分配'}: ${reason}`,
-      old_status: oldStatus,
-      new_status: newStatus,
-      created_at: now,
-    })
-    storage.set(STORAGE_KEYS.WORK_RECORDS, records)
-
-    return {
-      work_order_id: id,
-      old_status: oldStatus,
-      new_status: newStatus,
-      handled_at: now,
-      action,
     }
   },
 }
