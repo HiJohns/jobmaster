@@ -7,6 +7,7 @@ import type { WorkOrderDetail } from '../api/workorder'
 import { useAuthStore } from '../store/useAuthStore'
 import { getStatusConfig, canPerformAction, WorkOrderStatus } from '../config/status'
 import { StepFlow } from '../components/StepFlow'
+import { theme } from '../styles/theme'
 
 function WorkOrderDetail() {
   const { id } = useParams<{ id: string }>()
@@ -220,7 +221,7 @@ function WorkOrderDetail() {
 
         {userInfo?.role !== 'STORE' && (
           <div style={{ display: "flex", marginTop: 12 }}>
-            <span style={{ color: '#666' }}>费用合计: </span>
+            <span style={{ color: theme.fontSize.caption ? '#6B7280' : '#666' }}>费用合计: </span>
             <span style={{ fontWeight: 'bold' }}>CNY {totalFee.toFixed(2)}</span>
           </div>
         )}

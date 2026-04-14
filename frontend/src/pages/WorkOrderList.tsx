@@ -9,6 +9,7 @@ import { useAuthStore } from '../store/useAuthStore'
 import { WorkOrder } from '../api/local'
 import WeeklyCalendar from '../components/WeeklyCalendar'
 import EmptyStateIllustration from '../components/EmptyStateIllustration'
+import { theme } from '../styles/theme'
 
 const STATUS_TABS = [
   { key: 'pending', title: '待服务', status: ['PENDING', 'DISPATCHED'] },
@@ -103,7 +104,7 @@ function WorkOrderList() {
       dataIndex: 'order_no',
       key: 'order_no',
       width: 120,
-      render: (text: string) => <span style={{ color: '#0033FF', fontWeight: 'bold' }}>{text}</span>,
+      render: (text: string) => <span style={{ color: theme.primary, fontWeight: 'bold' }}>{text}</span>,
     },
     {
       title: '品牌网点',
@@ -167,18 +168,18 @@ function WorkOrderList() {
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <WeeklyCalendar onDateChange={(date: Dayjs) => setSelectedDate(date)} selectedDate={selectedDate} />
 
-      <SearchBar
+        <SearchBar
         placeholder="搜索单号、网点、品牌、工程师姓名..."
         value={searchText}
         onChange={setSearchText}
-        style={{ background: '#fff' }}
+        style={{ background: theme.cardBackground }}
       />
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: '#fff' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: theme.cardBackground }}>
         <span style={{ fontSize: 12, color: '#666' }}>共 {orders.length} 条</span>
         <div
           onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
-          style={{ cursor: 'pointer', color: '#0033FF' }}
+          style={{ cursor: 'pointer', color: theme.primary }}
         >
           创建时间 {sortOrder === 'desc' ? '↓' : '↑'}
         </div>
@@ -200,7 +201,7 @@ function WorkOrderList() {
                 ) : orders.length === 0 ? (
                   <EmptyStateIllustration message="当前节点暂无工单，点击右侧按钮发起新任务" />
                 ) : (
-                  <div style={{ background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                  <div style={{ background: theme.cardBackground, borderRadius: theme.borderRadius, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
                       <Table
                         columns={columns}
                         dataSource={orders}
