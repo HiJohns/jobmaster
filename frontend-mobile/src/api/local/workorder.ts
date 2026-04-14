@@ -652,6 +652,52 @@ export const localWorkorderApi = {
       photo_urls: photoUrls,
     }
   },
+
+  forward: async (id: string, target_org_id: string) => {
+    const user = getCurrentUser()
+    if (!user) {
+      throw new Error('未登录')
+    }
+
+    const workorders = storage.get<WorkOrder[]>(STORAGE_KEYS.WORKORDERS) || []
+    const idx = workorders.findIndex((wo) => wo.id === id)
+
+    if (idx === -1) {
+      throw new Error('工单不存在')
+    }
+
+    if (workorders[idx].status !== 'DISPATCHED' && workorders[idx].status !== 'ACCEPTED') {
+      throw new Error('当前状态无法转发')
+    }
+
+    const now = new Date().toISOString()
+    const oldOwnerOrg = workorders[idx].owner_org_name || '未知组织'
+
+    workorders[idx] = {
+      ...workorders[idx],
+      owner_org_id: target_org_id,
+      owner_org_name: target_org_id, // 简化为ID，实际应用中应该查询组织名称
+      hop_count: (workorders[idx].hop_count || 0) + 1,
+      updated_at: now,
+    }
+
+    storage.set(STORAGE_KEYS.WORKORDERS, workorders)
+
+    const records = storage.get<WorkRecord[]>(STORAGE_KEYS.WORK_RECORDS) || []
+    records.push({
+      id: generateId('wr'),
+      user_id: user.id,
+      user_name: user.display_name,
+      action: 'FORWARD',
+      details: `从 ${oldOwnerOrg} 转发到 ${target_org_id}`,
+      old_status: workorders[idx].status,
+      new_status: workorders[idx].status,
+      created_at: now,
+    })
+    storage.set(STORAGE_KEYS.WORK_RECORDS, records)
+
+    return workorders[idx]
+  },
 }
 
 export default localWorkorderApi

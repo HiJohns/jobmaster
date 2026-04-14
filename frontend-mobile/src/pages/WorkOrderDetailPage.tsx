@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Card, Toast, NavBar, Steps, Loading } from 'antd-mobile'
 import { LeftOutline } from 'antd-mobile-icons'
 import { localReservationApi } from '../api/local/reservation'
+import ForwardDialog from '../components/ForwardDialog'
 
 interface WorkOrder {
   id: string
@@ -52,6 +53,7 @@ export default function WorkOrderDetailPage() {
   const [workOrder, setWorkOrder] = useState<WorkOrder | null>(null)
   const [loading, setLoading] = useState(true)
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
+  const [forwardDialogVisible, setForwardDialogVisible] = useState(false)
 
   if (!orderId) {
     Toast.show('无效的工单ID')
@@ -229,6 +231,23 @@ export default function WorkOrderDetailPage() {
           </Steps>
         </Card>
 
+        {/* 转发工单按钮 */}
+        {(workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED') && (
+          <Button
+            block
+            style={{
+              '--background-color': '#FF8F1F',
+              '--border-radius': '8px',
+              height: '48px',
+              fontSize: '16px',
+              marginBottom: '16px'
+            }}
+            onClick={() => setForwardDialogVisible(true)}
+          >
+            转发工单
+          </Button>
+        )}
+
         {/* 施工记录入口 */}
         {workOrder.status === 'WORKING' && (
           <Button
@@ -250,6 +269,20 @@ export default function WorkOrderDetailPage() {
           <ReservationLogs workOrderId={orderId} />
         </Card>
       </div>
+
+      {/* 转发工单对话框 */}
+      <ForwardDialog
+        visible={forwardDialogVisible}
+        onClose={() => setForwardDialogVisible(false)}
+        workOrderId={orderId!}
+        onSuccess={() => {
+          Toast.show('转发成功')
+          // 刷新工单数据
+          setTimeout(() => {
+            window.location.reload()
+          }, 1000)
+        }}
+      />
     </div>
   )
 }
