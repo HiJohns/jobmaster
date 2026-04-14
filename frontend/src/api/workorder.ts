@@ -71,7 +71,7 @@ export interface ListWorkOrdersParams {
   keyword?: string
   page?: number
   page_size?: number
-  sort_by?: 'created_at' | 'updated_at'
+  sort_by?: "priority" | "created_at" | "updated_at"
   sort_order?: 'asc' | 'desc'
 }
 

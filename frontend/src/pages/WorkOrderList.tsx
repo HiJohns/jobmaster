@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Tabs, SearchBar, PullToRefresh, SpinLoading, Button } from 'antd-mobile'
-import { Checkbox, Tag, Space } from 'antd'
-import { CameraOutlined, EnvironmentOutlined } from '@ant-design/icons'
+import { Tabs, SearchBar, PullToRefresh, SpinLoading } from 'antd-mobile'
 import { useNavigate } from 'react-router-dom'
 import dayjs, { Dayjs } from 'dayjs'
 import { api } from '../api/factory'
@@ -32,8 +30,6 @@ function WorkOrderList() {
   const [loading, setLoading] = useState(false)
   const [, setRefreshing] = useState(false)
 
-  const [loading, setLoading] = useState(false)
-  const [, setRefreshing] = useState(false)
 
   // Calculate KPI stats from orders
   const stats = {
@@ -64,7 +60,7 @@ function WorkOrderList() {
       const params = {
         status: tab.status.join(','),
         keyword: searchText,
-        sort_by: 'created_at' as 'created_at' | 'updated_at',
+        sort_by: 'priority' as 'priority' | 'created_at' | 'updated_at',
         sort_order: sortOrder,
         start_date: selectedDate.startOf('day').toISOString(),
         end_date: selectedDate.endOf('day').toISOString(),

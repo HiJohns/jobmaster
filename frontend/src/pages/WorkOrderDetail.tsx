@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { Card, Button, Modal, TextArea, SpinLoading, Toast } from 'antd-mobile'
-import dayjs from 'dayjs'
 import { api } from '../api/factory'
 import type { WorkOrderDetail } from '../api/workorder'
 import { useAuthStore } from '../store/useAuthStore'
