@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Tabs, SearchBar, PullToRefresh, SpinLoading, FloatingBubble } from 'antd-mobile'
+import { SearchBar, PullToRefresh, SpinLoading } from 'antd-mobile'
 import { AddOutline } from 'antd-mobile-icons'
 import { useNavigate } from 'react-router-dom'
 import dayjs, { Dayjs } from 'dayjs'
@@ -12,18 +12,24 @@ import WorkOrderCard from '../components/WorkOrderCard'
 import KPIHeader from '../components/KPIHeader'
 import { theme } from '../styles/theme'
 
-const STATUS_TABS = [
-  { key: 'pending', title: '待服务', status: ['PENDING', 'DISPATCHED'] },
-  { key: 'working', title: '服务中', status: ['RESERVED', 'WORKING'] },
-  { key: 'review', title: '待修正', status: ['FINISHED'] },
-  { key: 'completed', title: '已完成', status: ['CLOSED'] },
-]
+const FILTER_MAP: Record<string, string[]> = {
+  total: ['PENDING', 'DISPATCHED', 'RESERVED', 'WORKING', 'FINISHED', 'CLOSED'],
+  pending: ['PENDING', 'DISPATCHED'],
+  working: ['RESERVED', 'WORKING'],
+  abnormal: ['FINISHED', 'CLOSED'],
+}
 
+const FILTER_LABELS: Record<string, string> = {
+  total: '今日工单',
+  pending: '待处理',
+  working: '进行中',
+  abnormal: '异常',
+}
 
 function WorkOrderList() {
   const navigate = useNavigate()
   const { userInfo } = useAuthStore()
-  const [activeTab, setActiveTab] = useState('pending')
+  const [activeFilter, setActiveFilter] = useState('total')
   const [searchText, setSearchText] = useState('')
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   const [selectedDate, setSelectedDate] = useState(dayjs())
@@ -34,7 +40,6 @@ function WorkOrderList() {
   // Check if user can create orders (STORE or EMPLOYEE role)
   const canCreateOrder = userInfo?.role === 'STORE' || userInfo?.role === 'EMPLOYEE'
 
-
   // Calculate KPI stats from orders
   const stats = {
     total: orders.length,
@@ -43,33 +48,24 @@ function WorkOrderList() {
     abnormal: orders.filter(o => o.is_urgent && new Date(o.created_at).getTime() + 4*60*60*1000 < Date.now()).length,
   }
 
-  const handleKPIswitch = (key: string) => {
-    const tabMap: Record<string, string> = {
-      total: 'pending',  // Default to first tab for total
-      pending: 'pending',
-      working: 'working',
-      abnormal: 'review',  // Show finished orders for reviewing abnormalities
-    }
-    if (tabMap[key]) {
-      setActiveTab(tabMap[key])
-    }
-  }
+  // Calculate filtered orders
+  const filteredOrders = orders.filter(order => {
+    const currentStatuses = FILTER_MAP[activeFilter] || FILTER_MAP.total
+    return currentStatuses.includes(order.status)
+  })
 
   const fetchOrders = async () => {
-    const tab = STATUS_TABS.find((t) => t.key === activeTab)
-    if (!tab) return
-
     setLoading(true)
     try {
       const params = {
-        status: tab.status.join(','),
+        status: FILTER_MAP.total.join(','),
         keyword: searchText,
         sort_by: 'priority' as 'priority' | 'created_at' | 'updated_at',
         sort_order: sortOrder,
         start_date: selectedDate.startOf('day').toISOString(),
         end_date: selectedDate.endOf('day').toISOString(),
         page: 1,
-        page_size: 20,
+        page_size: 100,
       }
 
       const response = await api.workorder.list(params)
@@ -92,7 +88,7 @@ function WorkOrderList() {
 
   useEffect(() => {
     fetchOrders()
-  }, [activeTab, searchText, sortOrder, selectedDate.format('YYYY-MM-DD')])
+  }, [searchText, sortOrder, selectedDate.format('YYYY-MM-DD')])
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -104,75 +100,144 @@ function WorkOrderList() {
     navigate(`/workorder/${orderId}`)
   }
 
-
+  const handleKPIFilter = (filterKey: string) => {
+    setActiveFilter(filterKey)
+  }
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <WeeklyCalendar onDateChange={(date: Dayjs) => setSelectedDate(date)} selectedDate={selectedDate} />
-
+    <div style={{ 
+      height: '100vh', 
+      display: 'flex', 
+      flexDirection: 'column',
+      backgroundColor: '#F5F7FA',
+      padding: '16px'
+    }}>
+      {/* Header Section - Combined Calendar and Search */}
+      <div style={{ 
+        backgroundColor: '#fff',
+        borderRadius: theme.borderRadius,
+        padding: '16px',
+        marginBottom: '16px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '16px'
+      }}>
+        <div style={{ flex: 1 }}>
+          <WeeklyCalendar onDateChange={(date: Dayjs) => setSelectedDate(date)} selectedDate={selectedDate} />
+        </div>
+        
         <SearchBar
-        placeholder="搜索单号、网点、品牌、工程师姓名..."
-        value={searchText}
-        onChange={setSearchText}
-        style={{ background: theme.cardBackground }}
-      />
+          placeholder="搜索单号、网点、工程师..."
+          value={searchText}
+          onChange={setSearchText}
+          style={{ 
+            background: '#f8f9fa',
+            borderRadius: '8px',
+            flex: '0 0 300px'
+          }}
+        />
+        
+        {canCreateOrder && (
+          <div
+            onClick={() => navigate('/create-workorder')}
+            style={{
+              background: '#2563EB',
+              color: 'white',
+              padding: '12px 24px',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              fontWeight: 600,
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              whiteSpace: 'nowrap',
+              flex: '0 0 auto'
+            }}
+          >
+            <AddOutline fontSize={16} />
+            创建工单
+          </div>
+        )}
+      </div>
 
-      <KPIHeader stats={stats} onTabChange={handleKPIswitch} />
+      {/* KPI Header - Interactive Filters */}
+      <KPIHeader stats={stats} onTabChange={handleKPIFilter} activeFilter={activeFilter} />
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: theme.cardBackground }}>
-        <span style={{ fontSize: 12, color: '#666' }}>共 {orders.length} 条</span>
+      {/* Results Bar */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        padding: '8px 16px', 
+        marginBottom: '8px'
+      }}>
+        <span style={{ fontSize: 12, color: '#666' }}>
+          {FILTER_LABELS[activeFilter]}: {filteredOrders.length} 条
+        </span>
         <div
           onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
-          style={{ cursor: 'pointer', color: theme.primary }}
+          style={{ cursor: 'pointer', color: theme.primary, fontSize: '12px' }}
         >
           创建时间 {sortOrder === 'desc' ? '↓' : '↑'}
         </div>
       </div>
 
-      <Tabs
-        activeKey={activeTab}
-        onChange={(key) => setActiveTab(key)}
-        style={{ flex: 1 }}
-      >
-        {STATUS_TABS.map((tab) => (
-          <Tabs.Tab key={tab.key} title={tab.title}>
-            <PullToRefresh onRefresh={handleRefresh}>
-              <div style={{ padding: 12, minHeight: 400 }}>
-                {loading ? (
-                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 40 }}>
-                    <SpinLoading style={{ "--size": "32px" } as any} />
+      {/* Work Orders Grid */}
+      <div style={{ 
+        flex: 1, 
+        overflowY: 'auto',
+        padding: '0 8px'
+      }}>
+        <PullToRefresh onRefresh={handleRefresh}>
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 40 }}>
+              <SpinLoading style={{ "--size": "32px" } as any} />
+            </div>
+          ) : filteredOrders.length === 0 ? (
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '60px 20px',
+              backgroundColor: '#fff',
+              borderRadius: theme.borderRadius
+            }}>
+              <EmptyStateIllustration message="暂无工单数据" />
+              {canCreateOrder && (
+                <div
+                  onClick={() => navigate('/create-workorder')}
+                  style={{
+                    marginTop: '24px',
+                    padding: '16px 32px',
+                    background: '#2563EB',
+                    color: 'white',
+                    borderRadius: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    textAlign: 'center'
+                  }}
+                >
+                  发起第一个任务
+                </div>
+              )}
+            </div>
+          ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                {filteredOrders.map((order) => (
+                  <div key={order.id}>
+                    <WorkOrderCard 
+                      order={order}
+                      onClick={() => handleOrderClick(order.id)}
+                    />
                   </div>
-                ) : orders.length === 0 ? (
-                  <EmptyStateIllustration message="当前节点暂无工单，点击右侧按钮发起新任务" />
-                ) : (
-                  <div style={{ padding: '0 8px' }}>
-                    {orders.map((order) => (
-                      <WorkOrderCard 
-                        key={order.id} 
-                        order={order}
-                        onClick={() => handleOrderClick(order.id)}
-                      />
-                    ))}
-
-      {/* Create Order Button (for STORE and EMPLOYEE roles) */}
-      {canCreateOrder && (
-        <FloatingBubble
-          onClick={() => navigate('/create-workorder')}
-          style={{
-            '--background': '#0033FF',
-            '--size': '56px',
-          }}
-        >
-          <AddOutline fontSize={24} color="#fff" />
-        </FloatingBubble>
-      )}
-                  </div>
-                )}
+                ))}
               </div>
-            </PullToRefresh>
-          </Tabs.Tab>
-        ))}
-      </Tabs>
+          )}
+        </PullToRefresh>
+      </div>
     </div>
   )
 }
