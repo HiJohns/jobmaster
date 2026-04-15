@@ -112,8 +112,10 @@ function EngineerHome() {
     }
   }
 
-  const getCategoryText = (categoryPath: string[]): string => {
-    if (!categoryPath || categoryPath.length === 0) return ''
+  const getCategoryText = (categoryPath: string[] | string): string => {
+    if (!categoryPath) return ''
+    if (typeof categoryPath === 'string') return categoryPath
+    if (categoryPath.length === 0) return ''
     return categoryPath[categoryPath.length - 1]
   }
 

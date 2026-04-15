@@ -40,7 +40,7 @@ export default function EngineerHomePage() {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
 
-  const canCreateOrder = userInfo?.role === 'STORE' || userInfo?.role === 'STAFF'
+  const canCreateOrder = userInfo?.role === 'STORE' || userInfo?.role === 'EMPLOYEE'
 
   /**
    * 获取工单统计
@@ -134,31 +134,62 @@ export default function EngineerHomePage() {
   }
 
   /**
+   * 获取当前进行中的工单（WORKING状态）
+   */
+  const getCurrentWorkingOrder = (): WorkOrder | null => {
+    return orders.find(order => order.status === 'WORKING') || null
+  }
+
+  /**
+   * 获取下一个即将开始的工单（RESERVED状态，按预约时间排序）
+   */
+  const getNextUpcomingOrder = (): WorkOrder | null => {
+    const reservedOrders = orders.filter(order => order.status === 'RESERVED')
+    if (reservedOrders.length === 0) return null
+    
+    // 按创建时间排序，取最新的一个作为下一个任务
+    return reservedOrders.sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )[0]
+  }
+
+  /**
    * 处理工单卡片点击
    */
   const handleOrderClick = (orderId: string) => {
     navigate(`/wechat/orders/${orderId}`)
   }
 
+  /**
+   * 处理提交施工记录
+   */
+  const handleSubmitRecord = (orderId: string) => {
+    navigate(`/wechat/construction-record/${orderId}`)
+  }
+
+  const currentWorkingOrder = getCurrentWorkingOrder()
+  const nextUpcomingOrder = getNextUpcomingOrder()
+
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: theme.background }}>
-      {/* 顶部统计栏 */}
+      {/* 顶部统计栏 - 缩小显示 */}
       <Card
         style={{
-          margin: '16px',
+          margin: '12px 16px 0',
           borderRadius: theme.borderRadius,
           background: '#fff',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
         }}
       >
-        <div style={{ padding: '16px', textAlign: 'center' }}>
-          <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#0033FF', marginBottom: '4px' }}>
-            {stats.total}
+        <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0033FF', lineHeight: 1 }}>
+              {stats.total}
+            </div>
+            <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>今日工单</div>
           </div>
-          <div style={{ fontSize: '14px', color: '#666' }}>今日工单</div>
-        </div>
-        
-        <div style={{ padding: '12px 16px', borderTop: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-around' }}>
-          {Object.entries(stats.by_status).map(([status, count]) => {
+          
+          {Object.entries(stats.by_status).slice(0, 3).map(([status, count]) => {
             const statusConfig = {
               DISPATCHED: { text: '待接单', color: '#0033FF' },
               ACCEPTED: { text: '已接单', color: '#00B578' },
@@ -168,15 +199,83 @@ export default function EngineerHomePage() {
 
             return (
               <div key={status} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '20px', fontWeight: 'bold', color: statusConfig.color }}>
+                <div style={{ fontSize: '16px', fontWeight: 'bold', color: statusConfig.color, lineHeight: 1 }}>
                   {count}
                 </div>
-                <div style={{ fontSize: '12px', color: '#999' }}>{statusConfig.text}</div>
+                <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>{statusConfig.text}</div>
               </div>
             )
           })}
         </div>
       </Card>
+
+      {/* 任务提示区 - 显示下一个即将开始的工单 */}
+      {nextUpcomingOrder && !currentWorkingOrder && (
+        <Card
+          style={{
+            margin: '12px 16px 0',
+            borderRadius: theme.borderRadius,
+            background: '#fff',
+            borderLeft: '4px solid #FF8F1F',
+          }}
+        >
+          <div style={{ padding: '12px 16px' }}>
+            <div style={{ fontSize: '12px', color: '#FF8F1F', fontWeight: 'bold', marginBottom: '4px' }}>
+              下一个任务
+            </div>
+            <div style={{ fontSize: '14px', fontWeight: '500', color: '#333', marginBottom: '4px' }}>
+              {nextUpcomingOrder.store_name}
+            </div>
+            <div style={{ fontSize: '13px', color: '#666' }}>
+              {nextUpcomingOrder.category_path} · {nextUpcomingOrder.brand_name}
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* 当前工单大卡片 - WORKING状态工单置顶 */}
+      {currentWorkingOrder && (
+        <Card
+          style={{
+            margin: '12px 16px',
+            borderRadius: theme.borderRadius,
+            background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+            color: '#fff',
+            boxShadow: '0 4px 16px rgba(99, 102, 241, 0.3)',
+          }}
+        >
+          <div style={{ padding: '20px 16px' }}>
+            <div style={{ fontSize: '12px', opacity: 0.9, marginBottom: '8px' }}>当前工单</div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>
+              {currentWorkingOrder.store_name}
+            </div>
+            <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '12px' }}>
+              {currentWorkingOrder.category_path}
+            </div>
+            <div style={{ fontSize: '13px', opacity: 0.8, marginBottom: '20px' }}>
+              {currentWorkingOrder.description}
+            </div>
+            
+            {/* 提交施工记录大按钮 */}
+            <div
+              onClick={() => handleSubmitRecord(currentWorkingOrder.id)}
+              style={{
+                background: '#fff',
+                color: '#6366F1',
+                padding: '16px',
+                borderRadius: '12px',
+                textAlign: 'center',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              }}
+            >
+              提交施工记录
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* 工单列表 */}
       <div style={{ flex: 1, overflow: 'auto', padding: '0 16px' }}>
@@ -191,13 +290,15 @@ export default function EngineerHomePage() {
             </div>
           ) : (
             <>
-              {orders.map((order) => (
-                <WorkOrderCard
-                  key={order.id}
-                  order={order}
-                  onClick={handleOrderClick}
-                />
-              ))}
+              {orders
+                .filter(order => order.status !== 'WORKING') // 过滤掉WORKING状态，已在大卡片显示
+                .map((order) => (
+                  <WorkOrderCard
+                    key={order.id}
+                    order={order}
+                    onClick={handleOrderClick}
+                  />
+                ))}
               <InfiniteScroll
                 loadMore={handleLoadMore}
                 hasMore={hasMore}

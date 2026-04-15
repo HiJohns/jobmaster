@@ -62,15 +62,28 @@ interface WorkOrderCardProps {
 /**
  * WorkOrder Card Component
  */
+// Helper function to check if order is urgent (priority >= 1)
+const isUrgentOrder = (order: WorkOrder): boolean => {
+  // Check priority field first (new API), fallback to is_urgent (legacy)
+  return (order.priority !== undefined && order.priority >= 1) || order.is_urgent
+}
+
+// Helper function to check if order is emergency (priority = 2)
+const isEmergencyOrder = (order: WorkOrder): boolean => {
+  return order.priority === 2
+}
+
 function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
   const statusConfig = getStatusConfig(order.status)
   const [slaDisplay, setSlaDisplay] = useState<{ text: string; isOverdue: boolean } | null>(null)
+  const urgent = isUrgentOrder(order)
+  const emergency = isEmergencyOrder(order)
 
   // Update SLA countdown every minute
   useEffect(() => {
-    if (order.is_urgent) {
+    if (urgent) {
       const updateSLA = () => {
-        const sla = calculateSLA(order.created_at, order.is_urgent)
+        const sla = calculateSLA(order.created_at, urgent)
         setSlaDisplay(sla)
       }
       
@@ -79,7 +92,7 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
       
       return () => clearInterval(timer)
     }
-  }, [order.created_at, order.is_urgent])
+  }, [order.created_at, urgent])
 
   const handleClick = () => {
     if (onClick) {
@@ -112,7 +125,7 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
       </style>
       <Card
         onClick={handleClick}
-        className={`card-layout transition-all active:scale-[0.98] hover:shadow-lg ${order.is_urgent ? 'urgent-card' : ''}`}
+        className={`card-layout transition-all active:scale-[0.98] hover:shadow-lg ${urgent ? 'urgent-card' : ''}`}
         style={{
           marginBottom: 16,
           position: 'relative',
@@ -120,16 +133,16 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
           overflow: 'hidden',
           border: 'none',
           // Urgent order styling
-          ...(order.is_urgent ? {
-            borderLeft: '4px solid #EF4444',
-            boxShadow: '0 0 0 1px #EF4444, 0 4px 12px rgba(239, 68, 68, 0.15)',
+          ...(urgent ? {
+            borderLeft: `4px solid ${emergency ? '#DC2626' : '#EF4444'}`,
+            boxShadow: `0 0 0 1px ${emergency ? '#DC2626' : '#EF4444'}, 0 4px 12px ${emergency ? 'rgba(220, 38, 38, 0.2)' : 'rgba(239, 68, 68, 0.15)'}`,
             animation: 'urgent-pulse 2s ease-in-out infinite',
           } : {}),
         }}
         bodyStyle={{ padding: 0 }}
       >
       {/* Left color bar */}
-      {!order.is_urgent && (
+      {!urgent && (
         <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 6, backgroundColor: statusConfig.color, zIndex: 10 }} />
       )}
       
@@ -162,7 +175,7 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
       </div>
 
       {/* Urgent badge with SLA countdown */}
-      {order.is_urgent && (
+      {urgent && (
         <div
           style={{
             display: "flex",
@@ -170,15 +183,15 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
             justifyContent: 'space-between',
             marginBottom: 12,
             padding: '6px 12px',
-            backgroundColor: '#fff2f0',
-            border: '1px solid #ffccc7',
+            backgroundColor: emergency ? '#fef2f2' : '#fff2f0',
+            border: `1px solid ${emergency ? '#fecaca' : '#ffccc7'}`,
             borderRadius: 6,
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <FireFill style={{ color: '#ff4d4f', fontSize: 16, marginRight: 6 }} />
-            <span style={{ color: '#ff4d4f', fontSize: 13, fontWeight: 'bold' }}>
-              加急工单
+            <FireFill style={{ color: emergency ? '#DC2626' : '#ff4d4f', fontSize: 16, marginRight: 6 }} />
+            <span style={{ color: emergency ? '#DC2626' : '#ff4d4f', fontSize: 13, fontWeight: 'bold' }}>
+              {emergency ? '紧急工单' : '加急工单'}
             </span>
           </div>
           {slaDisplay && (

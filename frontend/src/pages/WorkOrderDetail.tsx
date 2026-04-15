@@ -208,7 +208,7 @@ function WorkOrderDetail() {
         </div>
 
         {order.category_path && (
-          <span style={{ display: 'block', marginBottom: 8 }}>分类: {order.category_path}</span>
+          <span style={{ display: 'block', marginBottom: 8 }}>分类: {Array.isArray(order.category_path) ? order.category_path.join(' > ') : order.category_path}</span>
         )}
         {order.brand_name && (
           <span style={{ display: 'block', marginBottom: 8 }}>品牌: {order.brand_name}</span>

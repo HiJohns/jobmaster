@@ -9,12 +9,12 @@ import {
   Form,
   Input,
   Selector,
-  Switch,
   Toast,
   ImageUploader,
   Space,
   Button,
   TextArea,
+  Radio,
 } from 'antd-mobile'
 import { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import { api } from '../api/factory'
@@ -32,7 +32,7 @@ interface FormValues {
   brandName: string
   description: string
   photoUrls: string[]
-  isUrgent: boolean
+  priority: 0 | 1 | 2 // 0=普通, 1=加急, 2=紧急
   addressDetail?: string
   coordinates?: { lat: number; lng: number }
 }
@@ -79,14 +79,15 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
     setLoading(true)
 
     try {
-      // Prepare request data
+      // Prepare request data - map priority to is_urgent for backward compatibility
       const requestData: CreateWorkOrderRequest = {
         store_id: userInfo.orgId,
         category_path: values.categoryPath.split("/").map(s => s.trim()),
         brand_name: values.brandName,
         description: values.description,
         photo_urls: values.photoUrls || [],
-        is_urgent: values.isUrgent || false,
+        priority: values.priority || 0,
+        is_urgent: (values.priority || 0) > 0, // backward compatibility
         address_detail: values.addressDetail,
         coordinates: values.coordinates,
       }
@@ -220,9 +221,15 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
             <Input placeholder="请输入详细地址" />
           </Form.Item>
 
-          {/* 紧急程度 */}
-          <Form.Item name="isUrgent" label="加急处理">
-            <Switch />
+          {/* 优先级选择 */}
+          <Form.Item name="priority" label="优先级" initialValue={0}>
+            <Radio.Group>
+              <Space direction="vertical">
+                <Radio value={0}>普通 (24小时 SLA)</Radio>
+                <Radio value={1}>加急 (4小时 SLA)</Radio>
+                <Radio value={2}>紧急 (2小时 SLA)</Radio>
+              </Space>
+            </Radio.Group>
           </Form.Item>
         </Form>
       }

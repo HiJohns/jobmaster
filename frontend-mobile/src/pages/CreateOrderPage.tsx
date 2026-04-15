@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { theme } from '../styles/theme'
 import { Card, Button, Input, Dialog, Toast, NavBar } from 'antd-mobile'
 import { localWorkorderApi } from '../api/local/workorder'
 

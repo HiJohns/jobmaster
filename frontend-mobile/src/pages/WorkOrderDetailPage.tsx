@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Card, Toast, NavBar, Steps, Loading } from 'antd-mobile'
 import { LeftOutline } from 'antd-mobile-icons'
 import { localReservationApi } from '../api/local/reservation'
-import { theme } from '../styles/theme'
 import ForwardDialog from '../components/ForwardDialog'
 import QRCodeDisplay from '../components/QRCodeDisplay'
 
@@ -301,7 +300,7 @@ export default function WorkOrderDetailPage() {
               height: '48px',
               fontSize: '16px'
             }}
-            onClick={() = style={{ height: theme.buttonHeight }}> navigate(`/wechat/orders/${orderId}/record`)}
+            onClick={() => navigate(`/wechat/orders/${orderId}/record`)}
           >
             施工记录
           </Button>

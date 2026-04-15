@@ -20,6 +20,9 @@ export interface WorkOrder {
   description: string
   photo_urls: string[]
   is_urgent: boolean
+  priority?: 0 | 1 | 2 // 0=普通, 1=加急, 2=紧急
+  sla_deadline?: string
+  priority_fee?: number
   labor_fee?: number
   material_fee?: number
   other_fee?: number
@@ -59,7 +62,8 @@ export interface CreateWorkOrderRequest {
   brand_name: string
   description: string
   photo_urls?: string[]
-  is_urgent?: boolean
+  is_urgent?: boolean // 向后兼容
+  priority?: 0 | 1 | 2 // 0=普通, 1=加急, 2=紧急
   address_detail?: string
   coordinates?: { lat: number; lng: number }
 }

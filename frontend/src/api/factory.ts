@@ -1,5 +1,5 @@
 import { USE_LOCAL_API } from '../config/env'
-import { localAuthApi, localWorkorderApi, localOrganizationApi, initializeMockData } from './local'
+import { localAuthApi, localWorkorderApi, localOrganizationApi, localReservationApi, initializeMockData } from './local'
 import { authApi, workorderApi } from './index'
 
 const shouldUseLocal = (): boolean => {
@@ -120,6 +120,21 @@ export const createApi = () => {
           })),
         statistics: () =>
           Promise.resolve({ code: 200, data: { total: 0, by_status: {} } }),
+        acceptOrder: (id: string, comment?: string, photoUrls?: string[]) =>
+          localWorkorderApi.acceptOrder(id, comment, photoUrls).then((res) => ({
+            code: 200,
+            data: res,
+          })),
+        rejectOrder: (id: string, comment: string, photoUrls?: string[]) =>
+          localWorkorderApi.rejectOrder(id, comment, photoUrls).then((res) => ({
+            code: 200,
+            data: res,
+          })),
+        rejectHandle: (id: string, action: 'accept' | 'reassign', reason: string) =>
+          localWorkorderApi.rejectHandle(id, action, reason).then((res) => ({
+            code: 200,
+            data: res,
+          })),
       }
     : workorderApi
 
@@ -167,10 +182,53 @@ export const createApi = () => {
         createUser: () => Promise.resolve({ code: 200, data: null }),
       }
 
+  const reservation = useLocal
+    ? {
+        list: (params?: Parameters<typeof localReservationApi.list>[0]) =>
+          localReservationApi.list(params).then((res) => ({
+            code: 200,
+            data: res,
+          })),
+        get: (id: string) =>
+          localReservationApi.get(id).then((res) => ({
+            code: 200,
+            data: res,
+          })),
+        confirm: (id: string, comment?: string) =>
+          localReservationApi.confirm(id, comment).then((res) => ({
+            code: 200,
+            data: res,
+          })),
+        reject: (id: string, reason: string) =>
+          localReservationApi.reject(id, reason).then((res) => ({
+            code: 200,
+            data: res,
+          })),
+        reschedule: (id: string, newTime: string, comment?: string) =>
+          localReservationApi.reschedule(id, newTime, comment).then((res) => ({
+            code: 200,
+            data: res,
+          })),
+        listByWorkOrder: (workOrderId: string, includeRejected?: boolean) =>
+          localReservationApi.listByWorkOrder(workOrderId, includeRejected).then((res) => ({
+            code: 200,
+            data: res,
+          })),
+      }
+    : {
+        list: () => Promise.resolve({ code: 200, data: { list: [], total: 0 } }),
+        get: () => Promise.resolve({ code: 200, data: null }),
+        confirm: () => Promise.resolve({ code: 200, data: null }),
+        reject: () => Promise.resolve({ code: 200, data: null }),
+        reschedule: () => Promise.resolve({ code: 200, data: null }),
+        listByWorkOrder: () => Promise.resolve({ code: 200, data: { list: [], total: 0 } }),
+      }
+
   return {
     auth,
     workorder,
     organization,
+    reservation,
     initializeMockData,
   }
 }

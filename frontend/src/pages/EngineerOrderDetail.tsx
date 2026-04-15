@@ -166,7 +166,7 @@ function EngineerOrderDetail() {
         <List>
           <List.Item>
             <div style={{ color: '#999' }}>故障分类</div>
-            <div>{order.category_path}</div>
+            <div>{Array.isArray(order.category_path) ? order.category_path.join(' > ') : order.category_path}</div>
           </List.Item>
           <List.Item>
             <div style={{ color: '#999' }}>品牌</div>

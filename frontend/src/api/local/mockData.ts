@@ -55,6 +55,9 @@ export interface WorkOrder {
   description: string
   photo_urls: string[]
   is_urgent: boolean
+  priority?: 0 | 1 | 2 // 0=普通, 1=加急, 2=紧急
+  sla_deadline?: string
+  priority_fee?: number
   labor_fee?: number
   material_fee?: number
   other_fee?: number
@@ -362,6 +365,7 @@ export const mockWorkOrders: WorkOrder[] = [
     description: '卖场消防门把手损坏，无法正常关闭',
     photo_urls: [],
     is_urgent: false,
+    priority: 0,
     address_detail: '北京市朝阳区建国路88号',
     created_at: yesterday,
     updated_at: yesterday,
@@ -377,6 +381,7 @@ export const mockWorkOrders: WorkOrder[] = [
     description: '空调不制冷，需要加氟处理',
     photo_urls: [],
     is_urgent: true,
+    priority: 1,
     address_detail: '北京市朝阳区建国路88号',
     created_at: twoDaysAgo,
     updated_at: twoDaysAgo,
@@ -392,6 +397,7 @@ export const mockWorkOrders: WorkOrder[] = [
     description: '电梯运行时有异响，需要检查',
     photo_urls: [],
     is_urgent: false,
+    priority: 0,
     address_detail: '北京市海淀区中关村大街1号',
     created_at: twoDaysAgo,
     updated_at: twoDaysAgo,
@@ -407,6 +413,9 @@ export const mockWorkOrders: WorkOrder[] = [
     description: '灭火器压力不足，需要更换',
     photo_urls: [],
     is_urgent: true,
+    priority: 2, // Emergency level for testing
+    sla_deadline: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours from now
+    priority_fee: 100.00,
     address_detail: '北京市东城区王府井大街255号',
     created_at: twoDaysAgo,
     updated_at: twoDaysAgo,

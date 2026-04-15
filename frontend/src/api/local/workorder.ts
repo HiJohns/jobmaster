@@ -21,13 +21,36 @@ const getCurrentUser = (): User | null => {
   return session?.user || null
 }
 
+/**
+ * Normalize category_path to ensure it's always an array
+ * Handles legacy string data that was stored incorrectly
+ */
+const normalizeWorkOrder = (wo: WorkOrder): WorkOrder => {
+  // Ensure category_path is an array
+  if (typeof wo.category_path === 'string') {
+    // If it's a string, split by common delimiters or use as single item
+    return {
+      ...wo,
+      category_path: [wo.category_path]
+    }
+  } else if (!Array.isArray(wo.category_path)) {
+    // If it's neither string nor array (null, undefined), set to empty array
+    return {
+      ...wo,
+      category_path: []
+    }
+  }
+  return wo
+}
+
 export interface CreateWorkOrderRequest {
   store_id: string
   category_path: string[]
   brand_name: string
   description: string
   photo_urls?: string[]
-  is_urgent?: boolean
+  is_urgent?: boolean // 向后兼容
+  priority?: 0 | 1 | 2 // 0=普通, 1=加急, 2=紧急
   address_detail?: string
   coordinates?: { lat: number; lng: number }
 }
@@ -49,6 +72,9 @@ export const localWorkorderApi = {
     }
 
     let workorders = storage.get<WorkOrder[]>(STORAGE_KEYS.WORKORDERS) || []
+    
+    // Normalize category_path for all workorders
+    workorders = workorders.map(normalizeWorkOrder)
 
     if (user.role === 'ENGINEER') {
       workorders = workorders.filter((wo) => wo.engineer_id === user.id)
@@ -125,7 +151,7 @@ export const localWorkorderApi = {
     const logs = records.filter((r) => r.id.startsWith(id))
 
     return {
-      ...workorder,
+      ...normalizeWorkOrder(workorder),
       logs,
     }
   },
@@ -155,7 +181,8 @@ export const localWorkorderApi = {
       brand_name: data.brand_name,
       description: data.description,
       photo_urls: data.photo_urls || [],
-      is_urgent: data.is_urgent || false,
+      is_urgent: data.is_urgent || (data.priority !== undefined && data.priority > 0),
+      priority: data.priority !== undefined ? data.priority : (data.is_urgent ? 1 : 0),
       address_detail: data.address_detail || '',
       coordinates: data.coordinates,
       created_at: now,
@@ -178,7 +205,7 @@ export const localWorkorderApi = {
     })
     storage.set(STORAGE_KEYS.WORK_RECORDS, records)
 
-    return newWorkOrder
+    return normalizeWorkOrder(newWorkOrder)
   },
 
   dispatch: async (id: string, vendor_id: string, engineer_id?: string) => {
@@ -232,7 +259,7 @@ export const localWorkorderApi = {
     })
     storage.set(STORAGE_KEYS.WORK_RECORDS, records)
 
-    return workorders[idx]
+    return normalizeWorkOrder(workorders[idx])
   },
 
   accept: async (id: string, scheduled_at: string) => {
@@ -275,7 +302,7 @@ export const localWorkorderApi = {
     })
     storage.set(STORAGE_KEYS.WORK_RECORDS, records)
 
-    return workorders[idx]
+    return normalizeWorkOrder(workorders[idx])
   },
 
   reserve: async (id: string, appointed_at: string) => {
@@ -317,7 +344,7 @@ export const localWorkorderApi = {
     })
     storage.set(STORAGE_KEYS.WORK_RECORDS, records)
 
-    return workorders[idx]
+    return normalizeWorkOrder(workorders[idx])
   },
 
   arrive: async (
@@ -364,7 +391,7 @@ export const localWorkorderApi = {
     })
     storage.set(STORAGE_KEYS.WORK_RECORDS, records)
 
-    return workorders[idx]
+    return normalizeWorkOrder(workorders[idx])
   },
 
   finish: async (
@@ -420,7 +447,7 @@ export const localWorkorderApi = {
     })
     storage.set(STORAGE_KEYS.WORK_RECORDS, records)
 
-    return workorders[idx]
+    return normalizeWorkOrder(workorders[idx])
   },
 
   verify: async (id: string) => {
@@ -462,7 +489,7 @@ export const localWorkorderApi = {
     })
     storage.set(STORAGE_KEYS.WORK_RECORDS, records)
 
-    return workorders[idx]
+    return normalizeWorkOrder(workorders[idx])
   },
 
   reject: async (id: string, reason: string) => {
@@ -500,7 +527,7 @@ export const localWorkorderApi = {
     })
     storage.set(STORAGE_KEYS.WORK_RECORDS, records)
 
-    return workorders[idx]
+    return normalizeWorkOrder(workorders[idx])
   },
 
   generateQRCode: async (id: string) => {

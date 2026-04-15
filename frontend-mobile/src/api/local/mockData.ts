@@ -347,7 +347,6 @@ export const mockUsers: User[] = [
   },
 ]
 
-const now = new Date().toISOString()
 const yesterday = new Date(Date.now() - 86400000).toISOString()
 const twoDaysAgo = new Date(Date.now() - 172800000).toISOString()
 

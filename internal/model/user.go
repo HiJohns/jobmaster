@@ -43,10 +43,10 @@ const (
 	UserRoleSysIT    UserRole = "SYS_IT"    // 平台 IT
 
 	// IAM roles (management)
-	UserRoleOwner   UserRole = "OWNER"   // 组织所有者
-	UserRoleAdmin   UserRole = "ADMIN"   // 管理员
-	UserRoleManager UserRole = "MANAGER" // 经理
-	UserRoleStaff   UserRole = "STAFF"   // 员工
+	UserRoleOwner   UserRole = "OWNER"    // 组织所有者
+	UserRoleAdmin   UserRole = "ADMIN"    // 管理员
+	UserRoleManager UserRole = "MANAGER"  // 经理
+	UserRoleStaff   UserRole = "EMPLOYEE" // 员工
 
 	// Business roles
 	UserRoleBrandHQ        UserRole = "BRAND_HQ"        // 总店
