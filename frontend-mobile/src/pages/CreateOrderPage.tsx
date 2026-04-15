@@ -62,14 +62,14 @@ export default function CreateOrderPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f5f5' }}>
+    <div style={{ minHeight: '100vh', background: '#f5f5f5', paddingLeft: '16px', paddingRight: '16px' }}>
       <NavBar onBack={() => navigate(-1)} style={{ background: '#fff' }}>
         创建工单
       </NavBar>
 
-      <div style={{ padding: '12px' }}>
+      <div style={{ padding: '12px 0' }}>
         <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
-          <div style={{ padding: '12px' }}>
+          <div style={{ padding: '12px 0' }}>
             <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>工单标题 *</div>
             <Input
               placeholder="请输入工单标题"
@@ -81,7 +81,7 @@ export default function CreateOrderPage() {
         </Card>
 
         <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
-          <div style={{ padding: '12px' }}>
+          <div style={{ padding: '12px 0' }}>
             <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>故障描述 *</div>
             <Input
               placeholder="请输入故障描述"
@@ -93,7 +93,7 @@ export default function CreateOrderPage() {
         </Card>
 
         <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
-          <div style={{ padding: '12px' }}>
+          <div style={{ padding: '12px 0' }}>
             <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>设备分类 *</div>
             <Input
               placeholder="如：消防门 > 卖场 > 甲级防火门"
@@ -105,7 +105,7 @@ export default function CreateOrderPage() {
         </Card>
 
         <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
-          <div style={{ padding: '12px' }}>
+          <div style={{ padding: '12px 0' }}>
             <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>品牌 *</div>
             <Input
               placeholder="请输入品牌名称"
@@ -117,7 +117,7 @@ export default function CreateOrderPage() {
         </Card>
 
         <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
-          <div style={{ padding: '12px' }}>
+          <div style={{ padding: '12px 0' }}>
             <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>地址 *</div>
             <Input
               placeholder="请输入详细地址"
@@ -129,7 +129,7 @@ export default function CreateOrderPage() {
         </Card>
 
         <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
-          <div style={{ padding: '12px' }}>
+          <div style={{ padding: '12px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontSize: '16px' }}>设为加急</div>
               <input type="checkbox" checked={isUrgent} onChange={(e) => setIsUrgent(e.target.checked)} />
