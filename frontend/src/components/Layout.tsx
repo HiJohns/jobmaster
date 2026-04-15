@@ -52,7 +52,7 @@ function AppLayout() {
     
     return (
       <div style={{
-        background: 'linear-gradient(90deg, #0033FF 0%, #0055FF 100%)',
+        background: 'linear-gradient(90deg, #8B5CF6 0%, #7C3AED 100%)',
         color: '#fff',
         padding: '8px 24px',
         display: 'flex',

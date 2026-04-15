@@ -144,7 +144,11 @@ function WorkOrderDetail() {
     
     if (canPerformAction(order.status, 'reserve')) {
       buttons.push(
-        <Button key="reserve" onClick={() => setReserveModalVisible(true)} loading={actionLoading}>
+        <Button key="reserve" onClick={() => setReserveModalVisible(true)} loading={actionLoading} style={isImpersonated ? {
+          border: '2px dashed #8B5CF6',
+          background: 'transparent',
+          color: '#8B5CF6'
+        } : {}}>
           预约进场
         </Button>
       )
@@ -152,7 +156,11 @@ function WorkOrderDetail() {
     
     if (canPerformAction(order.status, 'arrive')) {
       buttons.push(
-        <Button key="arrive" onClick={handleArrive} loading={actionLoading} color="success">
+        <Button key="arrive" onClick={handleArrive} loading={actionLoading} color="success" style={isImpersonated ? {
+          border: '2px dashed #8B5CF6',
+          background: 'transparent',
+          color: '#8B5CF6'
+        } : {}}>
           到场签到
         </Button>
       )
@@ -160,7 +168,11 @@ function WorkOrderDetail() {
     
     if (canPerformAction(order.status, 'finish')) {
       buttons.push(
-        <Button key="finish" onClick={() => setFinishModalVisible(true)} loading={actionLoading} color="primary">
+        <Button key="finish" onClick={() => setFinishModalVisible(true)} loading={actionLoading} color="primary" style={isImpersonated ? {
+          border: '2px dashed #8B5CF6',
+          background: 'transparent',
+          color: '#8B5CF6'
+        } : {}}>
           完工提交
         </Button>
       )
