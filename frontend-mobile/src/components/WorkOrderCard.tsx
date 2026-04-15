@@ -9,6 +9,7 @@ export interface WorkOrder {
   address_detail: string
   category_path: string
   brand_name: string
+  appointed_at?: string
   description: string
   engineer_name?: string
   created_at: string
@@ -78,6 +79,11 @@ export default function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
           <div style={{ fontSize: '13px', color: theme.textDisabled }}>
             {order.store_name}
           </div>
+          {order.appointed_at && (
+            <div style={{ fontSize: '13px', color: theme.textDisabled, marginBottom: '4px' }}>
+              预约时间：{new Date(order.appointed_at).toLocaleString()}
+            </div>
+          )}
           {order.is_urgent && (
             <div
               style={{
