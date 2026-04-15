@@ -7,8 +7,8 @@ import ReservationListPage from './pages/ReservationListPage'
 import ReservationDetailPage from './pages/ReservationDetailPage'
 import CreateOrderPage from './pages/CreateOrderPage'
 import VerifyOrderPage from './pages/VerifyOrderPage'
+import QRScanHandlerPage from './pages/QRScanHandlerPage'
 import ProfilePage from './pages/ProfilePage'
-import LoginPage from './pages/Login'
 import { useAuthStore } from './store/useAuthStore'
 import { initializeMockData } from './api/local'
 
@@ -37,7 +37,6 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
         <Route 
           path="/wechat/orders" 
           element={
@@ -95,22 +94,30 @@ export default function App() {
           } 
         />
         <Route 
+          path="/wechat/scan-arrive" 
+          element={
+            <PrivateRoute>
+              <QRScanHandlerPage />
+            </PrivateRoute>
+          }
+        />
+        <Route 
           path="/wechat/profile" 
           element={
             <PrivateRoute>
               <ProfilePage />
             </PrivateRoute>
-          } 
+          }
         />
-        <Route 
-          path="/" 
+        <Route
+          path="/"
           element={
             isAuthenticated ? (
               <Navigate to="/wechat/orders" replace />
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
+          }
         />
       </Routes>
     </Router>
