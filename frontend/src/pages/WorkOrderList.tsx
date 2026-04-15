@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Tabs, SearchBar, PullToRefresh, SpinLoading } from 'antd-mobile'
+import { Tabs, SearchBar, PullToRefresh, SpinLoading, FloatingBubble } from 'antd-mobile'
+import { AddOutline } from 'antd-mobile-icons'
 import { useNavigate } from 'react-router-dom'
 import dayjs, { Dayjs } from 'dayjs'
 import { api } from '../api/factory'
@@ -21,7 +22,7 @@ const STATUS_TABS = [
 
 function WorkOrderList() {
   const navigate = useNavigate()
-  useAuthStore()
+  const { userInfo } = useAuthStore()
   const [activeTab, setActiveTab] = useState('pending')
   const [searchText, setSearchText] = useState('')
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
@@ -29,6 +30,9 @@ function WorkOrderList() {
   const [orders, setOrders] = useState<WorkOrder[]>([])
   const [loading, setLoading] = useState(false)
   const [, setRefreshing] = useState(false)
+
+  // Check if user can create orders (STORE or EMPLOYEE role)
+  const canCreateOrder = userInfo?.role === 'STORE' || userInfo?.role === 'EMPLOYEE'
 
 
   // Calculate KPI stats from orders
@@ -149,6 +153,19 @@ function WorkOrderList() {
                         onClick={() => handleOrderClick(order.id)}
                       />
                     ))}
+
+      {/* Create Order Button (for STORE and EMPLOYEE roles) */}
+      {canCreateOrder && (
+        <FloatingBubble
+          onClick={() => navigate('/create-workorder')}
+          style={{
+            '--background': '#0033FF',
+            '--size': '56px',
+          }}
+        >
+          <AddOutline fontSize={24} color="#fff" />
+        </FloatingBubble>
+      )}
                   </div>
                 )}
               </div>
