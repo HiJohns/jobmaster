@@ -96,12 +96,13 @@
 | id | UUID | 主键 |
 | tenant_id | UUID | 租户 ID |
 | order_no | VARCHAR(30) | 工单号（唯一） |
+| title | VARCHAR(100) | 工单标题（必填） |
 | status | SMALLINT | 状态：1-PENDING 2-DISPATCHED 3-ACCEPTED 4-RESERVED 5-WORKING 6-FINISHED 7-CLOSED |
 | store_id | UUID | 分公司 ID（组织 ID） |
 | vendor_id | UUID | 供应商 ID（组织 ID，可空） |
 | engineer_id | UUID | 工程师 ID（用户 ID，可空） |
-| category_path | VARCHAR(100) | 分类路径（如：内装/卖场/消防门） |
-| brand_name | VARCHAR(50) | 品牌名称 |
+| category_path | VARCHAR(100) | 分类路径（可选，如：内装/卖场/消防门） |
+| brand_name | VARCHAR(50) | 品牌名称（可选） |
 | info | JSONB | 扩展信息（故障描述、照片数组、是否加急等） |
 | address_detail | VARCHAR(500) | 详细地址 |
 | coordinates | JSONB | 坐标：{lat, lng} |

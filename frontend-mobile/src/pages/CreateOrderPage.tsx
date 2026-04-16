@@ -1,17 +1,23 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Input, Dialog, Toast, NavBar } from 'antd-mobile'
+import { Card, Button, Input, Dialog, Toast, NavBar, ImageUploader } from 'antd-mobile'
+import { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import { localWorkorderApi } from '../api/local/workorder'
 
 export default function CreateOrderPage() {
   const navigate = useNavigate()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [categoryPath, setCategoryPath] = useState('')
-  const [brandName, setBrandName] = useState('')
   const [addressDetail, setAddressDetail] = useState('')
   const [isUrgent, setIsUrgent] = useState(false)
+  const [photoUrls, setPhotoUrls] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
+
+  const handlePhotoUpload = async (file: File): Promise<ImageUploadItem> => {
+    const url = URL.createObjectURL(file)
+    setPhotoUrls(prev => [...prev, url])
+    return { url }
+  }
 
   const handleSubmit = async () => {
     if (!title.trim()) {
@@ -20,14 +26,6 @@ export default function CreateOrderPage() {
     }
     if (!description.trim()) {
       Toast.show('请输入故障描述')
-      return
-    }
-    if (!categoryPath.trim()) {
-      Toast.show('请输入设备分类')
-      return
-    }
-    if (!brandName.trim()) {
-      Toast.show('请输入品牌')
       return
     }
     if (!addressDetail.trim()) {
@@ -43,11 +41,9 @@ export default function CreateOrderPage() {
           await localWorkorderApi.create({
             title,
             description,
-            category_path: categoryPath,
-            brand_name: brandName,
             address_detail: addressDetail,
             is_urgent: isUrgent,
-            photo_urls: [],
+            photo_urls: photoUrls,
           })
           Toast.show('工单创建成功')
           navigate(-1)
@@ -69,61 +65,114 @@ export default function CreateOrderPage() {
 
       <div style={{ padding: '12px 0' }}>
         <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
-          <div style={{ padding: '12px 0' }}>
+          <div style={{ padding: '16px 20px' }}>
             <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>工单标题 *</div>
             <Input
               placeholder="请输入工单标题"
               value={title}
               onChange={setTitle}
-              style={{ background: '#f5f5f5', borderRadius: '8px', padding: '12px' }}
+              style={{ background: '#f5f5f5', borderRadius: '8px', padding: '12px', width: '100%' }}
             />
           </div>
         </Card>
 
         <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
-          <div style={{ padding: '12px 0' }}>
+          <div style={{ padding: '16px 20px' }}>
             <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>故障描述 *</div>
             <Input
               placeholder="请输入故障描述"
               value={description}
               onChange={setDescription}
-              style={{ background: '#f5f5f5', borderRadius: '8px', padding: '12px', minHeight: '80px' }}
+              style={{ background: '#f5f5f5', borderRadius: '8px', padding: '12px', minHeight: '80px', width: '100%' }}
             />
           </div>
         </Card>
 
         <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
-          <div style={{ padding: '12px 0' }}>
-            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>设备分类 *</div>
-            <Input
-              placeholder="如：消防门 > 卖场 > 甲级防火门"
-              value={categoryPath}
-              onChange={setCategoryPath}
-              style={{ background: '#f5f5f5', borderRadius: '8px', padding: '12px' }}
+          <div style={{ padding: '16px 20px' }}>
+            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>上传照片</div>
+            <ImageUploader
+              upload={handlePhotoUpload}
+              multiple
+              maxCount={9}
+              accept="image/*"
+              showUpload={photoUrls.length < 9}
+              deletable
+              onDelete={(item: ImageUploadItem) => {
+                setPhotoUrls(prev => prev.filter(url => url !== item.url))
+                return Promise.resolve(true)
+              }}
+              style={{
+                '--cell-size': '80px',
+                '--gap': '8px'
+              }}
             />
           </div>
         </Card>
 
         <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
-          <div style={{ padding: '12px 0' }}>
-            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>品牌 *</div>
-            <Input
-              placeholder="请输入品牌名称"
-              value={brandName}
-              onChange={setBrandName}
-              style={{ background: '#f5f5f5', borderRadius: '8px', padding: '12px' }}
-            />
-          </div>
-        </Card>
-
-        <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
-          <div style={{ padding: '12px 0' }}>
+          <div style={{ padding: '16px 20px' }}>
             <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>地址 *</div>
             <Input
               placeholder="请输入详细地址"
               value={addressDetail}
               onChange={setAddressDetail}
-              style={{ background: '#f5f5f5', borderRadius: '8px', padding: '12px' }}
+              style={{ background: '#f5f5f5', borderRadius: '8px', padding: '12px', width: '100%' }}
+            />
+          </div>
+        </Card>
+
+        <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
+          <div style={{ padding: '16px 20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: '16px' }}>设为加急</div>
+              <input type="checkbox" checked={isUrgent} onChange={(e) => setIsUrgent(e.target.checked)} />
+            </div>
+          </div>
+        </Card>
+
+        <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
+          <div style={{ padding: '12px 16px' }}>
+            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>故障描述 *</div>
+            <Input
+              placeholder="请输入故障描述"
+              value={description}
+              onChange={setDescription}
+              style={{ background: '#f5f5f5', borderRadius: '8px', padding: '12px', minHeight: '80px', width: '100%' }}
+            />
+          </div>
+        </Card>
+
+        <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
+          <div style={{ padding: '12px 0' }}>
+            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>上传照片</div>
+            <ImageUploader
+              upload={handlePhotoUpload}
+              multiple
+              maxCount={9}
+              accept="image/*"
+              showUpload={photoUrls.length < 9}
+              deletable
+              onDelete={(item: ImageUploadItem) => {
+                setPhotoUrls(prev => prev.filter(url => url !== item.url))
+                return Promise.resolve(true)
+              }}
+              style={{
+                '--cell-size': '80px',
+                '--gap': '8px'
+              }}
+            />
+          </div>
+        </Card>
+
+        <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
+          <div style={{ padding: '12px 16px' }}>
+            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>地址 *</div>
+            <Input
+              placeholder="请输入详细地址"
+              value={addressDetail}
+              onChange={setAddressDetail}
+              style={{ background: '#f5f5f5', borderRadius: '8px', padding: '12px', width: '100%' }}
             />
           </div>
         </Card>

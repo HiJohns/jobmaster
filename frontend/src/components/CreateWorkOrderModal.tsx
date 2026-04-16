@@ -1,6 +1,6 @@
 /**
- * Create Work Order Modal Component
- * Handles work order creation form with photo upload
+ * Create Work Order Modal Component v2.0
+ * 统一的视觉设计：灰色背景 + 白色卡片 + 卡片间距
  */
 
 import { useState } from 'react'
@@ -8,15 +8,14 @@ import {
   Modal,
   Form,
   Input,
-  Selector,
   Toast,
   ImageUploader,
-  Space,
   Button,
   TextArea,
-  Radio,
+  Card,
 } from 'antd-mobile'
 import { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
+import { LocationOutline } from 'antd-mobile-icons'
 import { api } from '../api/factory'
 import { CreateWorkOrderRequest } from '../api/workorder'
 import { useAuthStore } from '../store/useAuthStore'
@@ -28,35 +27,16 @@ interface CreateWorkOrderModalProps {
 }
 
 interface FormValues {
-  categoryPath: string
-  brandName: string
+  title: string
   description: string
   photoUrls: string[]
-  priority: 0 | 1 | 2 // 0=普通, 1=加急, 2=紧急
+  priority: 0 | 1 | 2
   addressDetail?: string
   coordinates?: { lat: number; lng: number }
 }
 
-const CATEGORY_OPTIONS = [
-  { label: '内装/卖场/消防门', value: '内装/卖场/消防门' },
-  { label: '内装/卖场/照明', value: '内装/卖场/照明' },
-  { label: '内装/后场/配电', value: '内装/后场/配电' },
-  { label: '外装/招牌', value: '外装/招牌' },
-  { label: '设备/空调', value: '设备/空调' },
-  { label: '设备/电梯', value: '设备/电梯' },
-]
-
-const BRAND_OPTIONS = [
-  { label: 'Apple', value: 'Apple' },
-  { label: 'Samsung', value: 'Samsung' },
-  { label: 'Huawei', value: 'Huawei' },
-  { label: 'Xiaomi', value: 'Xiaomi' },
-  { label: 'OPPO', value: 'OPPO' },
-  { label: 'Other', value: 'Other' },
-]
-
 /**
- * Create Work Order Modal
+ * Create Work Order Modal v2.0
  */
 export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
   visible,
@@ -65,6 +45,7 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
 }) => {
   const [form] = Form.useForm<FormValues>()
   const [loading, setLoading] = useState(false)
+  const [activePriority, setActivePriority] = useState<0 | 1 | 2>(0)
   const { userInfo } = useAuthStore()
 
   /**
@@ -79,15 +60,14 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
     setLoading(true)
 
     try {
-      // Prepare request data - map priority to is_urgent for backward compatibility
+      // Prepare request data
       const requestData: CreateWorkOrderRequest = {
         store_id: userInfo.orgId,
-        category_path: values.categoryPath.split("/").map(s => s.trim()),
-        brand_name: values.brandName,
+        title: values.title,
         description: values.description,
         photo_urls: values.photoUrls || [],
-        priority: values.priority || 0,
-        is_urgent: (values.priority || 0) > 0, // backward compatibility
+        priority: activePriority || 0,
+        is_urgent: (activePriority || 0) > 0,
         address_detail: values.addressDetail,
         coordinates: values.coordinates,
       }
@@ -103,6 +83,7 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
         
         // Reset form and close modal
         form.resetFields()
+        setActivePriority(0)
         onClose()
         onSuccess()
       } else {
@@ -127,112 +108,249 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
    */
   const handleClose = () => {
     form.resetFields()
+    setActivePriority(0)
     onClose()
   }
 
+  /**
+   * Priority capsule selector
+   */
+  const PrioritySelector = () => {
+    const options = [
+      { key: 0 as const, label: '普通', color: '#6B7280' },
+      { key: 1 as const, label: '加急', color: '#F59E0B' },
+      { key: 2 as const, label: '紧急', color: '#EF4444' },
+    ]
+
+    return (
+      <div style={{ display: 'flex', gap: '8px', padding: '4px', background: '#F3F4F6', borderRadius: '10px' }}>
+        {options.map(option => (
+          <div
+            key={option.key}
+            onClick={() => setActivePriority(option.key)}
+            style={{
+              flex: 1,
+              padding: '8px 16px',
+              borderRadius: '6px',
+              textAlign: 'center',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: activePriority === option.key ? 500 : 400,
+              color: activePriority === option.key ? '#fff' : option.color,
+              background: activePriority === option.key ? option.color : 'transparent',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {option.label}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   return (
-    <Modal
-      visible={visible}
-      onClose={handleClose}
-      title="创建工单"
-      content={
-        <Form
-          form={form}
-          onFinish={handleSubmit}
-          layout="vertical"
-          footer={
-            <Space direction="vertical" block>
-              <Button
-                block
-                type="submit"
-                color="primary"
-                loading={loading}
-                style={{ '--background-color': '#0033FF' }}
-              >
-                创建工单
-              </Button>
-              <Button block onClick={handleClose}>
-                取消
-              </Button>
-            </Space>
+    <div style={{ background: '#f5f5f5', padding: '20px', minHeight: '100vh' }}>
+      <style>
+        {`
+          .adm-form-item .adm-list-item-content {
+            border-top: none !important;
           }
-        >
-          {/* 故障分类 */}
-          <Form.Item
-            name="categoryPath"
-            label="故障分类"
-            rules={[
-              { required: true, message: '请选择故障分类' },
-            ]}
-          >
-            <Selector
-              options={CATEGORY_OPTIONS}
-              showCheckMark
-            />
-          </Form.Item>
+          .adm-list-body {
+            background: transparent !important;
+          }
+          .adm-list-body-inner {
+            background: transparent !important;
+          }
+          .adm-card {
+            border: none !important;
+          }
+          .btn-cancel {
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+          }
+          .btn-cancel:hover {
+            background: #E5E7EB !important;
+            color: #1F2937 !important;
+          }
+          .btn-submit {
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+          }
+          .btn-submit:hover {
+            background: #1D4ED8 !important;
+          }
+        `}
+      </style>
+      <Modal
+        visible={visible}
+        onClose={handleClose}
+        title="提交工单"
+        bodyStyle={{ background: '#f5f5f5', padding: 0 }}
+        content={
+          <>
+            <Form
+              form={form}
+              onFinish={handleSubmit}
+              layout="vertical"
+              style={{ background: 'transparent' }}
+            >
+              {/* 工单标题 */}
+              <Card style={{ borderRadius: '12px', marginBottom: '12px', background: '#fff' }}>
+                <div style={{ padding: '16px 20px' }}>
+                  <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>工单标题 *</div>
+                  <Form.Item
+                    name="title"
+                    noStyle
+                    rules={[
+                      { required: true, message: '请输入工单标题' },
+                      { min: 5, message: '标题至少需要5个字' },
+                      { max: 50, message: '标题不能超过50个字' },
+                    ]}
+                  >
+                    <Input
+                      placeholder="请输入工单标题"
+                      style={{
+                        background: '#F9FAFB',
+                        border: '1px solid #E5E7EB',
+                        borderRadius: '8px',
+                        padding: '12px 16px',
+                      }}
+                    />
+                  </Form.Item>
+                </div>
+              </Card>
 
-          {/* 品牌名称 */}
-          <Form.Item
-            name="brandName"
-            label="品牌名称"
-            rules={[
-              { required: true, message: '请选择品牌' },
-            ]}
-          >
-            <Selector
-              options={BRAND_OPTIONS}
-              showCheckMark
-            />
-          </Form.Item>
+              {/* 故障描述 */}
+              <Card style={{ borderRadius: '12px', marginBottom: '12px', background: '#fff' }}>
+                <div style={{ padding: '16px 20px' }}>
+                  <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>故障描述 *</div>
+                  <Form.Item
+                    name="description"
+                    noStyle
+                    rules={[
+                      { required: true, message: '请描述故障情况' },
+                      { min: 10, message: '描述至少需要10个字' },
+                    ]}
+                  >
+                    <TextArea
+                      placeholder="例如：二楼打印机卡纸，错误代码 E-05"
+                      rows={5}
+                      style={{
+                        background: '#F9FAFB',
+                        border: '1px solid #E5E7EB',
+                        borderRadius: '8px',
+                        padding: '12px 16px',
+                        minHeight: '120px',
+                      }}
+                    />
+                  </Form.Item>
+                </div>
+              </Card>
 
-          {/* 故障描述 */}
-          <Form.Item
-            name="description"
-            label="故障描述"
-            rules={[
-              { required: true, message: '请描述故障情况' },
-              { min: 10, message: '描述至少需要10个字' },
-            ]}
-          >
-            <TextArea
-              placeholder="请详细描述故障情况..."
-              rows={4}
-            />
-          </Form.Item>
+              {/* 照片上传 */}
+              <Card style={{ borderRadius: '12px', marginBottom: '12px', background: '#fff' }}>
+                <div style={{ padding: '16px 20px' }}>
+                  <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>上传照片</div>
+                  <Form.Item
+                    name="photoUrls"
+                    noStyle
+                  >
+                    <ImageUploader
+                      upload={async (file: File): Promise<ImageUploadItem> => {
+                        return {
+                          url: URL.createObjectURL(file),
+                          thumbnailUrl: URL.createObjectURL(file),
+                        }
+                      }}
+                      multiple
+                      maxCount={9}
+                      accept="image/*"
+                      deletable
+                    />
+                  </Form.Item>
+                </div>
+              </Card>
 
-          {/* 照片上传 */}
-          <Form.Item name="photoUrls" label="上传照片">
-            <ImageUploader
-              upload={async (file: File): Promise<ImageUploadItem> => {
-                // Return a mock URL for demo purposes
-                // In production, upload to server and return real URL
-                return {
-                  url: URL.createObjectURL(file),
-                }
-              }}
-              multiple
-              maxCount={9}
-              accept="image/*"
-            />
-          </Form.Item>
+              {/* 详细地址 */}
+              <Card style={{ borderRadius: '12px', marginBottom: '12px', background: '#fff' }}>
+                <div style={{ padding: '16px 20px' }}>
+                  <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>详细地址</div>
+                  <Form.Item
+                    name="addressDetail"
+                    noStyle
+                  >
+                    <div style={{ position: 'relative' }}>
+                      <Input
+                        placeholder="请输入详细地址"
+                        style={{
+                          background: '#F9FAFB',
+                          border: '1px solid #E5E7EB',
+                          borderRadius: '8px',
+                          padding: '12px 16px',
+                        }}
+                      />
+                      <div style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        cursor: 'pointer',
+                        color: '#6B7280',
+                      }}>
+                        <LocationOutline />
+                      </div>
+                    </div>
+                  </Form.Item>
+                </div>
+              </Card>
 
-          {/* 详细地址 */}
-          <Form.Item name="addressDetail" label="详细地址">
-            <Input placeholder="请输入详细地址" />
-          </Form.Item>
+              {/* 优先级选择 */}
+              <Card style={{ borderRadius: '12px', background: '#fff' }}>
+                <div style={{ padding: '16px 20px' }}>
+                  <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>优先级</div>
+                  <Form.Item noStyle>
+                    <PrioritySelector />
+                  </Form.Item>
+                </div>
+              </Card>
 
-          {/* 优先级选择 */}
-          <Form.Item name="priority" label="优先级" initialValue={0}>
-            <Radio.Group>
-              <Space direction="vertical">
-                <Radio value={0}>普通 (24小时 SLA)</Radio>
-                <Radio value={1}>加急 (4小时 SLA)</Radio>
-                <Radio value={2}>紧急 (2小时 SLA)</Radio>
-              </Space>
-            </Radio.Group>
-          </Form.Item>
-        </Form>
-      }
-    />
+              {/* 底部按钮 */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '20px' }}>
+                <Button
+                  onClick={handleClose}
+                  className="btn-cancel"
+                  style={{
+                    background: '#F3F4F6',
+                    color: '#4B5563',
+                    padding: '10px 20px',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontWeight: 500,
+                  }}
+                >
+                  取消
+                </Button>
+                <Button
+                  type="submit"
+                  color="primary"
+                  loading={loading}
+                  className="btn-submit"
+                  style={{
+                    background: '#2563EB',
+                    color: 'white',
+                    height: '44px',
+                    padding: '0 24px',
+                    borderRadius: '8px',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  提交工单
+                </Button>
+              </div>
+            </Form>
+          </>
+        }
+      />
+    </div>
   )
 }

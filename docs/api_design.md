@@ -316,8 +316,7 @@
 ```json
 {
   "store_id": "uuid",
-  "category_path": "string",
-  "brand_name": "string",
+  "title": "string",
   "fault_description": "string",
   "photos": ["string"],
   "is_urgent": "boolean",
@@ -328,6 +327,10 @@
   }
 }
 ```
+
+**字段说明**:
+- `title`: 工单标题（必填）
+- `fault_description`: 故障描述（必填）
 
 **响应**:
 ```json
