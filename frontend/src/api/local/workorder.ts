@@ -45,8 +45,9 @@ const normalizeWorkOrder = (wo: WorkOrder): WorkOrder => {
 
 export interface CreateWorkOrderRequest {
   store_id: string
-  category_path: string[]
-  brand_name: string
+  title: string
+  category_path?: string[]
+  brand_name?: string
   description: string
   photo_urls?: string[]
   is_urgent?: boolean // 向后兼容
@@ -177,8 +178,8 @@ export const localWorkorderApi = {
       status: 'PENDING',
       store_id: data.store_id,
       store_name: store.name,
-      category_path: data.category_path,
-      brand_name: data.brand_name,
+      category_path: data.category_path || [],
+      brand_name: data.brand_name || '',
       description: data.description,
       photo_urls: data.photo_urls || [],
       is_urgent: data.is_urgent || (data.priority !== undefined && data.priority > 0),

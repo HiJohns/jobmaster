@@ -58,8 +58,9 @@ export interface WorkOrderDetail extends WorkOrder {
 
 export interface CreateWorkOrderRequest {
   store_id: string
-  category_path: string[]
-  brand_name: string
+  title: string
+  category_path?: string[]
+  brand_name?: string
   description: string
   photo_urls?: string[]
   is_urgent?: boolean // 向后兼容
