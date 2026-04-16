@@ -2,28 +2,18 @@ import { useState, useEffect } from 'react'
 import { SearchBar, PullToRefresh, SpinLoading } from 'antd-mobile'
 import { AddOutline } from 'antd-mobile-icons'
 import { useNavigate } from 'react-router-dom'
-import dayjs, { Dayjs } from 'dayjs'
+import dayjs from 'dayjs'
 import { api } from '../api/factory'
 import { useAuthStore } from '../store/useAuthStore'
 import { WorkOrder } from '../api/local'
-import WeeklyCalendar from '../components/WeeklyCalendar'
-import EmptyStateIllustration from '../components/EmptyStateIllustration'
 import WorkOrderCard from '../components/WorkOrderCard'
-import KPIHeader from '../components/KPIHeader'
-import { theme } from '../styles/theme'
+import { CreateWorkOrderModal } from '../components/CreateWorkOrderModal'
 
 const FILTER_MAP: Record<string, string[]> = {
   total: ['PENDING', 'DISPATCHED', 'RESERVED', 'WORKING', 'FINISHED', 'CLOSED'],
   pending: ['PENDING', 'DISPATCHED'],
   working: ['RESERVED', 'WORKING'],
   abnormal: ['FINISHED', 'CLOSED'],
-}
-
-const FILTER_LABELS: Record<string, string> = {
-  total: '今日工单',
-  pending: '待处理',
-  working: '进行中',
-  abnormal: '异常',
 }
 
 function WorkOrderList() {
@@ -36,6 +26,7 @@ function WorkOrderList() {
   const [orders, setOrders] = useState<WorkOrder[]>([])
   const [loading, setLoading] = useState(false)
   const [, setRefreshing] = useState(false)
+  const [createModalVisible, setCreateModalVisible] = useState(false)
 
   // Check if user can create orders (STORE or EMPLOYEE role)
   const canCreateOrder = userInfo?.role === 'STORE' || userInfo?.role === 'EMPLOYEE'
@@ -104,83 +95,135 @@ function WorkOrderList() {
     setActiveFilter(filterKey)
   }
 
+  const handleCreateSuccess = () => {
+    setCreateModalVisible(false)
+    fetchOrders() // 刷新列表
+  }
+
+  // KPI items config for compact style
+  const KPI_ITEMS = [
+    { key: 'total', label: '今日工单', value: 'total' as const, color: '#1f2937' },
+    { key: 'pending', label: '待处理', value: 'pending' as const, color: '#0033FF' },
+    { key: 'working', label: '进行中', value: 'working' as const, color: '#00B578' },
+    { key: 'abnormal', label: '异常', value: 'abnormal' as const, color: '#F59E0B' },
+  ]
+
   return (
     <div style={{ 
       height: '100vh', 
       display: 'flex', 
       flexDirection: 'column',
-      backgroundColor: '#F5F7FA',
-      padding: '16px'
+      backgroundColor: '#F5F7FA'
     }}>
-      {/* Header Section - Combined Calendar and Search */}
+      {/* Row 1: Compact KPI Cards (Global Control) */}
       <div style={{ 
-        backgroundColor: '#fff',
-        borderRadius: theme.borderRadius,
-        padding: '16px',
-        marginBottom: '16px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
         display: 'flex',
         alignItems: 'center',
-        gap: '16px'
+        gap: '16px',
+        padding: '16px',
+        backgroundColor: '#fff',
+        borderBottom: '1px solid #E5E7EB'
       }}>
-        <div style={{ flex: 1 }}>
-          <WeeklyCalendar onDateChange={(date: Dayjs) => setSelectedDate(date)} selectedDate={selectedDate} />
+        <div style={{ 
+          display: 'flex', 
+          gap: '8px',
+          marginLeft: 'auto'
+        }}>
+          {KPI_ITEMS.map(item => {
+            const isActive = activeFilter === item.key
+            return (
+              <div
+                key={item.key}
+                onClick={() => handleKPIFilter(item.key)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: `1px solid ${isActive ? item.color : '#E5E7EB'}`,
+                  background: isActive ? item.color : '#fff',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  minWidth: '80px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <div style={{ 
+                  fontSize: '18px', 
+                  fontWeight: 'bold', 
+                  color: isActive ? '#fff' : item.color 
+                }}>
+                  {stats[item.value]}
+                </div>
+                <div style={{ 
+                  fontSize: '11px', 
+                  color: isActive ? '#fff' : '#6B7280',
+                  marginTop: '2px'
+                }}>
+                  {item.label}
+                </div>
+              </div>
+            )
+          })}
         </div>
+      </div>
+
+      {/* Row 2: Count + Search + Create + Sort (Search Control) */}
+      <div style={{ 
+        display: 'flex',
+        alignItems: 'center',
+        gap: '16px',
+        padding: '16px',
+        backgroundColor: '#F5F7FA',
+        borderBottom: '1px solid #E5E7EB'
+      }}>
+        {/* Left: Count */}
+        <span style={{ fontSize: '14px', color: '#374151', fontWeight: 500, whiteSpace: 'nowrap' }}>
+          今日工单：{filteredOrders.length} 条
+        </span>
         
+        {/* Center: Search Bar */}
         <SearchBar
-          placeholder="搜索单号、网点、工程师..."
+          placeholder="搜索..."
           value={searchText}
           onChange={setSearchText}
           style={{ 
-            background: '#f8f9fa',
-            borderRadius: '8px',
-            flex: '0 0 300px'
+            background: '#fff',
+            borderRadius: '6px',
+            width: '170px',
+            flex: '0 0 170px'
           }}
         />
         
+        {/* Center: Create Button (紧挨搜索框) */}
         {canCreateOrder && (
           <div
-            onClick={() => navigate('/create-workorder')}
+            onClick={() => setCreateModalVisible(true)}
             style={{
               background: '#2563EB',
               color: 'white',
-              padding: '12px 24px',
-              borderRadius: '12px',
+              padding: '8px 16px',
+              borderRadius: '6px',
               cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '14px',
+              fontWeight: 500,
+              fontSize: '13px',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              whiteSpace: 'nowrap',
-              flex: '0 0 auto'
+              gap: '4px',
+              whiteSpace: 'nowrap'
             }}
           >
-            <AddOutline fontSize={16} />
+            <AddOutline fontSize={14} />
             创建工单
           </div>
         )}
-      </div>
-
-      {/* KPI Header - Interactive Filters */}
-      <KPIHeader stats={stats} onTabChange={handleKPIFilter} activeFilter={activeFilter} />
-
-      {/* Results Bar */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        padding: '8px 16px', 
-        marginBottom: '8px'
-      }}>
-        <span style={{ fontSize: 12, color: '#666' }}>
-          {FILTER_LABELS[activeFilter]}: {filteredOrders.length} 条
-        </span>
-        <div
-          onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
-          style={{ cursor: 'pointer', color: theme.primary, fontSize: '12px' }}
-        >
-          创建时间 {sortOrder === 'desc' ? '↓' : '↑'}
+        
+        {/* Right: Sort */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
+          <div
+            onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
+            style={{ cursor: 'pointer', color: '#6B7280', fontSize: '12px', whiteSpace: 'nowrap' }}
+          >
+            创建时间 {sortOrder === 'desc' ? '↓' : '↑'}
+          </div>
         </div>
       </div>
 
@@ -196,31 +239,71 @@ function WorkOrderList() {
               <SpinLoading style={{ "--size": "32px" } as any} />
             </div>
           ) : filteredOrders.length === 0 ? (
+            // Version 4.0: 情感化空状态
             <div style={{ 
               display: 'flex', 
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '60px 20px',
+              padding: '80px 20px',
               backgroundColor: '#fff',
-              borderRadius: theme.borderRadius
+              borderRadius: '16px',
+              margin: '24px'
             }}>
-              <EmptyStateIllustration message="暂无工单数据" />
+              <div style={{ 
+                fontSize: '64px', 
+                marginBottom: '24px',
+                color: '#10B981'
+              }}>
+                ✅
+              </div>
+              <div style={{ 
+                fontSize: '20px', 
+                fontWeight: 600, 
+                color: '#1f2937',
+                marginBottom: '12px'
+              }}>
+                今天所有工单已清零，干得漂亮！
+              </div>
+              <div style={{ 
+                fontSize: '14px', 
+                color: '#6B7280',
+                marginBottom: '32px'
+              }}>
+                休息一下，或
+                <span 
+                  onClick={() => {
+                    // 查询昨日遗留工单
+                    const yesterday = dayjs().subtract(1, 'day')
+                    setSelectedDate(yesterday)
+                    fetchOrders()
+                  }}
+                  style={{ 
+                    color: '#2563EB', 
+                    cursor: 'pointer',
+                    marginLeft: '4px',
+                    textDecoration: 'underline'
+                  }}
+                >
+                  处理昨日遗留工单
+                </span>
+              </div>
+              
               {canCreateOrder && (
                 <div
-                  onClick={() => navigate('/create-workorder')}
+                  onClick={() => setCreateModalVisible(true)}
                   style={{
-                    marginTop: '24px',
                     padding: '16px 32px',
                     background: '#2563EB',
                     color: 'white',
                     borderRadius: '12px',
                     fontWeight: 600,
                     cursor: 'pointer',
-                    textAlign: 'center'
+                    textAlign: 'center',
+                    fontSize: '16px'
                   }}
                 >
-                  发起第一个任务
+                  ➕ 开始今天的第一项工作
                 </div>
               )}
             </div>
@@ -238,6 +321,12 @@ function WorkOrderList() {
           )}
         </PullToRefresh>
       </div>
+      
+      <CreateWorkOrderModal
+        visible={createModalVisible}
+        onClose={() => setCreateModalVisible(false)}
+        onSuccess={handleCreateSuccess}
+      />
     </div>
   )
 }

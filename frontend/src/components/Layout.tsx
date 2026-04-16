@@ -1,4 +1,4 @@
-import { Layout as AntLayout, Menu, Avatar, Dropdown, Breadcrumb, Button } from 'antd'
+import { Layout as AntLayout, Menu, Avatar, Dropdown, Breadcrumb, Button, Calendar, ConfigProvider } from 'antd'
 import {
   HomeTwoTone,
   FileTextTwoTone,
@@ -17,6 +17,7 @@ import Logo from './Logo'
 import TabBar from './TabBar'
 import '../styles/sidebar.css'
 import { useEffect, useState } from 'react'
+import zhCN from 'antd/es/locale/zh_CN'
 
 const { Header, Sider, Content } = AntLayout
 
@@ -267,133 +268,167 @@ function AppLayout() {
       </div>
     </Dropdown>
   )
-
   return (
-    <AntLayout className="min-h-screen">
-      <ImpersonationBanner />
-      {!isMobile && (
-        <Sider
-          theme="dark"
-          className="shadow-md"
-          breakpoint="lg"
-          collapsedWidth="60"
-          collapsed={collapsed}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          {/* Logo Section - 80px height (8px * 10) */}
-          <div style={{
-            height: '80px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderBottom: '1px solid rgba(255,255,255,0.1)',
-            padding: '0 8px',
-          }}>
-            {collapsed ? (
-              <Logo size={24} theme="light" showText={false} layout="horizontal" />
-            ) : (
-              <Logo size={36} theme="light" showText={true} layout="horizontal" />
+    <ConfigProvider locale={zhCN}>
+      <AntLayout className="min-h-screen">
+        <ImpersonationBanner />
+        {!isMobile && (
+          <Sider
+            theme="dark"
+            className="shadow-md"
+            breakpoint="lg"
+            collapsedWidth="60"
+            collapsed={collapsed}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {/* Logo Section - 80px height (8px * 10) */}
+            <div style={{
+              height: '80px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderBottom: '1px solid rgba(255,255,255,0.1)',
+              padding: '0 8px',
+            }}>
+              {collapsed ? (
+                <Logo size={24} theme="light" showText={false} layout="horizontal" />
+              ) : (
+                <Logo size={36} theme="light" showText={true} layout="horizontal" />
+              )}
+            </div>
+
+            {/* Toggle Button */}
+            <div style={{
+              position: 'absolute',
+              top: '90px',
+              right: collapsed ? '-12px' : '-12px',
+              zIndex: 10,
+            }}>
+              <Button
+                type="primary"
+                shape="circle"
+                size="small"
+                icon={collapsed ? '＞' : '＜'}
+                onClick={() => setCollapsed(!collapsed)}
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  backgroundColor: logoColor,
+                  border: 'none',
+                }}
+              />
+            </div>
+
+            {/* Menu Section - flex: 1 to take remaining space */}
+            <div style={{ flex: 1, overflow: 'auto' }}>
+              <Menu
+                theme="dark"
+                mode="inline"
+                selectedKeys={['/' + location.pathname.split('/')[1]]}
+                items={menuItems}
+                onClick={handleMenuClick}
+                className="tenant-admin-sidebar"
+                style={{
+                  backgroundColor: 'transparent',
+                  borderRight: 'none',
+                  padding: '16px 0',
+                }}
+                inlineCollapsed={collapsed}
+              />
+            </div>
+
+            {/* User Info at Sidebar Bottom */}
+            {collapsed ? <SidebarUserInfoCollapsed /> : <SidebarUserInfo />}
+            
+            {/* Logo Text in collapsed mode */}
+            {collapsed && (
+              <div style={{
+                padding: '16px 8px',
+                textAlign: 'center',
+                fontSize: '12px',
+                color: 'rgba(255,255,255,0.7)',
+                borderTop: '1px solid rgba(255,255,255,0.1)',
+              }}>
+                {logoText}
+              </div>
+            )}
+          </Sider>
+        )}
+        
+        <AntLayout>
+          {/* Header - 64px height */}
+          <Header
+            style={{
+              padding: '0 24px',
+              background: '#ffffff',
+              boxShadow: '0 2px 8px rgba(0, 0, 33, 0.08)',
+              borderBottom: '1px solid #f0f0f0',
+              position: 'sticky',
+              top: 0,
+              zIndex: 100,
+              height: '64px',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <Breadcrumb items={getBreadcrumbItems()} />
+            </div>
+            
+            {/* Right side - simplified, user info moved to sidebar */}
+            <div style={{ marginLeft: 'auto' }}>
+              {/* User info moved to sidebar bottom */}
+            </div>
+          </Header>
+          
+          <div style={{ display: 'flex', flex: 1 }}>
+            <Content style={{ background: 'var(--bg-color)', overflow: 'auto', padding: '24px', flex: 1 }}>
+              <Outlet />
+            </Content>
+            
+            {/* Right Sidebar - Compact Calendar */}
+            {!isMobile && (
+              <div style={{ 
+                width: '220px', 
+                background: '#fff', 
+                padding: '16px', 
+                borderLeft: '1px solid #f0f0f0',
+                marginTop: '64px' // Header height
+              }}>
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ 
+                    fontSize: '14px', 
+                    fontWeight: 500, 
+                    marginBottom: '12px',
+                    color: '#1f2937'
+                  }}>
+                    日历
+                  </div>
+                  <Calendar 
+                    fullscreen={false}
+                    onSelect={(date) => {
+                      // Update selected date in URL
+                      const dateStr = date.format('YYYY-MM-DD')
+                      navigate(`?date=${dateStr}`)
+                    }}
+                  />
+                </div>
+                
+                {/* Add other compact widgets here */}
+              </div>
             )}
           </div>
-
-          {/* Toggle Button */}
-          <div style={{
-            position: 'absolute',
-            top: '90px',
-            right: collapsed ? '-12px' : '-12px',
-            zIndex: 10,
-          }}>
-            <Button
-              type="primary"
-              shape="circle"
-              size="small"
-              icon={collapsed ? '＞' : '＜'}
-              onClick={() => setCollapsed(!collapsed)}
-              style={{
-                width: '24px',
-                height: '24px',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                backgroundColor: logoColor,
-                border: 'none',
-              }}
-            />
-          </div>
-
-          {/* Menu Section - flex: 1 to take remaining space */}
-          <div style={{ flex: 1, overflow: 'auto' }}>
-            <Menu
-              theme="dark"
-              mode="inline"
-              selectedKeys={['/' + location.pathname.split('/')[1]]}
-              items={menuItems}
-              onClick={handleMenuClick}
-              className="tenant-admin-sidebar"
-              style={{
-                backgroundColor: 'transparent',
-                borderRight: 'none',
-                padding: '16px 0',
-              }}
-              inlineCollapsed={collapsed}
-            />
-          </div>
-
-          {/* User Info at Sidebar Bottom */}
-          {collapsed ? <SidebarUserInfoCollapsed /> : <SidebarUserInfo />}
           
-          {/* Logo Text in collapsed mode */}
-          {collapsed && (
-            <div style={{
-              padding: '16px 8px',
-              textAlign: 'center',
-              fontSize: '12px',
-              color: 'rgba(255,255,255,0.7)',
-              borderTop: '1px solid rgba(255,255,255,0.1)',
-            }}>
-              {logoText}
-            </div>
-          )}
-        </Sider>
-      )}
-      
-      <AntLayout>
-        {/* Header - 64px height */}
-        <Header
-          style={{
-            padding: '0 24px',
-            background: '#ffffff',
-            boxShadow: '0 2px 8px rgba(0, 0, 33, 0.08)',
-            borderBottom: '1px solid #f0f0f0',
-            position: 'sticky',
-            top: 0,
-            zIndex: 100,
-            height: '64px',
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <Breadcrumb items={getBreadcrumbItems()} />
-          </div>
-          
-          {/* Right side - simplified, user info moved to sidebar */}
-          <div style={{ marginLeft: 'auto' }}>
-            {/* User info moved to sidebar bottom */}
-          </div>
-        </Header>
-        
-        <Content style={{ background: 'var(--bg-color)', overflow: 'auto', padding: '24px' }}>
-          <Outlet />
-        </Content>
-        
-        {isMobile && <TabBar />}
+          {isMobile && <TabBar />}
+        </AntLayout>
       </AntLayout>
-    </AntLayout>
+    </ConfigProvider>
   )
 }
-
 export default AppLayout
