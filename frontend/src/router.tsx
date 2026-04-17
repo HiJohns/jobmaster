@@ -48,11 +48,11 @@ function AppRouter() {
 <Route path="/admin/tenants" element={<TenantList />} />
               <Route path="/admin/tenants/success" element={<TenantCreateSuccess />} />
 
-              <Route path="/engineer" element={<EngineerHome />} />
-              <Route path="/engineer/order/:id" element={<EngineerOrderDetail />} />
+              <Route path="/engineer" element={<WorkOrderList />} />
+              <Route path="/engineer/order/:id" element={<WorkOrderDetail />} />
 
-              <Route path="/contractor" element={<ContractorHome />} />
-              <Route path="/vendor" element={<VendorHome />} />
+              <Route path="/contractor" element={<WorkOrderList />} />
+              <Route path="/vendor" element={<WorkOrderList />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

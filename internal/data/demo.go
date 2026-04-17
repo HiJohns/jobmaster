@@ -25,12 +25,8 @@ type DemoData struct {
 func LoadDemoData() (*DemoData, error) {
 	filePath := os.Getenv("DEMO_DUMMY_FILE")
 	if filePath == "" {
-		// Try default path
-		exePath, err := os.Executable()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get executable path: %w", err)
-		}
-		filePath = filepath.Join(filepath.Dir(exePath), "demo.json")
+		// Try default path relative to working directory
+		filePath = "demo.json"
 	}
 
 	data, err := os.ReadFile(filepath.Clean(filePath))

@@ -60,8 +60,11 @@ function WorkOrderList() {
       }
 
       const response = await api.workorder.list(params)
+      console.log('[DEBUG WorkOrderList] full response:', JSON.stringify(response).substring(0, 500))
       const res = response as { code: number; data: { list: WorkOrder[] } }
-      if (res.code === 200) {
+      console.log('[DEBUG WorkOrderList] res:', res)
+      if (res && res.code === 200 && res.data && res.data.list) {
+        console.log('[DEBUG WorkOrderList] list length:', res.data.list.length)
         // Sort: urgent orders first, then by created_at desc
         const sortedOrders = [...res.data.list].sort((a, b) => {
           if (a.is_urgent && !b.is_urgent) return -1
@@ -69,6 +72,9 @@ function WorkOrderList() {
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         })
         setOrders(sortedOrders)
+        console.log('[DEBUG WorkOrderList] setOrders done, count:', sortedOrders.length)
+      } else {
+        console.log('[DEBUG WorkOrderList] condition failed, res:', res)
       }
     } catch (error) {
       console.error('Failed to fetch orders:', error)
@@ -175,10 +181,29 @@ function WorkOrderList() {
         backgroundColor: '#F5F7FA',
         borderBottom: '1px solid #E5E7EB'
       }}>
-        {/* Left: Count */}
-        <span style={{ fontSize: '14px', color: '#374151', fontWeight: 500, whiteSpace: 'nowrap' }}>
-          今日工单：{filteredOrders.length} 条
-        </span>
+        {/* Left: Count + Create Button */}
+        <>
+          <span style={{ fontSize: '14px', color: '#374151', fontWeight: 500, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            今日工单：{filteredOrders.length} 条
+            {canCreateOrder && (
+              <span
+                onClick={() => setCreateModalVisible(true)}
+                style={{
+                  background: '#2563EB',
+                  color: 'white',
+                  padding: '4px 12px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                  fontSize: '13px',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                +创建
+              </span>
+            )}
+          </span>
+        </>
         
         {/* Center: Search Bar */}
         <SearchBar
@@ -192,29 +217,6 @@ function WorkOrderList() {
             flex: '0 0 170px'
           }}
         />
-        
-        {/* Center: Create Button (紧挨搜索框) */}
-        {canCreateOrder && (
-          <div
-            onClick={() => setCreateModalVisible(true)}
-            style={{
-              background: '#2563EB',
-              color: 'white',
-              padding: '8px 16px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: 500,
-              fontSize: '13px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              whiteSpace: 'nowrap'
-            }}
-          >
-            <AddOutline fontSize={14} />
-            创建工单
-          </div>
-        )}
         
         {/* Right: Sort */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
@@ -308,7 +310,7 @@ function WorkOrderList() {
               )}
             </div>
           ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', paddingTop: '8px' }}>
                 {filteredOrders.map((order) => (
                   <div key={order.id}>
                     <WorkOrderCard 
@@ -322,11 +324,13 @@ function WorkOrderList() {
         </PullToRefresh>
       </div>
       
-      <CreateWorkOrderModal
-        visible={createModalVisible}
-        onClose={() => setCreateModalVisible(false)}
-        onSuccess={handleCreateSuccess}
-      />
+      {createModalVisible && (
+        <CreateWorkOrderModal
+          visible={createModalVisible}
+          onClose={() => setCreateModalVisible(false)}
+          onSuccess={handleCreateSuccess}
+        />
+      )}
     </div>
   )
 }

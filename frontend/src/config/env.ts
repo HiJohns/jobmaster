@@ -1,7 +1,16 @@
-export const USE_LOCAL_API = import.meta.env.VITE_USE_LOCAL_API === 'true'
+export const USE_LOCAL_API = false
 
-export const USE_DEMO_API = import.meta.env.VITE_USE_DEMO_API === 'true'
+export const USE_DEMO_API = true
 
-export const API_BASE_URL = USE_LOCAL_API || USE_DEMO_API
-  ? '/api/demo'
-  : import.meta.env.VITE_API_BASE_URL || '/api/v1'
+export const API_BASE_URL = '/api/demo'
+
+export const API_TARGET = 'http://localhost:5555'
+
+// 当前登录用户的角色（用于 Demo API 过滤）
+let currentDemoUserRole = ''
+
+export const setDemoUserRole = (role: string) => {
+  currentDemoUserRole = role
+}
+
+export const getDemoUserRole = () => currentDemoUserRole

@@ -6,6 +6,8 @@ import WorkOrderCard from '../components/WorkOrderCard'
 import TabBar from '../components/TabBar'
 import { useAuthStore } from '../store/useAuthStore'
 import { theme } from '../styles/theme'
+import { api } from '../api'
+import { demoApi } from '../api/demo'
 
 interface WorkOrderStats {
   total: number
@@ -75,21 +77,21 @@ export default function EngineerHomePage() {
         setLoading(true)
       }
 
-      // 模拟 API 调用
-      await new Promise(resolve => setTimeout(resolve, 800))
+      // 调用 Demo API
+      const res = await demoApi.getWorkOrders()
 
-      const mockOrders: WorkOrder[] = Array.from({ length: 10 }).map((_, i) => ({
-        id: `jm-wo-${currentPage}-${i}`,
-        order_no: `WO-20240413-${String(i).padStart(3, '0')}`,
-        status: ['DISPATCHED', 'ACCEPTED', 'RESERVED', 'WORKING'][Math.floor(Math.random() * 4)],
-        store_name: `Store ${Math.floor(Math.random() * 5) + 1}`,
-        address_detail: `${Math.floor(Math.random() * 100) + 1} Main St, City`,
-        category_path: '内装/卖场/消防门',
-        brand_name: ['Apple', 'Samsung', 'Huawei'][Math.floor(Math.random() * 3)],
-        description: '设备故障，需要维修',
-        engineer_name: '工程师A',
-        created_at: new Date(Date.now() - Math.random() * 86400000 * 7).toISOString(),
-        is_urgent: Math.random() > 0.7,
+      const mockOrders: WorkOrder[] = (res.list || []).map((o: any) => ({
+        id: o.id,
+        order_no: o.order_no,
+        status: o.status,
+        store_name: o.store_name,
+        address_detail: o.address_detail,
+        category_path: o.category_path,
+        brand_name: o.brand_name,
+        description: o.description,
+        engineer_name: o.engineer_name,
+        created_at: o.created_at,
+        is_urgent: o.is_urgent,
       }))
 
       if (isRefresh || currentPage === 1) {
@@ -99,9 +101,10 @@ export default function EngineerHomePage() {
         setOrders(prev => [...prev, ...mockOrders])
       }
 
-      setHasMore(currentPage < 5) // 最多5页
+      setHasMore(false)
       setPage(currentPage)
     } catch (error) {
+      console.error('[DEBUG mobile] fetchOrders error:', error)
       console.error('Failed to fetch orders:', error)
     } finally {
       setLoading(false)

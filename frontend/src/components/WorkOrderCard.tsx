@@ -104,8 +104,10 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
    * Render category path as breadcrumbs
    * e.g., ["内装", "卖场", "消防门"] -> "内装 > 卖场 > 消防门"
    */
-  const renderCategoryPath = (paths: string[]) => {
-    if (!paths || paths.length === 0) return '-'
+  const renderCategoryPath = (paths: string[] | string) => {
+    if (!paths) return '-'
+    if (typeof paths === 'string') return paths
+    if (!paths.length) return '-'
     return paths.join(' > ')
   }
 

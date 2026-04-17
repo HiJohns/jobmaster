@@ -4,10 +4,15 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"jobmaster/internal/data"
 )
+
+func contains(s string, substr string) bool {
+	return strings.Contains(s, substr)
+}
 
 // DemoHandlers handles demo mode API endpoints
 type DemoHandlers struct{}
@@ -57,7 +62,27 @@ func (h *DemoHandlers) GetWorkOrders(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, workOrders)
+	// Filter by status query param (comma-separated)
+	statusParam := c.Query("status")
+	if statusParam != "" {
+		allowedStatuses := strings.Split(statusParam, ",")
+		var filtered []map[string]interface{}
+		for _, wo := range workOrders {
+			status, _ := wo["status"].(string)
+			for _, s := range allowedStatuses {
+				if strings.TrimSpace(s) == status {
+					filtered = append(filtered, wo)
+					break
+				}
+			}
+		}
+		workOrders = filtered
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"list":  workOrders,
+		"total": len(workOrders),
+	})
 }
 
 // GetWorkOrder returns a single work order by ID
@@ -107,7 +132,10 @@ func (h *DemoHandlers) GetOrganizations(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, orgs)
+	c.JSON(http.StatusOK, gin.H{
+		"list":  orgs,
+		"total": len(orgs),
+	})
 }
 
 // GetUsers returns all users from demo data
@@ -124,7 +152,10 @@ func (h *DemoHandlers) GetUsers(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, users)
+	c.JSON(http.StatusOK, gin.H{
+		"list":  users,
+		"total": len(users),
+	})
 }
 
 // Login handles demo mode login
@@ -140,30 +171,29 @@ func (h *DemoHandlers) Login(c *gin.Context) {
 	}
 
 	// Demo mode - accept any credentials
-	// In production, this would validate against the database
-	demoData, err := data.LoadDemoData()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+	// Parse role from username (always use this logic)
+	role := "EMPLOYEE" // default
+	username := req.Username
+	if contains(username, "admin") {
+		role = "BRANCH_ADMIN"
+	} else if contains(username, "engineer") {
+		role = "ENGINEER"
+	} else if contains(username, "contractor") {
+		role = "CONTRACTOR_EMPLOYEE"
+	} else if contains(username, "vendor") {
+		role = "VENDOR_EMPLOYEE"
 	}
-
-	var session map[string]interface{}
-	if err := json.Unmarshal(demoData.Session, &session); err != nil {
-		// Return a default response if session data is not available
-		c.JSON(http.StatusOK, gin.H{
-			"token": "demo_token_" + os.Getenv("DEMO_MODE"),
-			"user": map[string]interface{}{
-				"id":          "jm-user-2",
-				"username":    req.Username,
-				"displayName": "Demo User",
-				"role":        "EMPLOYEE",
-				"orgId":       "jm-branch1",
-				"orgName":     "Branch 001",
-				"tenantId":    "jm-tenant1",
-			},
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, session)
+	// Return user with parsed role
+	c.JSON(http.StatusOK, gin.H{
+		"token": "demo_token_" + os.Getenv("DEMO_MODE"),
+		"user": map[string]interface{}{
+			"id":          "jm-user-" + username,
+			"username":    username,
+			"displayName": username,
+			"role":        role,
+			"orgId":       "jm-branch1",
+			"orgName":     "Branch 001",
+			"tenantId":    "jm-tenant1",
+		},
+	})
 }

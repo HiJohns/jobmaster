@@ -1,10 +1,14 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { message } from 'antd'
 import { useAuthStore } from '../store/useAuthStore'
+import { API_BASE_URL, API_TARGET } from '../config/env'
+
+import { USE_DEMO_API } from '../config/env'
+console.log('[DEBUG client] USE_DEMO_API:', USE_DEMO_API, 'API_BASE_URL:', API_BASE_URL, 'API_TARGET:', API_TARGET)
 
 // API Configuration
 const API_CONFIG = {
-  BASE_URL: '/api/v1',
+  BASE_URL: API_BASE_URL,
   TIMEOUT: 10000, // 10 seconds
   DEFAULT_HEADERS: {
     'Content-Type': 'application/json',

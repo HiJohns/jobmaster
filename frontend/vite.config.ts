@@ -19,6 +19,11 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: false,
         },
+        '/api/demo': {
+          target: apiTarget,
+          changeOrigin: true,
+          secure: false,
+        },
       },
     },
     build: {

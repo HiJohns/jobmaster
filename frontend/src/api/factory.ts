@@ -1,13 +1,172 @@
-import { USE_LOCAL_API } from '../config/env'
+import { USE_LOCAL_API, USE_DEMO_API, API_BASE_URL, setDemoUserRole, getDemoUserRole } from '../config/env'
 import { localAuthApi, localWorkorderApi, localOrganizationApi, localReservationApi, initializeMockData } from './local'
 import { authApi, workorderApi } from './index'
+import apiClient from './client'
+
+console.log('[DEBUG] env config:', { USE_LOCAL_API, USE_DEMO_API, API_BASE_URL })
+
+export const setUserRole = (role: string) => {
+  setDemoUserRole(role)
+}
+
+const getUserRole = () => getDemoUserRole()
 
 const shouldUseLocal = (): boolean => {
   return USE_LOCAL_API
 }
 
+const shouldUseDemo = (): boolean => {
+  return USE_DEMO_API
+}
+
+console.log('[DEBUG] useLocal:', USE_LOCAL_API, 'useDemo:', USE_DEMO_API)
+
+export const demoApi = {
+  login: async (username: string, password: string) => {
+    console.log('[DEBUG] demoApi.login called')
+    const response = await apiClient.request({
+      url: '/auth/login',
+      method: 'POST',
+      data: { username, password },
+    })
+    console.log('[DEBUG demoApi.login] response:', response)
+    const data = response.data || response
+    if (data && data.user) {
+      console.log('[DEBUG demoApi.login] user:', data.user)
+      setDemoUserRole(data.user.role)
+    }
+    return data
+  },
+  getWorkOrders: async (params?: Record<string, unknown>) => {
+    // 根据角色设置不同的状态过滤
+    const userRole = getUserRole()
+    console.log('[DEBUG demoApi.getWorkOrders] userRole:', userRole, 'statusFilter will be:', !userRole ? 'ALL' : userRole)
+    
+    let statusFilter = '' // 不设置则返回全部
+    
+    if (userRole === 'BRANCH_ADMIN' || userRole === 'EMPLOYEE') {
+      // 分公司管理员、员工：查看所有工单
+      statusFilter = ''
+    } else if (userRole === 'ENGINEER') {
+      statusFilter = 'ACCEPTED,RESERVED,WORKING'
+    } else if (userRole === 'CONTRACTOR_EMPLOYEE' || userRole === 'CONTRACTOR_ADMIN') {
+      statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING'
+    } else if (userRole === 'VENDOR_EMPLOYEE' || userRole === 'VENDOR_ADMIN') {
+      statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING'
+    }
+    
+    console.log('[DEBUG demoApi.getWorkOrders] requesting with status:', statusFilter)
+    const response = await apiClient.request({
+      url: '/workorders',
+      method: 'GET',
+      params: { status: statusFilter },
+    })
+    // Demo API returns data directly, not wrapped in response.data
+    return response.data || response
+  },
+  getWorkOrder: async (id: string) => {
+    const response = await apiClient.request({
+      url: `/workorders/${id}`,
+      method: 'GET',
+    })
+    return response.data || response
+  },
+  updateWorkOrder: async (id: string, data: Record<string, unknown>) => {
+    const response = await apiClient.request({
+      url: `/workorders/${id}`,
+      method: 'PUT',
+      data,
+    })
+    return response.data || response
+  },
+  dispatchWorkOrder: async (id: string, vendor_id: string, engineer_id?: string) => {
+    const response = await apiClient.request({
+      url: `/workorders/${id}/dispatch`,
+      method: 'POST',
+      data: { vendor_id, engineer_id },
+    })
+    return response.data || response
+  },
+  acceptWorkOrder: async (id: string, scheduled_at: string) => {
+    const response = await apiClient.request({
+      url: `/workorders/${id}/accept`,
+      method: 'POST',
+      data: { scheduled_at },
+    })
+    return response.data || response
+  },
+  reserveWorkOrder: async (id: string, appointed_at: string) => {
+    const response = await apiClient.request({
+      url: `/workorders/${id}/reserve`,
+      method: 'POST',
+      data: { appointed_at },
+    })
+    return response.data || response
+  },
+  arriveWorkOrder: async (id: string, latitude: number, longitude: number) => {
+    const response = await apiClient.request({
+      url: `/workorders/${id}/arrive`,
+      method: 'POST',
+      data: { latitude, longitude },
+    })
+    return response.data || response
+  },
+  finishWorkOrder: async (
+    id: string,
+    description: string,
+    photo_urls: string[],
+    labor_fee: number,
+    material_fee: number,
+    other_fee: number
+  ) => {
+    const response = await apiClient.request({
+      url: `/workorders/${id}/finish`,
+      method: 'POST',
+      data: { description, photo_urls, labor_fee, material_fee, other_fee },
+    })
+    return response.data || response
+  },
+  verifyWorkOrder: async (id: string) => {
+    const response = await apiClient.request({
+      url: `/workorders/${id}/verify`,
+      method: 'POST',
+    })
+    return response.data
+  },
+  rejectWorkOrder: async (id: string, reason: string) => {
+    const response = await apiClient.request({
+      url: `/workorders/${id}/reject`,
+      method: 'POST',
+      data: { reason },
+    })
+    return response.data
+  },
+  getOrganizations: async () => {
+    const response = await apiClient.request({
+      url: '/organizations',
+      method: 'GET',
+    })
+    return response.data
+  },
+  getOrganization: async (id: string) => {
+    const response = await apiClient.request({
+      url: `/organizations/${id}`,
+      method: 'GET',
+    })
+    return response.data
+  },
+  getUsers: async () => {
+    const response = await apiClient.request({
+      url: '/users',
+      method: 'GET',
+    })
+    return response.data
+  },
+}
+
 export const createApi = () => {
   const useLocal = shouldUseLocal()
+  const useDemo = shouldUseDemo()
 
   const auth = useLocal
     ? {
@@ -27,6 +186,25 @@ export const createApi = () => {
         selectTenant: (tenantId: string) => localAuthApi.selectTenant(tenantId),
         logout: () => localAuthApi.logout(),
         getSession: () => localAuthApi.getSession(),
+      }
+    : useDemo
+    ? {
+        login: (data: { username: string; password: string }) =>
+          demoApi.login(data.username, data.password).then((res) => ({
+            token: res.token,
+            user_id: res.user?.id,
+            username: res.user?.username,
+            role: res.user?.role,
+            org_id: res.user?.orgId,
+            tenant_id: res.user?.tenantId,
+            display_name: res.user?.displayName,
+            is_impersonated: false,
+          })),
+        refreshToken: () => Promise.resolve({}),
+        getMyTenants: () => Promise.resolve([]),
+        selectTenant: () => Promise.resolve({}),
+        logout: () => Promise.resolve({}),
+        getSession: () => Promise.resolve({}),
       }
     : authApi
 
@@ -136,6 +314,67 @@ export const createApi = () => {
             data: res,
           })),
       }
+    : useDemo
+    ? {
+        list: (_params?: Record<string, unknown>) => {
+          console.log('[DEBUG factory] list called with role filtering')
+          // 不传递原始params，让demoApi根据role自动过滤
+          return demoApi.getWorkOrders().then((res: { list: unknown[]; total: number }) => {
+            console.log('[DEBUG factory] list result:', res)
+            return {
+              code: 200,
+              data: {
+                list: res.list,
+                total: res.total,
+                page: 1,
+                page_size: 20,
+              },
+            }
+          })
+        },
+        get: (id: string) =>
+          demoApi.getWorkOrder(id).then((res) => ({
+            code: 200,
+            data: res,
+          })),
+        create: (data: unknown) =>
+          demoApi.updateWorkOrder('', data as Record<string, unknown>).then((res) => ({
+            code: 200,
+            data: res,
+          })),
+        dispatch: () =>
+          Promise.resolve({ code: 200, data: {} }),
+        accept: () =>
+          Promise.resolve({ code: 200, data: {} }),
+        reserve: () =>
+          Promise.resolve({ code: 200, data: {} }),
+        arrive: () =>
+          Promise.resolve({ code: 200, data: {} }),
+        finish: () =>
+          Promise.resolve({ code: 200, data: {} }),
+        verify: () =>
+          Promise.resolve({ code: 200, data: {} }),
+        reject: () =>
+          Promise.resolve({ code: 200, data: {} }),
+        generateQRCode: () =>
+          Promise.resolve({ code: 200, data: { qrcode: '' } }),
+        myTasks: () =>
+          demoApi.getWorkOrders().then((res: { list: unknown[]; total: number }) => ({
+            code: 200,
+            data: {
+              list: res.list,
+              total: res.total,
+            },
+          })),
+        statistics: () =>
+          Promise.resolve({ code: 200, data: { total: 0, by_status: {} } }),
+        acceptOrder: () =>
+          Promise.resolve({ code: 200, data: {} }),
+        rejectOrder: () =>
+          Promise.resolve({ code: 200, data: {} }),
+        rejectHandle: () =>
+          Promise.resolve({ code: 200, data: null }),
+      }
     : workorderApi
 
   const organization = useLocal
@@ -173,6 +412,32 @@ export const createApi = () => {
             code: 200,
             data: res,
           })),
+      }
+    : useDemo
+    ? {
+        list: () =>
+          demoApi.getOrganizations().then((res: { list: unknown[]; total: number }) => ({
+            code: 200,
+            data: {
+              list: res.list,
+              total: res.total,
+            },
+          })),
+        get: (_id: string) =>
+          demoApi.getOrganization(_id).then((res) => ({
+            code: 200,
+            data: res,
+          })),
+        create: () => Promise.resolve({ code: 200, data: null }),
+        listUsers: () =>
+          demoApi.getUsers().then((res: { list: unknown[]; total: number }) => ({
+            code: 200,
+            data: {
+              list: res.list,
+              total: res.total,
+            },
+          })),
+        createUser: () => Promise.resolve({ code: 200, data: null }),
       }
     : {
         list: () => Promise.resolve({ code: 200, data: { list: [], total: 0 } }),
@@ -214,6 +479,17 @@ export const createApi = () => {
             code: 200,
             data: res,
           })),
+      }
+    : useDemo
+    ? {
+        list: () => Promise.resolve({ code: 200, data: { list: [], total: 0 } }),
+        get: (_id: string) => Promise.resolve({ code: 200, data: null }),
+        confirm: (_id: string, _comment?: string) => Promise.resolve({ code: 200, data: null }),
+        reject: (_id: string, _reason: string) => Promise.resolve({ code: 200, data: null }),
+        reschedule: (_id: string, _newTime: string, _comment?: string) =>
+          Promise.resolve({ code: 200, data: null }),
+        listByWorkOrder: (_workOrderId: string, _includeRejected?: boolean) =>
+          Promise.resolve({ code: 200, data: { list: [], total: 0 } }),
       }
     : {
         list: () => Promise.resolve({ code: 200, data: { list: [], total: 0 } }),

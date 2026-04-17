@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
+import LoginPage from './pages/Login'
 import EngineerHomePage from './pages/EngineerHomePage'
 import WorkOrderDetailPage from './pages/WorkOrderDetailPage'
 import ConstructionRecordPage from './pages/ConstructionRecordPage'
@@ -37,6 +38,7 @@ export default function App() {
   return (
     <Router>
       <Routes>
+        <Route path="/login" element={<LoginPage />} />
         <Route 
           path="/wechat/orders" 
           element={

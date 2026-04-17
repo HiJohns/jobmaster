@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/useAuthStore'
 import { localAuthApi, initializeMockData } from '../api/local'
 import Logo from '../components/Logo'
+import { demoApi, setUserRole } from '../api/factory'
 
 const DEMO_ACCOUNTS = [
   { username: 'admin@branch1', displayName: 'Branch Admin', role: 'BRANCH_ADMIN', password: 'demo123' },
@@ -46,16 +47,26 @@ function Login() {
     setLoading(true)
     try {
       initializeMockData()
-      const response = await localAuthApi.login(values.username, values.password)
+      // Use demoApi for login
+      console.log('[DEBUG Login] calling demoApi.login')
+      const response = await demoApi.login(values.username, values.password)
+      console.log('[DEBUG Login] response:', response)
+      const user = response.user || {}
+      
+      // Set user role for API filtering
+      if (user.role) {
+        console.log('[DEBUG Login] setting user role:', user.role)
+        setUserRole(user.role)
+      }
       
       login(response.token, {
-        userId: response.user_id,
-        username: response.username,
-        displayName: response.display_name,
-        role: response.role,
-        orgId: response.org_id,
-        orgName: response.display_name,
-        tenantId: response.tenant_id,
+        userId: user.id || response.user_id || '',
+        username: user.username || response.username || '',
+        displayName: user.displayName || response.display_name || '',
+        role: user.role || response.role || '',
+        orgId: user.orgId || response.org_id || '',
+        orgName: user.orgName || response.org_name || '',
+        tenantId: user.tenantId || response.tenant_id || '',
       })
 
       if (values.remember) {

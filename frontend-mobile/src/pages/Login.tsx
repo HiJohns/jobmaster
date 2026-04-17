@@ -3,6 +3,7 @@ import { Form, Input, Button, Card, Space, Toast } from 'antd-mobile'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/useAuthStore'
 import { localAuthApi, initializeMockData } from '../api/local'
+import { demoApi } from '../api/demo'
 
 const DEMO_ACCOUNTS = [
   { username: 'admin@branch1', displayName: 'Branch Admin', role: 'BRANCH_ADMIN', password: 'demo123' },
@@ -48,8 +49,13 @@ export default function LoginPage() {
   const handleSubmit = async (values: { username: string; password: string; remember?: boolean }) => {
     setLoading(true)
     try {
-      initializeMockData()
-      const response = await localAuthApi.login(values.username, values.password)
+      // Use demo API for login
+      const response = await demoApi.login(values.username, values.password)
+      
+      // Set user role for API filtering
+      if (response.user) {
+        demoApi.setUserRole(response.user.role)
+      }
       
       login(response.token, {
         userId: response.user_id,
