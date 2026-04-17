@@ -22,6 +22,11 @@ func SetupRouter() *gin.Engine {
 	return SetupRouterWithFrontend("./frontend/dist")
 }
 
+func init() {
+	// Register demo routes when package is loaded
+	// This is done in SetupRouterWithFrontend
+}
+
 // SetupRouterWithFrontend configures the API routes with custom frontend static files
 func SetupRouterWithFrontend(frontendDist string) *gin.Engine {
 	r := gin.New()
@@ -36,6 +41,9 @@ func SetupRouterWithFrontend(frontendDist string) *gin.Engine {
 			"status": "ok",
 		})
 	})
+
+	// Demo mode endpoints (no auth required)
+	RegisterDemoRoutes(r)
 
 	// API v1 routes
 	v1 := r.Group("/api/v1")
