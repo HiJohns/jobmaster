@@ -162,6 +162,10 @@ export const demoApi = {
     })
     return response.data
   },
+  request: async (config: { url: string; method: string; data?: unknown; params?: Record<string, unknown> }) => {
+    const response = await apiClient.request(config)
+    return response
+  },
 }
 
 export const createApi = () => {
@@ -505,6 +509,51 @@ export const createApi = () => {
     workorder,
     organization,
     reservation,
+    category: {
+      list: (params?: { parent_id?: string }) =>
+        demoApi.request({
+          url: '/categories',
+          method: 'GET',
+          params,
+        }).then((res: any) => ({
+          code: 200,
+          data: res.data?.data || res.data || [],
+        })),
+      get: (id: string) =>
+        demoApi.request({
+          url: `/categories/${id}`,
+          method: 'GET',
+        }).then((res: any) => ({
+          code: 200,
+          data: res.data,
+        })),
+      create: (data: { name: string; code: string; parent_id?: string; sort_order?: number }) =>
+        demoApi.request({
+          url: '/categories',
+          method: 'POST',
+          data,
+        }).then((res: any) => ({
+          code: 200,
+          data: res.data,
+        })),
+      update: (id: string, data: { name?: string; sort_order?: number; status?: number }) =>
+        demoApi.request({
+          url: `/categories/${id}`,
+          method: 'PUT',
+          data,
+        }).then((res: any) => ({
+          code: 200,
+          data: res.data,
+        })),
+      delete: (id: string) =>
+        demoApi.request({
+          url: `/categories/${id}`,
+          method: 'DELETE',
+        }).then((res: any) => ({
+          code: 200,
+          data: res.data,
+        })),
+    },
     initializeMockData,
   }
 }

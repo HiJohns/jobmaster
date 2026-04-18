@@ -1,4 +1,5 @@
 import { Layout as AntLayout, Menu, Avatar, Dropdown, Breadcrumb, Button, Calendar, ConfigProvider } from 'antd'
+import { BankOutlined, AppstoreOutlined } from '@ant-design/icons'
 import {
   HomeTwoTone,
   FileTextTwoTone,
@@ -113,6 +114,11 @@ function AppLayout() {
           key: '/admin/tenants',
           label: '租户管理',
           icon: <BankOutlined />,
+        },
+        {
+          key: '/admin/categories',
+          label: '工单分类',
+          icon: <AppstoreOutlined />,
         },
       ],
     })

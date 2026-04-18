@@ -10,6 +10,7 @@ import AssetDetail from './pages/AssetDetail'
 import AssetMonitor from './pages/AssetMonitor'
 import TenantList from './pages/admin/TenantList'
 import TenantCreateSuccess from './pages/admin/TenantCreateSuccess'
+import CategoryManagement from './pages/admin/CategoryManagement'
 import EngineerHome from './pages/EngineerHome'
 import EngineerOrderDetail from './pages/EngineerOrderDetail'
 import ContractorHome from './pages/ContractorHome'
@@ -47,6 +48,7 @@ function AppRouter() {
             
 <Route path="/admin/tenants" element={<TenantList />} />
               <Route path="/admin/tenants/success" element={<TenantCreateSuccess />} />
+              <Route path="/admin/categories" element={<CategoryManagement />} />
 
               <Route path="/engineer" element={<WorkOrderList />} />
               <Route path="/engineer/order/:id" element={<WorkOrderDetail />} />
