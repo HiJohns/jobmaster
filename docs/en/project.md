@@ -365,6 +365,26 @@ This document is the core design document for the JobMaster project, and all tea
 
 ---
 
+## 11. Data Sources
+
+### 11.1 Administrative Divisions (行政区划)
+
+- **Source**: GB/T 2260 (National Bureau of Statistics Administrative Division Codes)
+- **Format**: JSON file with province/city/district hierarchy
+- **Location**: `data/admin_divisions_sample.json`
+- **API**: `GET /api/v1/admin-divisions` (supports hierarchical query)
+- **Database**: `admin_divisions` table (auto-migration via `008_create_admin_divisions.up.sql`)
+- **Organization Integration**: Organizations have `province_code`, `city_code`, `district_code` fields
+
+### 11.2 Work Order Categories (工单分类)
+
+- **Structure**: Tree structure with unlimited depth
+- **API**: `GET/POST/PUT/DELETE /api/v1/categories`
+- **Database**: `categories` table (auto-migration via `009_create_categories.up.sql`)
+- **Fields**: id, tenant_id, parent_id, name, code, level, path, sort_order, status
+
+---
+
 ## 7. Documentation Synchronization
 
 This document is the Chinese master document, English translation located at `docs/en/project.md`.
