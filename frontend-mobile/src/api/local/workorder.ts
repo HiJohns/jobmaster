@@ -24,7 +24,8 @@ const getCurrentUser = (): User | null => {
 export interface CreateWorkOrderRequest {
   title?: string
   store_id?: string
-  category_path?: string[]
+  category_id?: string
+  category_path?: string
   brand_name?: string
   description: string
   photo_urls?: string[]
@@ -153,7 +154,8 @@ export const localWorkorderApi = {
       status: 'PENDING',
       store_id: storeId,
       store_name: store.name,
-      category_path: data.category_path || [],
+      category_id: data.category_id,
+      category_path: data.category_path ? [data.category_path] : [],
       brand_name: data.brand_name || '',
       description: data.description,
       photo_urls: data.photo_urls || [],

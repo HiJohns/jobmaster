@@ -41,7 +41,7 @@ export interface User {
 export interface WorkOrder {
   id: string
   order_no: string
-  status: 'PENDING' | 'DISPATCHED' | 'ACCEPTED' | 'RESERVED' | 'WORKING' | 'FINISHED' | 'CLOSED'
+  status: 'PENDING' | 'DISPATCHED' | 'ACCEPTED' | 'RESERVED' | 'WORKING' | 'FINISHED' | 'PENDING_EVALUATION' | 'CLOSED'
   store_id: string
   store_name: string
   vendor_id?: string
@@ -50,6 +50,7 @@ export interface WorkOrder {
   engineer_name?: string
   owner_org_id?: string
   owner_org_name?: string
+  category_id?: string
   category_path: string[]
   brand_name: string
   description: string
