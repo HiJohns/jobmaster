@@ -90,6 +90,14 @@ func SetupRouterWithFrontend(frontendDist string) *gin.Engine {
 			// Organization routes (require authentication)
 			protected.GET("/organizations", ListOrganizations)
 			protected.POST("/organizations", CreateOrganization)
+			protected.GET("/admin-divisions", ListAdminDivisions)
+			// Category routes (require authentication)
+			protected.GET("/categories", ListCategories)
+			protected.POST("/categories", CreateCategory)
+			protected.GET("/categories/:id", GetCategory)
+			protected.PUT("/categories/:id", UpdateCategory)
+			protected.DELETE("/categories/:id", DeleteCategory)
+			protected.GET("/admin-divisions/:id", GetAdminDivision)
 			protected.PUT("/organizations/:id", UpdateOrganization)
 			protected.GET("/organizations/tree", GetOrganizationTree)
 
@@ -110,6 +118,8 @@ func SetupRouterWithFrontend(frontendDist string) *gin.Engine {
 			protected.POST("/workorders/:id/reserve", ReserveWorkOrder)
 			protected.POST("/workorders/:id/arrive", ArriveWorkOrder)
 			protected.POST("/workorders/:id/finish", FinishWorkOrder)
+			protected.POST("/workorders/:id/verify", VerifyWorkOrder)
+			protected.POST("/workorders/:id/evaluate", EvaluateWorkOrder)
 			protected.POST("/workorders/:id/validate-location", ValidateWorkOrderLocation)
 
 			// Device routes (require authentication)

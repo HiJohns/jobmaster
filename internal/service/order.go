@@ -234,6 +234,73 @@ func (s *OrderService) Accept(ctx context.Context, orderID uuid.UUID, userID uui
 	return &order, nil
 }
 
+// Verify verifies a finished work order (approve or reject)
+// Approve: FINISHED -> PENDING_EVALUATION
+// Reject: FINISHED -> DISPATCHED (rejected back to contractor)
+func (s *OrderService) Verify(ctx context.Context, orderID uuid.UUID, userID uuid.UUID, userOrgID uuid.UUID, userName string, action string, comment string) (*model.WorkOrder, error) {
+	if action != "approve" && action != "reject" {
+		return nil, fmt.Errorf("invalid action: must be 'approve' or 'reject'")
+	}
+
+	db, err := database.GetDB()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database connection: %w", err)
+	}
+
+	var order model.WorkOrder
+	err = db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.First(&order, "id = ?", orderID).Error; err != nil {
+			return fmt.Errorf("work order not found: %w", err)
+		}
+
+		oldStatus := order.Status
+		if oldStatus != model.WorkOrderStatusFinished {
+			return fmt.Errorf("work order must be in FINISHED status to verify: current status is %s", oldStatus.String())
+		}
+
+		var newStatus model.WorkOrderStatus
+		var logAction string
+		var details string
+
+		if action == "approve" {
+			newStatus = model.WorkOrderStatusPendingEvaluation
+			logAction = model.LogActionStatusChangeToPendingEvaluation
+			details = "Verification approved"
+			if comment != "" {
+				details += fmt.Sprintf(": %s", comment)
+			}
+		} else {
+			newStatus = model.WorkOrderStatusDispatched
+			logAction = model.LogActionReject
+			details = fmt.Sprintf("Verification rejected: %s", comment)
+		}
+
+		order.Status = newStatus
+		order.Logs.AddLog(userID, userName, logAction, details, oldStatus, newStatus)
+
+		if err := tx.Save(&order).Error; err != nil {
+			return fmt.Errorf("failed to save work order: %w", err)
+		}
+
+		// Send notification if verification approved
+		if action == "approve" {
+			notificationSvc := NewNotificationService(tx)
+			if err := notificationSvc.NotifyEvaluationNeeded(order); err != nil {
+				// Log but don't fail the transaction
+				fmt.Printf("failed to send evaluation notification: %v\n", err)
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &order, nil
+}
+
 // Reject allows vendor/engineer to reject a dispatched work order
 // Transitions from DISPATCHED back to PENDING (with reason)
 func (s *OrderService) Reject(ctx context.Context, orderID uuid.UUID, userID uuid.UUID, userName string, reason string) (*model.WorkOrder, error) {
@@ -430,6 +497,61 @@ func (s *OrderService) Finish(ctx context.Context, orderID uuid.UUID, userID uui
 			details += fmt.Sprintf(" | Photos: %d attached", len(photoURLs))
 		}
 		order.Logs.AddLog(userID, userName, model.LogActionFinish, details, oldStatus, model.WorkOrderStatusFinished)
+
+		if err := tx.Save(&order).Error; err != nil {
+			return fmt.Errorf("failed to save work order: %w", err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &order, nil
+}
+
+// Evaluate evaluates a work order and transitions it from PENDING_EVALUATION to CLOSED
+// Only users from the same organization as the work order can evaluate it
+func (s *OrderService) Evaluate(ctx context.Context, orderID uuid.UUID, userID uuid.UUID, userOrgID uuid.UUID, userName string, evaluationScore int, evaluationNotes string, estimatedCost float64) (*model.WorkOrder, error) {
+	db, err := database.GetDB()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database connection: %w", err)
+	}
+
+	var order model.WorkOrder
+	err = db.Transaction(func(tx *gorm.DB) error {
+		// Fetch the work order with lock
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&order, "id = ?", orderID).Error; err != nil {
+			return fmt.Errorf("work order not found: %w", err)
+		}
+
+		// Check organization permission - only allow evaluation from the work order's organization
+		if order.StoreID != userOrgID {
+			return fmt.Errorf("permission denied: you can only evaluate work orders from your organization")
+		}
+
+		// Validate transition to CLOSED (must be from PENDING_EVALUATION)
+		oldStatus := order.Status
+		if err := order.CanTransitionTo(model.WorkOrderStatusClosed); err != nil {
+			return fmt.Errorf("work order must be in PENDING_EVALUATION status: %w", err)
+		}
+
+		// Update status and evaluation details
+		order.Status = model.WorkOrderStatusClosed
+		order.Info.EvaluationScore = evaluationScore
+		order.Info.EvaluationNotes = evaluationNotes
+		order.Info.EstimatedCost = estimatedCost
+		evaluatedAt := time.Now()
+		order.Info.EvaluatedAt = evaluatedAt
+
+		// Add log entry
+		details := fmt.Sprintf("Evaluation completed: score=%d, cost=%.2f", evaluationScore, estimatedCost)
+		if evaluationNotes != "" {
+			details += fmt.Sprintf(" | Notes: %s", evaluationNotes)
+		}
+		order.Logs.AddLog(userID, userName, model.LogActionStatusChangeToClosed, details, oldStatus, model.WorkOrderStatusClosed)
 
 		if err := tx.Save(&order).Error; err != nil {
 			return fmt.Errorf("failed to save work order: %w", err)

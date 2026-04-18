@@ -262,7 +262,7 @@ func CreateWorkOrder(c *gin.Context) {
 		currentMonth := time.Now().Format("2006-01")
 		var quota model.BranchQuota
 		err := db.Where("branch_id = ? AND month = ?", orgID, currentMonth).First(&quota).Error
-		
+
 		if err == nil {
 			// Quota record exists
 			if !quota.HasQuota() {
@@ -272,11 +272,11 @@ func CreateWorkOrder(c *gin.Context) {
 		} else if err == gorm.ErrRecordNotFound {
 			// No quota record exists, create one with default value
 			quota = model.BranchQuota{
-				ID:        uuid.New(),
-				BranchID: orgID,
-				Month:    currentMonth,
+				ID:          uuid.New(),
+				BranchID:    orgID,
+				Month:       currentMonth,
 				UrgentQuota: 5,
-				UrgentUsed: 0,
+				UrgentUsed:  0,
 			}
 			if err := db.Create(&quota).Error; err != nil {
 				response.InternalServerError(c, "failed to initialize quota")
@@ -332,8 +332,6 @@ func CreateWorkOrder(c *gin.Context) {
 		return
 	}
 
-	
-
 	// If urgent, increment quota usage
 	if req.IsUrgent {
 		currentMonth := time.Now().Format("2006-01")
@@ -367,7 +365,6 @@ func ListWorkOrders(c *gin.Context) {
 		return
 	}
 	tenantID, ok := middleware.GetTenantID(c)
-
 
 	if !ok {
 		response.Unauthorized(c, "invalid token: tenant not found")
@@ -462,7 +459,6 @@ func GetWorkOrder(c *gin.Context) {
 	}
 	tenantID, ok := middleware.GetTenantID(c)
 
-
 	if !ok {
 		response.Unauthorized(c, "invalid token: tenant not found")
 		return
@@ -485,9 +481,6 @@ func GetWorkOrder(c *gin.Context) {
 		response.NotFound(c, "work order not found")
 		return
 	}
-
-	
-
 
 	response.Success(c, toWorkOrderResponse(&workOrder))
 }
@@ -678,7 +671,6 @@ func ListMyTasks(c *gin.Context) {
 	}
 	tenantID, ok := middleware.GetTenantID(c)
 
-
 	if !ok {
 		response.Unauthorized(c, "invalid token: tenant not found")
 		return
@@ -791,7 +783,6 @@ func GetTaskStatistics(c *gin.Context) {
 		return
 	}
 	tenantID, ok := middleware.GetTenantID(c)
-
 
 	if !ok {
 		response.Unauthorized(c, "invalid token: tenant not found")
@@ -986,6 +977,63 @@ func FinishWorkOrder(c *gin.Context) {
 	response.Success(c, toWorkOrderResponse(order))
 }
 
+// VerifyWorkOrderRequest represents the request to verify a work order
+type VerifyWorkOrderRequest struct {
+	Action  string `json:"action" binding:"required,oneof=approve reject"` // approve or reject
+	Comment string `json:"comment"`                                        // verification comment
+}
+
+// VerifyWorkOrder verifies a finished work order (BRANCH_ADMIN or EMPLOYEE only)
+// Approve: FINISHED -> PENDING_EVALUATION
+// Reject: FINISHED -> DISPATCHED
+func VerifyWorkOrder(c *gin.Context) {
+	userRole, ok := middleware.GetRole(c)
+	if !ok {
+		response.Unauthorized(c, "invalid token: role not found")
+		return
+	}
+	if model.UserRole(userRole) != model.UserRoleStore && model.UserRole(userRole) != model.UserRoleStaff {
+		response.Forbidden(c, "only branch admin or employee can verify work orders")
+		return
+	}
+
+	orderID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "invalid order id")
+		return
+	}
+
+	var req VerifyWorkOrderRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid request: "+err.Error())
+		return
+	}
+
+	userID, ok := middleware.GetUserID(c)
+	if !ok {
+		response.Unauthorized(c, "invalid token: user id not found")
+		return
+	}
+	orgID, ok := middleware.GetOrgID(c)
+	if !ok {
+		response.Unauthorized(c, "invalid token: organization not found")
+		return
+	}
+	userName := getCurrentUserName(c, userID)
+
+	order, err := OrderService.Verify(c, orderID, userID, orgID, userName, req.Action, req.Comment)
+	if err != nil {
+		if err.Error() == "work order must be in FINISHED status to verify" {
+			response.BadRequest(c, err.Error())
+			return
+		}
+		response.InternalServerError(c, fmt.Errorf("failed to verify work order: %w", err).Error())
+		return
+	}
+
+	response.Success(c, toWorkOrderResponse(order))
+}
+
 // GetWorkOrderDetail retrieves detailed work order information with role-based data masking
 func GetWorkOrderDetail(c *gin.Context) {
 	orderID, err := uuid.Parse(c.Param("id"))
@@ -1006,7 +1054,6 @@ func GetWorkOrderDetail(c *gin.Context) {
 		return
 	}
 	tenantID, ok := middleware.GetTenantID(c)
-
 
 	if !ok {
 		response.Unauthorized(c, "invalid token: tenant not found")
@@ -1225,4 +1272,57 @@ func ValidateWorkOrderLocation(c *gin.Context) {
 			"longitude": req.Longitude,
 		},
 	})
+}
+
+// EvaluateWorkOrderRequest represents the request to evaluate a work order
+type EvaluateWorkOrderRequest struct {
+	EvaluationScore int     `json:"evaluation_score" binding:"required,min=1,max=5"` // 1-5 rating
+	EvaluationNotes string  `json:"evaluation_notes" binding:"required,max=500"`     // Evaluation comments
+	EstimatedCost   float64 `json:"estimated_cost" binding:"required,min=0"`         // Cost estimate
+}
+
+// EvaluateWorkOrder handles evaluation of a work order and transitions it to CLOSED
+// Only employees/admin/manager from the work order's organization can evaluate
+func EvaluateWorkOrder(c *gin.Context) {
+	userID, ok := middleware.GetUserID(c)
+	if !ok {
+		response.Unauthorized(c, "invalid token: user id not found")
+		return
+	}
+	userOrgID, ok := middleware.GetOrgID(c)
+	if !ok {
+		response.Unauthorized(c, "invalid token: organization not found")
+		return
+	}
+
+	orderID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "invalid order id")
+		return
+	}
+
+	var req EvaluateWorkOrderRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid request: "+err.Error())
+		return
+	}
+
+	userName := getCurrentUserName(c, userID)
+
+	// Call service to evaluate the order
+	order, err := OrderService.Evaluate(c, orderID, userID, userOrgID, userName, req.EvaluationScore, req.EvaluationNotes, req.EstimatedCost)
+	if err != nil {
+		if err == model.ErrInvalidStateTransition {
+			response.BadRequest(c, fmt.Errorf("work order must be in PENDING_EVALUATION status to evaluate: %w", err).Error())
+			return
+		}
+		if err != nil && err.Error() == "permission denied: you can only evaluate work orders from your organization" {
+			response.Forbidden(c, "you can only evaluate work orders from your organization")
+			return
+		}
+		response.InternalServerError(c, fmt.Errorf("failed to evaluate work order: %w", err).Error())
+		return
+	}
+
+	response.Success(c, toWorkOrderResponse(order))
 }

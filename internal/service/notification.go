@@ -54,3 +54,14 @@ func (s *NotificationService) NotifyEscalation(orders []model.WorkOrder) error {
 	}
 	return nil
 }
+
+// NotifyEvaluationNeeded notifies that a work order needs evaluation
+func (s *NotificationService) NotifyEvaluationNeeded(order model.WorkOrder) error {
+	var org model.Organization
+	if err := s.db.First(&org, "id = ?", order.StoreID).Error; err != nil {
+		return fmt.Errorf("failed to get organization: %w", err)
+	}
+
+	message := fmt.Sprintf("工单 %s 已通过验收，需要进行评估评分", order.OrderNo)
+	return model.RecordEscalation(s.db, order.ID, org.TenantID.String(), message)
+}

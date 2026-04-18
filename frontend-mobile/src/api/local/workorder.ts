@@ -443,7 +443,7 @@ export const localWorkorderApi = {
     }
 
     const now = new Date().toISOString()
-    const newStatus = action === 'approve' ? 'CLOSED' : 'DISPATCHED'
+    const newStatus = action === 'approve' ? 'PENDING_EVALUATION' : 'DISPATCHED'
     const details = action === 'approve' ? '验收通过' : `验收拒绝: ${comment || ''}`
 
     workorders[idx] = {
