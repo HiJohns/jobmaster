@@ -11,6 +11,7 @@ export interface WorkOrder {
   order_no: string
   status: WorkOrderStatus
   store_id: string
+  category_id?: string
   store_name: string
   vendor_id?: string
   engineer_id?: string
@@ -58,6 +59,7 @@ export interface WorkOrderDetail extends WorkOrder {
 
 export interface CreateWorkOrderRequest {
   store_id: string
+  category_id?: string
   title: string
   category_path?: string[]
   brand_name?: string

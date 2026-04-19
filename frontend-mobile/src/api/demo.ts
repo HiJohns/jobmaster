@@ -17,6 +17,10 @@ export const demoApi = {
     currentUserRole = role
   },
   getUserRole: () => currentUserRole,
+  request: async (config: { url: string; method: string; data?: unknown; params?: Record<string, unknown> }) => {
+    const response = await apiClient.request(config)
+    return response
+  },
   getWorkOrders: async (params?: Record<string, unknown>) => {
     // 根据角色设置不同的状态过滤
     let statusFilter = '' // 不设置则返回全部

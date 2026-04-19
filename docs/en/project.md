@@ -1,5 +1,14 @@
 # JobMaster - Project Constitution
 
+## Core Documents
+
+The core documents of this project are as follows, and any code modifications must be consistent with these documents:
+
+- `docs/cases.md` - Use cases and business processes
+- `docs/api_design.md` - API interface design
+- `docs/database_design.md` - Data model and table structure
+- `docs/ui_design.md` - Interface design and interaction specifications
+
 ## 1. Business Vision & Roles
 
 ### 1.1 Project Positioning

@@ -57,14 +57,17 @@ export default function LoginPage() {
         demoApi.setUserRole(response.user.role)
       }
       
+      const user = response.user || {}
+      const demoAccount = DEMO_ACCOUNTS.find(acc => acc.username === values.username)
+      
       login(response.token, {
-        userId: response.user_id,
-        username: response.username,
-        displayName: response.display_name,
-        role: response.role,
-        orgId: response.org_id,
-        orgName: response.display_name,
-        tenantId: response.tenant_id,
+        userId: user.id || response.userId || response.user_id || '',
+        username: user.username || response.username || values.username,
+        displayName: user.displayName || user.display_name || response.displayName || response.display_name || demoAccount?.displayName || values.username,
+        role: user.role || response.role || demoAccount?.role || 'EMPLOYEE',
+        orgId: user.orgId || user.org_id || response.orgId || response.org_id || '',
+        orgName: user.orgName || user.org_name || user.displayName || demoAccount?.displayName || '未分配',
+        tenantId: user.tenantId || user.tenant_id || response.tenantId || response.tenant_id || '',
       })
 
       if (values.remember) {

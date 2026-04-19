@@ -23,6 +23,9 @@ type CreateOrganizationRequest struct {
 	Address      string        `json:"address"`
 	ContactName  string        `json:"contact_name"`
 	ContactPhone string        `json:"contact_phone"`
+	ProvinceCode string    `json:"province_code"` 
+	CityCode     string    `json:"city_code"` 
+	DistrictCode string    `json:"district_code"`
 }
 
 // OrganizationResponse represents the organization response
@@ -101,6 +104,9 @@ func CreateOrganization(c *gin.Context) {
 		Address:      req.Address,
 		ContactName:  req.ContactName,
 		ContactPhone: req.ContactPhone,
+		ProvinceCode: req.ProvinceCode,
+		CityCode:     req.CityCode,
+		DistrictCode: req.DistrictCode,
 	}
 
 	if err := db.Create(&org).Error; err != nil {

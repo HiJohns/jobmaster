@@ -37,7 +37,7 @@ export const demoApi = {
     }
     return data
   },
-  getWorkOrders: async (params?: Record<string, unknown>) => {
+  getWorkOrders: async (_params?: Record<string, unknown>) => {
     // 根据角色设置不同的状态过滤
     const userRole = getUserRole()
     console.log('[DEBUG demoApi.getWorkOrders] userRole:', userRole, 'statusFilter will be:', !userRole ? 'ALL' : userRole)

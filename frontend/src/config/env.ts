@@ -14,3 +14,4 @@ export const setDemoUserRole = (role: string) => {
 }
 
 export const getDemoUserRole = () => currentDemoUserRole
+export const WorkOrderStatusPendingEvaluation = 'PENDING_EVALUATION'

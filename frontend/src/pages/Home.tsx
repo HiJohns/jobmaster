@@ -338,7 +338,7 @@ function Home() {
                 }}>
                    <EmptyStateIllustration
                      message="暂无待处理工单，去派发新任务吧"
-                     showAction={userInfo?.role === 'STORE' || userInfo?.role === 'EMPLOYEE'}
+                     showAction={userInfo?.role === 'BRANCH_ADMIN' || userInfo?.role === 'EMPLOYEE'}
                      onAction={handleCreateOrder}
                    />
                 </div>
@@ -368,8 +368,8 @@ function Home() {
         )}
       </div>
 
-      {/* Create Order Button (for STORE and EMPLOYEE roles) */}
-      {(userInfo?.role === 'STORE' || userInfo?.role === 'EMPLOYEE') && (
+      {/* Create Order Button (for BRANCH_ADMIN and EMPLOYEE roles) */}
+      {(userInfo?.role === 'BRANCH_ADMIN' || userInfo?.role === 'EMPLOYEE') && (
         <FloatingBubble
           onClick={handleCreateOrder}
           style={{

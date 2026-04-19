@@ -3,7 +3,7 @@ import { Form, Input, Button, Card, Checkbox, Space, Tag, message } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/useAuthStore'
-import { localAuthApi, initializeMockData } from '../api/local'
+import { initializeMockData } from '../api/local'
 import Logo from '../components/Logo'
 import { demoApi, setUserRole } from '../api/factory'
 
@@ -46,6 +46,10 @@ function Login() {
   const handleSubmit = async (values: { username: string; password: string; remember?: boolean }) => {
     setLoading(true)
     try {
+      // 清除旧的 localStorage，确保 userInfo 更新
+      localStorage.removeItem('auth-storage')
+      localStorage.removeItem('jobmaster-auth-storage')  // 兼容旧 key
+      
       initializeMockData()
       // Use demoApi for login
       console.log('[DEBUG Login] calling demoApi.login')

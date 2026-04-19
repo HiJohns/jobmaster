@@ -167,7 +167,7 @@ export default function EngineerHomePage() {
    * 处理提交施工记录
    */
   const handleSubmitRecord = (orderId: string) => {
-    navigate(`/wechat/construction-record/${orderId}`)
+    navigate(`/wechat/orders/${orderId}/record`)
   }
 
   const currentWorkingOrder = getCurrentWorkingOrder()

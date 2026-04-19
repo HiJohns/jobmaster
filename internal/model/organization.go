@@ -20,6 +20,9 @@ type Organization struct {
 	ContactName     string         `gorm:"size:100" json:"contact_name"`
 	ContactPhone    string         `gorm:"size:20" json:"contact_phone"`
 	IAMOrgID        *string        `gorm:"size:100" json:"iam_org_id,omitempty"` // IAM 组织 ID
+	ProvinceCode    string         `gorm:"size:20;index" json:"province_code,omitempty"`
+	CityCode        string         `gorm:"size:20;index" json:"city_code,omitempty"`
+	DistrictCode    string         `gorm:"size:20;index" json:"district_code,omitempty"`
 	IsShadow        bool           `gorm:"default:false" json:"is_shadow"`       // 是否为影子组织
 	MaxDispatchHops int            `gorm:"default:3" json:"max_dispatch_hops"`   // 最大流转跳数
 	Path            string         `gorm:"size:500" json:"path,omitempty"`       // 组织路径

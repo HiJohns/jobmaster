@@ -1,5 +1,14 @@
 # JobMaster (工单匠) - Project Constitution
 
+## Core Documents
+
+本项目核心文档如下，任何代码修改必须与这些文档保持一致：
+
+- `docs/cases.md` - 用例与业务流程
+- `docs/api_design.md` - API 接口设计
+- `docs/database_design.md` - 数据模型与表结构
+- `docs/ui_design.md` - 界面设计与交互规范
+
 ## 1. 业务愿景与角色
 
 ### 1.1 项目定位

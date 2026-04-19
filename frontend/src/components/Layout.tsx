@@ -5,7 +5,6 @@ import {
   FileTextTwoTone,
   SettingTwoTone,
   UserOutlined,
-  BankOutlined,
   LogoutOutlined,
   AppstoreTwoTone,
   CloseOutlined,

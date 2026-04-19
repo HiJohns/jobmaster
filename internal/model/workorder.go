@@ -16,14 +16,15 @@ import (
 type WorkOrderStatus int
 
 const (
-	WorkOrderStatusPending    WorkOrderStatus = 1 // 报修
-	WorkOrderStatusDispatched WorkOrderStatus = 2 // 已指派
-	WorkOrderStatusReserved   WorkOrderStatus = 3 // 已预约
-	WorkOrderStatusArrived    WorkOrderStatus = 4 // 已到场
-	WorkOrderStatusWorking    WorkOrderStatus = 5 // 施工中
-	WorkOrderStatusFinished   WorkOrderStatus = 6 // 离场确认
-	WorkOrderStatusObserving  WorkOrderStatus = 7 // 观察期
-	WorkOrderStatusClosed     WorkOrderStatus = 8 // 已关闭
+	WorkOrderStatusPending           WorkOrderStatus = 1 // 报修
+	WorkOrderStatusDispatched        WorkOrderStatus = 2 // 已指派
+	WorkOrderStatusReserved          WorkOrderStatus = 3 // 已预约
+	WorkOrderStatusArrived           WorkOrderStatus = 4 // 已到场
+	WorkOrderStatusWorking           WorkOrderStatus = 5 // 施工中
+	WorkOrderStatusFinished          WorkOrderStatus = 6 // 离场确认
+	WorkOrderStatusPendingEvaluation WorkOrderStatus = 9 // 待评估
+	WorkOrderStatusObserving         WorkOrderStatus = 7 // 观察期
+	WorkOrderStatusClosed            WorkOrderStatus = 8 // 已关闭
 )
 
 // String returns the string representation of the status
@@ -41,6 +42,8 @@ func (s WorkOrderStatus) String() string {
 		return "WORKING"
 	case WorkOrderStatusFinished:
 		return "FINISHED"
+	case WorkOrderStatusPendingEvaluation:
+		return "PENDING_EVALUATION"
 	case WorkOrderStatusObserving:
 		return "OBSERVING"
 	case WorkOrderStatusClosed:
@@ -48,6 +51,42 @@ func (s WorkOrderStatus) String() string {
 	default:
 		return "UNKNOWN"
 	}
+}
+
+// MarshalJSON implements json.Marshaler for custom JSON serialization
+func (s WorkOrderStatus) MarshalJSON() ([]byte, error) {
+	return json.Marshal(s.String())
+}
+
+// UnmarshalJSON implements json.Unmarshaler for custom JSON deserialization
+func (s *WorkOrderStatus) UnmarshalJSON(data []byte) error {
+	var str string
+	if err := json.Unmarshal(data, &str); err != nil {
+		return err
+	}
+	switch str {
+	case "PENDING":
+		*s = WorkOrderStatusPending
+	case "DISPATCHED":
+		*s = WorkOrderStatusDispatched
+	case "RESERVED":
+		*s = WorkOrderStatusReserved
+	case "ARRIVED":
+		*s = WorkOrderStatusArrived
+	case "WORKING":
+		*s = WorkOrderStatusWorking
+	case "FINISHED":
+		*s = WorkOrderStatusFinished
+	case "PENDING_EVALUATION":
+		*s = WorkOrderStatusPendingEvaluation
+	case "OBSERVING":
+		*s = WorkOrderStatusObserving
+	case "CLOSED":
+		*s = WorkOrderStatusClosed
+	default:
+		*s = WorkOrderStatus(0)
+	}
+	return nil
 }
 
 // ErrInvalidStateTransition is returned when an invalid state transition is attempted
@@ -65,6 +104,12 @@ type WorkOrderInfo struct {
 	// Multi-level category support
 	CategoryPath []string `json:"category_path,omitempty"`
 	BrandName    string   `json:"brand_name,omitempty"`
+	// Evaluation fields
+	EvaluationScore int       `json:"evaluation_score,omitempty"`
+	EvaluationNotes string    `json:"evaluation_notes,omitempty"`
+	EstimatedCost   float64   `json:"estimated_cost,omitempty"`
+	EvaluatedBy     *string   `json:"evaluated_by,omitempty"` // User ID
+	EvaluatedAt     time.Time `json:"evaluated_at,omitempty"`
 }
 
 // Value implements the driver.Valuer interface
@@ -99,6 +144,7 @@ type WorkOrderLog struct {
 const (
 	LogActionCreate                   = "create"
 	LogActionDispatch                 = "dispatch"
+	LogActionStatusChangeToPendingEvaluation = "status_changed_FINISHED_to_PENDING_EVALUATION"
 	LogActionAccept                   = "accept"
 	LogActionReject                   = "reject"
 	LogActionReserve                  = "reserve"
@@ -148,7 +194,7 @@ func (l *WorkOrderLogs) AddLog(userID uuid.UUID, userName, action, details strin
 type Priority int
 
 const (
-	PriorityNormal Priority = iota // 普通
+	PriorityNormal    Priority = iota // 普通
 	PriorityUrgent                    // 加急
 	PriorityEmergency                 // 紧急
 )
@@ -198,9 +244,9 @@ type WorkOrder struct {
 	OtherFee    float64 `json:"other_fee" gorm:"default:0"`
 
 	// Priority and SLA
-	Priority     Priority    `gorm:"default:0" json:"priority"`
-	SLADeadline  *time.Time `json:"sla_deadline,omitempty"`
-	PriorityFee  float64    `json:"priority_fee" gorm:"default:0"`
+	Priority    Priority   `gorm:"default:0" json:"priority"`
+	SLADeadline *time.Time `json:"sla_deadline,omitempty"`
+	PriorityFee float64    `json:"priority_fee" gorm:"default:0"`
 
 	// Location details
 	AddressDetail string       `json:"address_detail,omitempty"`
@@ -254,14 +300,15 @@ func (w *WorkOrder) SetPriority(p Priority) {
 func (w *WorkOrder) IsValidTransition(newStatus WorkOrderStatus) bool {
 	// State transition whitelist
 	validTransitions := map[WorkOrderStatus][]WorkOrderStatus{
-		WorkOrderStatusPending:    {WorkOrderStatusDispatched},
-		WorkOrderStatusDispatched: {WorkOrderStatusReserved, WorkOrderStatusPending}, // Support rejection flow
-		WorkOrderStatusReserved:   {WorkOrderStatusArrived},
-		WorkOrderStatusArrived:    {WorkOrderStatusWorking},
-		WorkOrderStatusWorking:    {WorkOrderStatusFinished},
-		WorkOrderStatusFinished:   {WorkOrderStatusObserving},
-		WorkOrderStatusObserving:  {WorkOrderStatusClosed, WorkOrderStatusDispatched}, // Support rejection flow
-		WorkOrderStatusClosed:     {},                                                 // Terminal state
+		WorkOrderStatusPending:           {WorkOrderStatusDispatched},
+		WorkOrderStatusDispatched:        {WorkOrderStatusReserved, WorkOrderStatusPending}, // Support rejection flow
+		WorkOrderStatusReserved:          {WorkOrderStatusArrived},
+		WorkOrderStatusArrived:           {WorkOrderStatusWorking},
+		WorkOrderStatusWorking:           {WorkOrderStatusFinished},
+		WorkOrderStatusFinished:          {WorkOrderStatusPendingEvaluation},                 // After work completion, go to evaluation
+		WorkOrderStatusPendingEvaluation: {WorkOrderStatusClosed},                            // After evaluation, close
+		WorkOrderStatusObserving:         {WorkOrderStatusClosed, WorkOrderStatusDispatched}, // Support rejection flow
+		WorkOrderStatusClosed:            {},                                                 // Terminal state
 	}
 
 	allowed, exists := validTransitions[w.Status]

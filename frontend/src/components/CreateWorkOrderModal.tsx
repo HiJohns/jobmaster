@@ -33,6 +33,7 @@ interface FormValues {
   priority: 0 | 1 | 2
   addressDetail?: string
   coordinates?: { lat: number; lng: number }
+  categoryId?: string
 }
 
 /**
@@ -46,7 +47,12 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
   const [form] = Form.useForm<FormValues>()
   const [loading, setLoading] = useState(false)
   const [activePriority, setActivePriority] = useState<0 | 1 | 2>(0)
+
+  // @ts-ignore
+  const [categoryData, setCategoryData] = useState<any[]>([])
   const { userInfo } = useAuthStore()
+
+  // Load categories\n  const loadCategories = async () => {\n    try {\n      const response = await api.category.list({ parent_id: "" })\n      if (response.code === 200 && response.data) {\n        setCategoryData(response.data as any[])\n      }\n    } catch (error) {\n      console.error('Failed to load categories:', error)\n    }\n  }\n\n  // Load categories on mount\n  useEffect(() => {\n    if (visible) {\n      loadCategories()\n    }\n  }, [visible])
 
   /**
    * Handle form submission
@@ -69,6 +75,7 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
         priority: activePriority || 0,
         is_urgent: (activePriority || 0) > 0,
         address_detail: values.addressDetail,
+        category_id: values.categoryId,
         coordinates: values.coordinates,
       }
 
@@ -216,6 +223,57 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
                         padding: '12px 16px',
                       }}
                     />
+                  </Form.Item>
+                </div>
+              </Card>
+
+              {/* 分类选择 */}
+              <Card style={{ borderRadius: '12px', marginBottom: '12px', background: '#fff' }}>
+                <div style={{ padding: '16px 20px' }}>
+                  <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>工单分类 *</div>
+                  <Form.Item
+                    name="categoryId"
+                    noStyle
+                    rules={[
+                      { required: true, message: '请选择工单分类' },
+                    ]}
+                  >
+                    <div style={{ position: 'relative' }}>
+                      <select
+                        style={{
+                          width: '100%',
+                          padding: '12px 16px',
+                          border: '1px solid #E5E7EB',
+                          borderRadius: '8px',
+                          background: '#F9FAFB',
+                          fontSize: '14px',
+                          color: '#333',
+                          appearance: 'none',
+                          cursor: 'pointer',
+                        }}
+                        onChange={(e) => {
+                          form.setFieldValue('categoryId', e.target.value)
+                          form.setFieldValue('categoryId', e.target.value)
+                        }}
+                      >
+                        <option value="">请选择分类</option>
+                        {(categoryData || []).map((cat: any) => (
+                          <option key={cat?.id || ''} value={cat?.id || ''}>
+                            {cat?.path || cat?.name || '未命名分类'}
+                          </option>
+                        ))}
+                      </select>
+                      <div style={{
+                        position: 'absolute',
+                        right: '16px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        pointerEvents: 'none',
+                        color: '#999',
+                      }}>
+                        ▼
+                      </div>
+                    </div>
                   </Form.Item>
                 </div>
               </Card>

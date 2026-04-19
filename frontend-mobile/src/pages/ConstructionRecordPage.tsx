@@ -24,8 +24,15 @@ export default function ConstructionRecordPage() {
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([])
 
   if (!orderId) {
-    Toast.show('无效的工单ID')
-    navigate(-1)
+    console.error('[ConstructionRecordPage] Invalid orderId, redirecting back')
+    Toast.show({
+      content: '无效的工单ID',
+      icon: 'fail',
+      duration: 2000
+    })
+    setTimeout(() => {
+      navigate(-1)
+    }, 2000)
     return null
   }
 
