@@ -50,6 +50,11 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
 
   // @ts-ignore
   const [categoryData, setCategoryData] = useState<any[]>([])
+  
+  // Add division state - disabled pending API verification
+  // TODO: Enable after backend API confirmed working
+  // const [divisionData, setDivisionData] = useState<any[]>([])
+  // const [selectedDivisionPath, setSelectedDivisionPath] = useState<string[]>([])
   const { userInfo } = useAuthStore()
 
   // Load categories\n  const loadCategories = async () => {\n    try {\n      const response = await api.category.list({ parent_id: "" })\n      if (response.code === 200 && response.data) {\n        setCategoryData(response.data as any[])\n      }\n    } catch (error) {\n      console.error('Failed to load categories:', error)\n    }\n  }\n\n  // Load categories on mount\n  useEffect(() => {\n    if (visible) {\n      loadCategories()\n    }\n  }, [visible])

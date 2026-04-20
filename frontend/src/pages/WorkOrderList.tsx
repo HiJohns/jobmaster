@@ -27,8 +27,8 @@ function WorkOrderList() {
   const [, setRefreshing] = useState(false)
   const [createModalVisible, setCreateModalVisible] = useState(false)
 
-  // Check if user can create orders (STORE or EMPLOYEE role)
-  const canCreateOrder = userInfo?.role === 'STORE' || userInfo?.role === 'EMPLOYEE'
+  // Check if user can create orders (BRANCH_ADMIN or EMPLOYEE role)
+  const canCreateOrder = userInfo?.role === 'BRANCH_ADMIN' || userInfo?.role === 'EMPLOYEE'
 
   // Calculate KPI stats from orders
   const stats = {
