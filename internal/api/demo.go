@@ -46,6 +46,8 @@ func RegisterDemoRoutes(r *gin.Engine) {
 		// Auth endpoints
 		demo.POST("/auth/login", handlers.Login)
 	}
+		// Categories endpoint
+		demo.GET("/categories", handlers.GetCategories)
 }
 
 // GetWorkOrders returns all work orders from demo data
@@ -155,6 +157,26 @@ func (h *DemoHandlers) GetUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"list":  users,
 		"total": len(users),
+	})
+}
+
+// GetCategories returns categories from demo data
+func (h *DemoHandlers) GetCategories(c *gin.Context) {
+	demoData, err := data.LoadDemoData()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var categories []map[string]interface{}
+	if err := json.Unmarshal(demoData.Categories, &categories); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse categories"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"list":  categories,
+		"total": len(categories),
 	})
 }
 

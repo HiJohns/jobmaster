@@ -495,5 +495,35 @@
       "isAuthenticated": true
     },
     "version": 0
-  }
+  },
+  "jm_categories": [
+    {
+      "id": "cat-1",
+      "name": "空调维修",
+      "code": "AC_REPAIR",
+      "level": 1,
+      "path": "空调维修"
+    },
+    {
+      "id": "cat-2",
+      "name": "水电维修",
+      "code": "UTILITY_REPAIR",
+      "level": 1,
+      "path": "水电维修"
+    },
+    {
+      "id": "cat-3",
+      "name": "设备保养",
+      "code": "MAINTENANCE",
+      "level": 1,
+      "path": "设备保养"
+    },
+    {
+      "id": "cat-4",
+      "name": "其他",
+      "code": "OTHER",
+      "level": 1,
+      "path": "其他"
+    }
+  ]
 }

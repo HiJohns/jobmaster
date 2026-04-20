@@ -19,8 +19,9 @@ type DemoData struct {
 	WorkOrders    json.RawMessage `json:"jm_workorders"`
 	Session       json.RawMessage `json:"jm_session,omitempty"`
 	MobileAuth    json.RawMessage `json:"mobile-auth-storage,omitempty"`
-}
 
+	Categories json.RawMessage `json:"jm_categories"`
+}
 // LoadDemoData loads demo data from the file specified in DEMO_DUMMY_FILE env var
 func LoadDemoData() (*DemoData, error) {
 	filePath := os.Getenv("DEMO_DUMMY_FILE")
