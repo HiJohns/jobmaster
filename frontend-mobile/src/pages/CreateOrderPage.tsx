@@ -135,6 +135,7 @@ export default function CreateOrderPage() {
       </NavBar>
 
       <div style={{ padding: '12px 0' }}>
+        {/* 工单标题 + 工单分类 */}
         <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
           <div style={{ padding: '16px 20px' }}>
             <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>工单标题 *</div>
@@ -142,11 +143,21 @@ export default function CreateOrderPage() {
               placeholder="请输入工单标题"
               value={title}
               onChange={setTitle}
-              style={{ background: '#f5f5f5', borderRadius: '8px', padding: '12px', width: '100%' }}
+              style={{ background: '#f5f5f5', borderRadius: '8px', padding: '12px', width: '100%', marginBottom: '16px' }}
             />
+            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>工单分类 *</div>
+            <select
+              style={{ width: '100%', padding: '12px 16px', border: '1px solid #E5E7EB', borderRadius: '8px', background: '#F9FAFB', fontSize: '14px', color: selectedCategoryPath ? '#333' : '#999' }}
+              value={selectedCategoryId}
+              onChange={(e) => { const selected = e.target.value; setSelectedCategoryId(selected); const cat = categories.find(c => c.id === selected); setSelectedCategoryPath(cat?.path || cat?.name || ''); }}
+            >
+              <option value="">请选择分类</option>
+              {categories.map((cat) => (<option key={cat.id} value={cat.id}> {cat.path || cat.name}</option>))}
+            </select>
           </div>
         </Card>
 
+        {/* 故障描述 + 上传照片 */}
         <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
           <div style={{ padding: '16px 20px' }}>
             <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>故障描述 *</div>
@@ -154,13 +165,8 @@ export default function CreateOrderPage() {
               placeholder="请输入故障描述"
               value={description}
               onChange={setDescription}
-              style={{ background: '#f5f5f5', borderRadius: '8px', padding: '12px', minHeight: '80px', width: '100%' }}
+              style={{ background: '#f5f5f5', borderRadius: '8px', padding: '12px', minHeight: '80px', width: '100%', marginBottom: '16px' }}
             />
-          </div>
-        </Card>
-
-        <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
-          <div style={{ padding: '16px 20px' }}>
             <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>上传照片</div>
             <ImageUploader
               upload={handlePhotoUpload}
@@ -169,90 +175,27 @@ export default function CreateOrderPage() {
               accept="image/*"
               showUpload={photoUrls.length < 9}
               deletable
-              onDelete={(item: ImageUploadItem) => {
-                setPhotoUrls(prev => prev.filter(url => url !== item.url))
-                return Promise.resolve(true)
-              }}
-              style={{
-                '--cell-size': '80px',
-                '--gap': '8px'
-              }}
+              onDelete={(item: ImageUploadItem) => { setPhotoUrls(prev => prev.filter(url => url !== item.url)); return Promise.resolve(true); }}
+              style={{ '--cell-size': '80px', '--gap': '8px' }}
             />
           </div>
         </Card>
 
-        <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
-          <div style={{ padding: '16px 20px' }}>
-            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>地址 *</div>
-            <Input
-              placeholder="请输入详细地址"
-              value={addressDetail}
-              onChange={setAddressDetail}
-              style={{ background: '#f5f5f5', borderRadius: '8px', padding: '12px', width: '100%' }}
-            />
-          </div>
-        </Card>
-
-        {/* Add Division Selection */}
+        {/* 行政区划 + 地址 */}
         <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
           <div style={{ padding: '16px 20px' }}>
             <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>行政区划</div>
             <Button 
-              block
-              size="middle"
-              onClick={async () => {
-                if (divisions.length === 0) {
-                  await loadDivisions()
-                }
-                setDivisionVisible(true)
-              }}
-              style={{ 
-                background: '#f5f5f5', 
-                borderRadius: '8px', 
-                padding: '12px',
-                textAlign: 'left',
-                color: selectedDivision.length > 0 ? '#333' : '#999'
-              }}
-            >
-              {selectedDivision.length > 0 
-                ? divisions.find(d => d.id === selectedDivision[selectedDivision.length - 1])?.name || '请选择行政区划'
-                : '请选择行政区划'
-              }
-            </Button>
+              block size="middle"
+              onClick={async () => { if (divisions.length === 0) { await loadDivisions(); } setDivisionVisible(true); }}
+              style={{ background: '#f5f5f5', borderRadius: '8px', padding: '12px', textAlign: 'left', color: selectedDivision.length > 0 ? '#333' : '#999', marginBottom: '16px' }}
+            >{selectedDivision.length > 0 ? divisions.find(d => d.id === selectedDivision[selectedDivision.length - 1])?.name || '请选择行政区划' : '请选择行政区划'}</Button>
+            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>地址 *</div>
+            <Input placeholder="请输入详细地址" value={addressDetail} onChange={setAddressDetail} style={{ background: '#f5f5f5', borderRadius: '8px', padding: '12px', width: '100%' }} />
           </div>
         </Card>
 
-        <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
-          <div style={{ padding: '16px 20px' }}>
-            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>工单分类 *</div>
-            <select
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                border: '1px solid #E5E7EB',
-                borderRadius: '8px',
-                background: '#F9FAFB',
-                fontSize: '14px',
-                color: selectedCategoryPath ? '#333' : '#999',
-              }}
-              value={selectedCategoryId}
-              onChange={(e) => {
-                const selected = e.target.value
-                setSelectedCategoryId(selected)
-                const cat = categories.find(c => c.id === selected)
-                setSelectedCategoryPath(cat?.path || cat?.name || '')
-              }}
-            >
-              <option value="">请选择分类</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.path || cat.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </Card>
-
+        {/* 设为加急 */}
         <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
           <div style={{ padding: '16px 20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -265,9 +208,7 @@ export default function CreateOrderPage() {
         <Button block size="large" color="primary" onClick={handleSubmit} loading={submitting} style={{ marginTop: '12px' }}>
           提交工单
         </Button>
-      </div>
-      
-      {/* Division Picker */}
+      </div>      {/* Division Picker */}
       <Picker
         columns={[divisions.map(d => ({ label: d.name, value: d.id }))]}
         visible={divisionVisible}
