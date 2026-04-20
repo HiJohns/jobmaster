@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Input, Dialog, Toast, NavBar, ImageUploader } from 'antd-mobile'
+import { Card, Button, Input, Dialog, Toast, NavBar, ImageUploader, Picker } from 'antd-mobile'
 import { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import { localWorkorderApi } from '../api/local/workorder'
 import { demoApi } from '../api/demo'
@@ -10,6 +10,14 @@ interface Category {
   name: string
   path: string
   children?: Category[]
+}
+
+interface Division {
+  id: string
+  name: string
+  code: string
+  level: number
+  children?: Division[]
 }
 
 export default function CreateOrderPage() {
@@ -23,6 +31,11 @@ export default function CreateOrderPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategoryId, setSelectedCategoryId] = useState('')
   const [selectedCategoryPath, setSelectedCategoryPath] = useState('')
+  
+  // Add division state
+  const [divisions, setDivisions] = useState<Division[]>([])
+  const [selectedDivision, setSelectedDivision] = useState<string[]>([])
+  const [divisionVisible, setDivisionVisible] = useState(false)
 
   const handlePhotoUpload = async (file: File): Promise<ImageUploadItem> => {
     const url = URL.createObjectURL(file)
@@ -45,8 +58,26 @@ export default function CreateOrderPage() {
         console.error('Failed to load categories:', error)
       }
     }
+    
     loadCategories()
   }, [])
+  
+  // Load divisions when opening division picker
+  const loadDivisions = async () => {
+    try {
+      const res = await demoApi.request({
+        url: '/api/v1/admin-divisions',
+        method: 'GET',
+      })
+      const data = res.data?.data || res.data || res
+      if (Array.isArray(data)) {
+        setDivisions(data as Division[])
+      }
+    } catch (error) {
+      console.error('Failed to load divisions:', error)
+      Toast.show('加载行政区划失败')
+    }
+  }
 
   const handleSubmit = async () => {
     if (!title.trim()) {
@@ -71,6 +102,10 @@ export default function CreateOrderPage() {
       onConfirm: async () => {
         try {
           setSubmitting(true)
+          
+          // Get division_id if selected
+          const divisionId = selectedDivision.length > 0 ? selectedDivision[selectedDivision.length - 1] : undefined
+          
           await localWorkorderApi.create({
             title,
             description,
@@ -79,6 +114,7 @@ export default function CreateOrderPage() {
             photo_urls: photoUrls,
             category_id: selectedCategoryId,
             category_path: selectedCategoryPath,
+            division_id: divisionId,
           })
           Toast.show('工单创建成功')
           navigate(-1)
@@ -157,6 +193,35 @@ export default function CreateOrderPage() {
           </div>
         </Card>
 
+        {/* Add Division Selection */}
+        <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
+          <div style={{ padding: '16px 20px' }}>
+            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>行政区划</div>
+            <Button 
+              block
+              size="middle"
+              onClick={async () => {
+                if (divisions.length === 0) {
+                  await loadDivisions()
+                }
+                setDivisionVisible(true)
+              }}
+              style={{ 
+                background: '#f5f5f5', 
+                borderRadius: '8px', 
+                padding: '12px',
+                textAlign: 'left',
+                color: selectedDivision.length > 0 ? '#333' : '#999'
+              }}
+            >
+              {selectedDivision.length > 0 
+                ? divisions.find(d => d.id === selectedDivision[selectedDivision.length - 1])?.name || '请选择行政区划'
+                : '请选择行政区划'
+              }
+            </Button>
+          </div>
+        </Card>
+
         <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
           <div style={{ padding: '16px 20px' }}>
             <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>工单分类 *</div>
@@ -201,6 +266,20 @@ export default function CreateOrderPage() {
           提交工单
         </Button>
       </div>
+      
+      {/* Division Picker */}
+      <Picker
+        columns={[divisions.map(d => ({ label: d.name, value: d.id }))]}
+        visible={divisionVisible}
+        onClose={() => {
+          setDivisionVisible(false)
+        }}
+        onConfirm={(val) => {
+          if (val && val.length > 0) {
+            setSelectedDivision([String(val[0])])
+          }
+        }}
+      />
     </div>
   )
 }

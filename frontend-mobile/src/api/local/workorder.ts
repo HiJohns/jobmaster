@@ -32,6 +32,7 @@ export interface CreateWorkOrderRequest {
   is_urgent?: boolean
   address_detail?: string
   coordinates?: { lat: number; lng: number }
+	division_id?: string
 }
 
 export const localWorkorderApi = {
