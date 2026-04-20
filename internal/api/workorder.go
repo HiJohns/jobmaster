@@ -51,6 +51,7 @@ type CreateWorkOrderRequest struct {
 	IsUrgent      bool               `json:"is_urgent"`
 	PhotoURLs     []string           `json:"photo_urls"`
 	Location      *model.GPSLocation `json:"location"`
+	DivisionID    *uuid.UUID         `json:"division_id,omitempty"`
 }
 
 // WorkOrderResponse represents the work order response
@@ -312,6 +313,7 @@ func CreateWorkOrder(c *gin.Context) {
 	}
 
 	workOrder := model.WorkOrder{
+		DivisionID: req.DivisionID,
 		OrderNo:   orderNo,
 		TenantID:  tenantID,
 		StoreID:   orgID,

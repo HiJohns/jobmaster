@@ -142,18 +142,18 @@ type WorkOrderLog struct {
 
 // Log action constants
 const (
-	LogActionCreate                   = "create"
-	LogActionDispatch                 = "dispatch"
+	LogActionCreate                          = "create"
+	LogActionDispatch                        = "dispatch"
 	LogActionStatusChangeToPendingEvaluation = "status_changed_FINISHED_to_PENDING_EVALUATION"
-	LogActionAccept                   = "accept"
-	LogActionReject                   = "reject"
-	LogActionReserve                  = "reserve"
-	LogActionArrive                   = "arrive"
-	LogActionFinish                   = "finish"
-	LogActionStatusChangeToWorking    = "status_changed_ARRIVED_to_WORKING"
-	LogActionStatusChangeToFinished   = "status_changed_WORKING_to_FINISHED"
-	LogActionStatusChangeToClosed     = "status_changed_OBSERVING_to_CLOSED"
-	LogActionStatusChangeToDispatched = "status_changed_OBSERVING_to_DISPATCHED"
+	LogActionAccept                          = "accept"
+	LogActionReject                          = "reject"
+	LogActionReserve                         = "reserve"
+	LogActionArrive                          = "arrive"
+	LogActionFinish                          = "finish"
+	LogActionStatusChangeToWorking           = "status_changed_ARRIVED_to_WORKING"
+	LogActionStatusChangeToFinished          = "status_changed_WORKING_to_FINISHED"
+	LogActionStatusChangeToClosed            = "status_changed_OBSERVING_to_CLOSED"
+	LogActionStatusChangeToDispatched        = "status_changed_OBSERVING_to_DISPATCHED"
 )
 
 // WorkOrderLogs is a slice of log entries
@@ -210,6 +210,10 @@ type WorkOrder struct {
 	StoreID   uuid.UUID       `gorm:"type:uuid;not null;index:idx_workorder_store" json:"store_id"`
 	CreatedBy uuid.UUID       `gorm:"type:uuid;not null" json:"created_by"`
 	Status    WorkOrderStatus `gorm:"index:idx_workorder_status" json:"status"`
+
+	// Administrative division (district/county level)
+	DivisionID *uuid.UUID     `gorm:"type:uuid;index" json:"division_id,omitempty"`
+	Division   *AdminDivision `gorm:"foreignKey:DivisionID" json:"division,omitempty"`
 
 	// Assignment fields
 	VendorID         *uuid.UUID `gorm:"type:uuid;index" json:"vendor_id,omitempty"`
