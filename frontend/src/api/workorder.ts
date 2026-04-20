@@ -69,6 +69,7 @@ export interface CreateWorkOrderRequest {
   priority?: 0 | 1 | 2 // 0=普通, 1=加急, 2=紧急
   address_detail?: string
   coordinates?: { lat: number; lng: number }
+  division_id?: string
 }
 
 export interface ListWorkOrdersParams {

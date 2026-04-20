@@ -3,7 +3,7 @@
  * 统一的视觉设计：灰色背景 + 白色卡片 + 卡片间距
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Modal,
   Form,
@@ -13,6 +13,7 @@ import {
   Button,
   TextArea,
   Card,
+  Cascader,
 } from 'antd-mobile'
 import { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import { LocationOutline } from 'antd-mobile-icons'
@@ -51,10 +52,9 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
   // @ts-ignore
   const [categoryData, setCategoryData] = useState<any[]>([])
   
-  // Add division state - disabled pending API verification
-  // TODO: Enable after backend API confirmed working
-  // const [divisionData, setDivisionData] = useState<any[]>([])
-  // const [selectedDivisionPath, setSelectedDivisionPath] = useState<string[]>([])
+  // Add division state - enabled for API #147
+  const [divisionData, setDivisionData] = useState<any[]>([])
+  const [selectedDivisionPath, setSelectedDivisionPath] = useState<string[]>([])
   const { userInfo } = useAuthStore()
 
   // Load categories\n  const loadCategories = async () => {\n    try {\n      const response = await api.category.list({ parent_id: "" })\n      if (response.code === 200 && response.data) {\n        setCategoryData(response.data as any[])\n      }\n    } catch (error) {\n      console.error('Failed to load categories:', error)\n    }\n  }\n\n  // Load categories on mount\n  useEffect(() => {\n    if (visible) {\n      loadCategories()\n    }\n  }, [visible])
@@ -82,6 +82,7 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
         address_detail: values.addressDetail,
         category_id: values.categoryId,
         coordinates: values.coordinates,
+        division_id: selectedDivisionPath.length > 0 ? selectedDivisionPath[selectedDivisionPath.length - 1] : undefined,
       }
 
       // Call API to create work order
@@ -330,6 +331,28 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
                       accept="image/*"
                       deletable
                     />
+                  </Form.Item>
+                </div>
+              </Card>
+
+              {/* 行政区划选择 */}
+              <Card style={{ borderRadius: '12px', marginBottom: '12px', background: '#fff' }}>
+                <div style={{ padding: '16px 20px' }}>
+                  <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>行政区划</div>
+                  <Form.Item noStyle>
+                    <Cascader
+                      options={divisionData}
+                      onChange={(value) => {
+                        setSelectedDivisionPath(value)
+                      }}
+                      placeholder="请选择行政区划"
+                    >
+                      {() => (
+                        <Button style={{ width: '100%', textAlign: 'left' }}>
+                          {selectedDivisionPath.length > 0 ? selectedDivisionPath.join(' / ') : '请选择行政区划'}
+                        </Button>
+                      )}
+                    </Cascader>
                   </Form.Item>
                 </div>
               </Card>
