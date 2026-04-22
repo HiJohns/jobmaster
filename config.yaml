@@ -4,7 +4,7 @@
 # 服务器配置
 server:
   port: 5555
-  port_mobile: 5561
+  port_mobile: 5562
   mode: debug
 
 # 数据库配置
