@@ -556,6 +556,25 @@ export const createApi = () => {
         listByWorkOrder: () => Promise.resolve({ code: 200, data: { list: [], total: 0 } }),
       }
 
+  const region = {
+    list: () =>
+      demoApi.request({
+        url: '/regions',
+        method: 'GET',
+      }).then((res: any) => ({
+        code: 200,
+        data: res,
+      })),
+    getCategories: (region: string) =>
+      demoApi.request({
+        url: `/regions/$\{encodeURIComponent(region)}/categories`,
+        method: 'GET',
+      }).then((res: any) => ({
+        code: 200,
+        data: res,
+      })),
+  }
+
   return {
     auth,
     workorder,
