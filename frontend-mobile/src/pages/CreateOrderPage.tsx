@@ -40,11 +40,8 @@ export default function CreateOrderPage() {
   // Load regions
   const loadRegions = async () => {
     try {
-      const res = await demoApi.request({
-        url: '/regions',
-        method: 'GET',
-      })
-      const data = res.data || res
+      const response = await demoApi.getRegions()
+      const data = response.data || response
       if (data.regions && Array.isArray(data.regions)) {
         setRegions(data.regions)
       }
@@ -65,22 +62,18 @@ export default function CreateOrderPage() {
   }
 
   // Load categories for region
-  // Load categories for region
   const loadCategoriesForRegion = async (region: string) => {
     try {
-      const res = await demoApi.request({
-        url: `/regions/${encodeURIComponent(region)}/categories`,
-        method: "GET",
-      });
-      const data = res.data || res;
+      const response = await demoApi.getRegionCategories(region)
+      const data = response.data || response
       if (data.categories && Array.isArray(data.categories)) {
-        setFilteredCategories(data.categories);
+        setFilteredCategories(data.categories)
       } else {
-        setFilteredCategories([]);
+        setFilteredCategories([])
       }
     } catch (error) {
-      console.error("Failed to load categories:", error);
-      setFilteredCategories([]);
+      console.error('Failed to load categories:', error)
+      setFilteredCategories([])
     }
   }
 

@@ -66,5 +66,27 @@ export const demoApi = {
     return response.data || response
   },
 }
+  getWorkOrderRecords: async (workOrderId: string) => {
+    const response = await apiClient.request({
+      url: `/workorders/${workOrderId}/records`,
+      method: 'GET',
+    })
+    return response.data || response
+  },
+  getRegions: async () => {
+    const response = await apiClient.request({
+      url: '/regions',
+      method: 'GET',
+    })
+    return response.data || response
+  },
+  getRegionCategories: async (region: string) => {
+    const response = await apiClient.request({
+      url: `/regions/${encodeURIComponent(region)}/categories`,
+      method: 'GET',
+    })
+    return response.data || response
+  },
+}
 
 export default apiClient
