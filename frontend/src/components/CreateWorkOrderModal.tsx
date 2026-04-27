@@ -94,25 +94,26 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
   }
 
   // Load categories for selected region
+  // Load categories for selected region
   const loadCategoriesForRegion = async (region: string) => {
     try {
-      const response = await api.region.list()
-      if (response.code === 200 && response.data) {
-        const data = response.data as any
-        if (data.region_categories && data.region_categories[region]) {
-          const categories = data.region_categories[region]
-          setFilteredCategories(categories.map((cat: string, idx: number) => ({
-            id: `${region}_${idx}`,
-            name: cat,
-            path: cat
-          })))
-        } else {
-          setFilteredCategories([])
-        }
+      const response = await demoApi.request({
+        url: `/regions/${encodeURIComponent(region)}/categories`,
+        method: "GET",
+      });
+      const data = response.data || response;
+      if (data.categories && Array.isArray(data.categories)) {
+        setFilteredCategories(data.categories.map((cat: string, idx: number) => ({
+          id: `${region}_${idx}`,
+          name: cat,
+          path: cat
+        })));
+      } else {
+        setFilteredCategories([]);
       }
     } catch (error) {
-      console.error('Failed to load categories for region:', error)
-      setFilteredCategories([])
+      console.error("Failed to load categories for region:", error);
+      setFilteredCategories([]);
     }
   }
 

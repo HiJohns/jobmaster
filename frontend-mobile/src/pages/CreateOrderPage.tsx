@@ -65,21 +65,22 @@ export default function CreateOrderPage() {
   }
 
   // Load categories for region
+  // Load categories for region
   const loadCategoriesForRegion = async (region: string) => {
     try {
       const res = await demoApi.request({
-        url: '/regions',
-        method: 'GET',
-      })
-      const data = res.data || res
-      if (data.region_categories && data.region_categories[region]) {
-        setFilteredCategories(data.region_categories[region])
+        url: `/regions/${encodeURIComponent(region)}/categories`,
+        method: "GET",
+      });
+      const data = res.data || res;
+      if (data.categories && Array.isArray(data.categories)) {
+        setFilteredCategories(data.categories);
       } else {
-        setFilteredCategories([])
+        setFilteredCategories([]);
       }
     } catch (error) {
-      console.error('Failed to load categories:', error)
-      setFilteredCategories([])
+      console.error("Failed to load categories:", error);
+      setFilteredCategories([]);
     }
   }
 

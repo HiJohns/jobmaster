@@ -478,7 +478,8 @@ func (h *DemoHandlers) CreateWorkOrderRecord(c *gin.Context) {
 	})
 }
 
-// GetRegions returns region list and region-category mapping for demo mode
+
+// GetRegions returns region list for demo mode
 func (h *DemoHandlers) GetRegions(c *gin.Context) {
 	demoData, err := data.LoadDemoData()
 	if err != nil {
@@ -486,12 +487,59 @@ func (h *DemoHandlers) GetRegions(c *gin.Context) {
 		return
 	}
 
-	// Parse regions data
 	var regionsData map[string]interface{}
 	if err := json.Unmarshal(demoData.Regions, &regionsData); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse regions data: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, regionsData)
+	// Return only regions list, not categories
+	if regions, ok := regionsData["regions"].([]interface{}); ok {
+		c.JSON(http.StatusOK, gin.H{
+			"regions": regions,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"regions": []string{},
+	})
+}
+
+// GetRegionCategories returns categories for a specific region
+func (h *DemoHandlers) GetRegionCategories(c *gin.Context) {
+	region := c.Param("region")
+	if region == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Region is required"})
+		return
+	}
+
+	demoData, err := data.LoadDemoData()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var regionsData map[string]interface{}
+	if err := json.Unmarshal(demoData.Regions, &regionsData); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse regions data: " + err.Error()})
+		return
+	}
+
+	// Get region_categories
+	if regionCategories, ok := regionsData["region_categories"].(map[string]interface{}); ok {
+		if categories, exists := regionCategories[region]; exists {
+			if cats, ok := categories.([]interface{}); ok {
+				c.JSON(http.StatusOK, gin.H{
+					"categories": cats,
+				})
+				return
+			}
+		}
+	}
+
+	// Return empty array if region not found
+	c.JSON(http.StatusOK, gin.H{
+		"categories": []string{},
+	})
 }
