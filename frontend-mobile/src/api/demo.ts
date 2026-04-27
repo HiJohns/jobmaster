@@ -22,36 +22,108 @@ export const demoApi = {
     return response
   },
   getWorkOrders: async (params?: Record<string, unknown>) => {
-    // 根据角色设置不同的状态过滤
-    let statusFilter = '' // 不设置则返回全部
+    let statusFilter = ''
     
     if (currentUserRole === 'BRANCH_ADMIN' || currentUserRole === 'EMPLOYEE') {
-      // 分公司管理员、员工：查看所有工单
       statusFilter = ''
     } else if (currentUserRole === 'ENGINEER') {
-      // 工程师：查看已分配给自己的
       statusFilter = 'ACCEPTED,RESERVED,WORKING'
     } else if (currentUserRole === 'CONTRACTOR_EMPLOYEE' || currentUserRole === 'CONTRACTOR_ADMIN') {
-      // 工程公司员工：查看已分配给自己的
       statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING'
     } else if (currentUserRole === 'VENDOR_EMPLOYEE' || currentUserRole === 'VENDOR_ADMIN') {
-      // 供应商：查看与自己相关的（不包括 FINISHED）
       statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING'
     }
     
     const response = await apiClient.request({
       url: '/workorders',
       method: 'GET',
-      params: { ...params, status: statusFilter },
+      params: { status: statusFilter },
     })
     return response.data || response
   },
-  getWorkOrderRecords: async (workOrderId: string) => {
+  getWorkOrder: async (id: string) => {
     const response = await apiClient.request({
-      url: `/workorders/${workOrderId}/records`,
+      url: `/workorders/${id}`,
       method: 'GET',
     })
     return response.data || response
+  },
+  updateWorkOrder: async (id: string, data: Record<string, unknown>) => {
+    const response = await apiClient.request({
+      url: `/workorders/${id}`,
+      method: 'PUT',
+      data,
+    })
+    return response.data || response
+  },
+  dispatchWorkOrder: async (id: string, vendor_id: string, engineer_id?: string) => {
+    const response = await apiClient.request({
+      url: `/workorders/${id}/dispatch`,
+      method: 'POST',
+      data: { vendor_id, engineer_id },
+    })
+    return response.data || response
+  },
+  acceptWorkOrder: async (id: string, scheduled_at: string) => {
+    const response = await apiClient.request({
+      url: `/workorders/${id}/accept`,
+      method: 'POST',
+      data: { scheduled_at },
+    })
+    return response.data || response
+  },
+  reserveWorkOrder: async (id: string, appointed_at: string) => {
+    const response = await apiClient.request({
+      url: `/workorders/${id}/reserve`,
+      method: 'POST',
+      data: { appointed_at },
+    })
+    return response.data || response
+  },
+  arriveWorkOrder: async (id: string, latitude: number, longitude: number) => {
+    const response = await apiClient.request({
+      url: `/workorders/${id}/arrive`,
+      method: 'POST',
+      data: { latitude, longitude },
+    })
+    return response.data || response
+  },
+  finishWorkOrder: async (
+    id: string,
+    description: string,
+    photo_urls: string[],
+    labor_fee: number,
+    material_fee: number,
+    other_fee: number
+  ) => {
+    const response = await apiClient.request({
+      url: `/workorders/${id}/finish`,
+      method: 'POST',
+      data: { description, photo_urls, labor_fee, material_fee, other_fee },
+    })
+    return response.data || response
+  },
+  verifyWorkOrder: async (id: string) => {
+    const response = await apiClient.request({
+      url: `/workorders/${id}/verify`,
+      method: 'POST',
+    })
+    return response.data
+  },
+  rejectWorkOrder: async (id: string, reason: string) => {
+    const response = await apiClient.request({
+      url: `/workorders/${id}/reject`,
+      method: 'POST',
+      data: { reason },
+    })
+    return response.data
+  },
+  generateQRCode: async (id: string) => {
+    const response = await apiClient.request({
+      url: `/workorders/${id}/qrcode`,
+      method: 'GET',
+    })
+    return response.data
   },
   login: async (username: string, password: string) => {
     const response = await apiClient.request({
@@ -59,13 +131,11 @@ export const demoApi = {
       method: 'POST',
       data: { username, password },
     })
-    // Extract role from response
     if (response.data && response.data.user) {
       currentUserRole = response.data.user.role
     }
     return response.data || response
   },
-}
   getWorkOrderRecords: async (workOrderId: string) => {
     const response = await apiClient.request({
       url: `/workorders/${workOrderId}/records`,
