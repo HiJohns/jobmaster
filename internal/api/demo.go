@@ -50,6 +50,12 @@ func RegisterDemoRoutes(r *gin.Engine) {
 	demo.GET("/workorders/:id", handlers.GetWorkOrder)
 	demo.POST("/workorders", handlers.CreateWorkOrder)
 
+	// Reservation endpoints
+	demo.GET("/reservations", handlers.GetReservations)
+	demo.GET("/reservations/:id", handlers.GetReservation)
+	demo.POST("/reservations/:id/confirm", handlers.ConfirmReservation)
+	demo.POST("/reservations/:id/reject", handlers.RejectReservation)
+
 	// Organization endpoints
 	demo.GET("/organizations", handlers.GetOrganizations)
 
@@ -303,4 +309,108 @@ func (h *DemoHandlers) parseRoleFromUsername(username string) string {
 	}
 
 	return role
+}
+
+// GetReservations returns all reservations from demo data
+
+// GetReservations returns all reservations from demo data
+func (h *DemoHandlers) GetReservations(c *gin.Context) {
+	demoData, err := data.LoadDemoData()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var reservations []map[string]interface{}
+	if err := json.Unmarshal(demoData.Reservations, &reservations); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse reservations: " + err.Error()})
+		return
+	}
+
+	filtered := reservations
+
+	// Optional: Filter by work_order_id if provided
+	workOrderID := c.Query("work_order_id")
+	if workOrderID != "" {
+		var workOrderFiltered []map[string]interface{}
+		for _, r := range reservations {
+			if woID, ok := r["work_order_id"].(string); ok && woID == workOrderID {
+				workOrderFiltered = append(workOrderFiltered, r)
+			}
+		}
+		filtered = workOrderFiltered
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"list":  filtered,
+		"total": len(filtered),
+	})
+}
+
+// GetReservation returns a single reservation by ID
+func (h *DemoHandlers) GetReservation(c *gin.Context) {
+	id := c.Param("id")
+
+	demoData, err := data.LoadDemoData()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var reservations []map[string]interface{}
+	if err := json.Unmarshal(demoData.Reservations, &reservations); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse reservations"})
+		return
+	}
+
+	for _, r := range reservations {
+		if r["id"] == id {
+			c.JSON(http.StatusOK, r)
+			return
+		}
+	}
+
+	c.JSON(http.StatusNotFound, gin.H{"error": "Reservation not found"})
+}
+
+// ConfirmReservation confirms a reservation
+func (h *DemoHandlers) ConfirmReservation(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		Comment string `json:"comment"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Demo mode - just return success
+	c.JSON(http.StatusOK, gin.H{
+		"id":     id,
+		"status": "confirmed",
+		"comment": req.Comment,
+	})
+}
+
+// RejectReservation rejects a reservation
+func (h *DemoHandlers) RejectReservation(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		Reason string `json:"reason" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Demo mode - just return success
+	c.JSON(http.StatusOK, gin.H{
+		"id":     id,
+		"status": "rejected",
+		"reason": req.Reason,
+	})
 }
