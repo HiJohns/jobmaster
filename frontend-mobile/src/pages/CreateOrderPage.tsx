@@ -9,15 +9,6 @@ interface Category {
   id: string
   name: string
   path: string
-  children?: Category[]
-}
-
-interface Division {
-  id: string
-  name: string
-  code: string
-  level: number
-  children?: Division[]
 }
 
 export default function CreateOrderPage() {
@@ -28,14 +19,13 @@ export default function CreateOrderPage() {
   const [isUrgent, setIsUrgent] = useState(false)
   const [photoUrls, setPhotoUrls] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
-  const [categories, setCategories] = useState<Category[]>([])
-  const [selectedCategoryId, setSelectedCategoryId] = useState('')
-  const [selectedCategoryPath, setSelectedCategoryPath] = useState('')
   
-  // Add division state
-  const [divisions, setDivisions] = useState<Division[]>([])
-  const [selectedDivision, setSelectedDivision] = useState<string[]>([])
-  const [divisionVisible, setDivisionVisible] = useState(false)
+  // Region and Category states
+  const [regions, setRegions] = useState<string[]>([])
+  const [selectedRegion, setSelectedRegion] = useState('')
+  const [categoriesVisible, setCategoriesVisible] = useState(false)
+  const [filteredCategories, setFilteredCategories] = useState<string[]>([])
+  const [selectedCategory, setSelectedCategory] = useState('')
 
   const handlePhotoUpload = async (file: File): Promise<ImageUploadItem> => {
     const url = URL.createObjectURL(file)
@@ -44,42 +34,57 @@ export default function CreateOrderPage() {
   }
 
   useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const res = await demoApi.request({
-          url: '/categories',
-          method: 'GET',
-        })
-        const data = res.data?.data || res.data || res
-        if (Array.isArray(data)) {
-          setCategories(data as Category[])
-        }
-      } catch (error) {
-        console.error('Failed to load categories:', error)
-      }
-    }
-    
-    loadCategories()
+    loadRegions()
   }, [])
-  
-  // Load divisions when opening division picker
-  const loadDivisions = async () => {
+
+  // Load regions
+  const loadRegions = async () => {
     try {
       const res = await demoApi.request({
-        url: '/api/v1/admin-divisions',
+        url: '/regions',
         method: 'GET',
       })
-      const data = res.data?.data || res.data || res
-      if (Array.isArray(data)) {
-        setDivisions(data as Division[])
+      const data = res.data || res
+      if (data.regions && Array.isArray(data.regions)) {
+        setRegions(data.regions)
       }
     } catch (error) {
-      console.error('Failed to load divisions:', error)
-      Toast.show('加载行政区划失败')
+      console.error('Failed to load regions:', error)
+      Toast.show('加载区域失败')
+    }
+  }
+
+  // Handle region change
+  const handleRegionChange = (region: string) => {
+    setSelectedRegion(region)
+    setCategoriesVisible(true)
+    setSelectedCategory('')
+    
+    // Load categories for selected region
+    loadCategoriesForRegion(region)
+  }
+
+  // Load categories for region
+  const loadCategoriesForRegion = async (region: string) => {
+    try {
+      const res = await demoApi.request({
+        url: '/regions',
+        method: 'GET',
+      })
+      const data = res.data || res
+      if (data.region_categories && data.region_categories[region]) {
+        setFilteredCategories(data.region_categories[region])
+      } else {
+        setFilteredCategories([])
+      }
+    } catch (error) {
+      console.error('Failed to load categories:', error)
+      setFilteredCategories([])
     }
   }
 
   const handleSubmit = async () => {
+    // Validate required fields
     if (!title.trim()) {
       Toast.show('请输入工单标题')
       return
@@ -88,139 +93,257 @@ export default function CreateOrderPage() {
       Toast.show('请输入故障描述')
       return
     }
-    if (!addressDetail.trim()) {
-      Toast.show('请输入地址')
+    if (!selectedRegion) {
+      Toast.show('请选择区域')
       return
     }
-    if (!selectedCategoryId) {
-      Toast.show('请选择工单分类')
+    if (!selectedCategory) {
+      Toast.show('请选择分类')
       return
     }
 
-    Dialog.confirm({
-      content: isUrgent ? '确认创建加急工单？' : '确认创建工单？',
-      onConfirm: async () => {
-        try {
-          setSubmitting(true)
-          
-          // Get division_id if selected
-          const divisionId = selectedDivision.length > 0 ? selectedDivision[selectedDivision.length - 1] : undefined
-          
-          await localWorkorderApi.create({
-            title,
-            description,
-            address_detail: addressDetail,
-            is_urgent: isUrgent,
-            photo_urls: photoUrls,
-            category_id: selectedCategoryId,
-            category_path: selectedCategoryPath,
-            division_id: divisionId,
-          })
-          Toast.show('工单创建成功')
+    setSubmitting(true)
+
+    try {
+      const requestData = {
+        title,
+        description,
+        category_id: selectedCategory,
+        category_path: selectedCategory,
+        photo_urls: photoUrls,
+        priority: isUrgent ? 1 : 0,
+        is_urgent: isUrgent,
+        address_detail: addressDetail,
+        division_id: null, // Deprecated, keeping for compatibility
+      }
+
+      const response = await localWorkorderApi.create(requestData as any)
+      
+      if (response.code === 200 || response.success) {
+        Toast.show({
+          content: '工单创建成功',
+          icon: 'success',
+        })
+        
+        // Reset form
+        setTitle('')
+        setDescription('')
+        setAddressDetail('')
+        setIsUrgent(false)
+        setPhotoUrls([])
+        setSelectedRegion('')
+        setSelectedCategory('')
+        setCategoriesVisible(false)
+        
+        // Navigate back
+        setTimeout(() => {
           navigate(-1)
-        } catch (error) {
-          console.error('Create order failed:', error)
-          Toast.show('创建失败')
-        } finally {
-          setSubmitting(false)
-        }
-      },
-    })
+        }, 1000)
+      } else {
+        throw new Error(response.message || '创建失败')
+      }
+    } catch (error) {
+      console.error('Failed to create work order:', error)
+      Toast.show({
+        content: '创建失败',
+        icon: 'fail',
+      })
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f5f5', paddingLeft: '16px', paddingRight: '16px' }}>
-      <NavBar onBack={() => navigate(-1)} style={{ background: '#fff' }}>
+    <div style={{ minHeight: '100vh', background: '#f5f5f5' }}>
+      <NavBar
+        back="返回"
+        backArrow
+        onBack={() => navigate(-1)}
+        style={{
+          '--height': '48px',
+          '--border-bottom': '1px solid #eee',
+          background: '#fff',
+        }}
+      >
         创建工单
       </NavBar>
 
-      <div style={{ padding: '12px 0' }}>
-        {/* 工单标题 + 工单分类 */}
-        <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
-          <div style={{ padding: '16px 20px' }}>
-            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>工单标题 *</div>
+      <div style={{ padding: '16px' }}>
+        {/* 工单标题 */}
+        <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
+          <div style={{ padding: '16px' }}>
+            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>工单标题 *</div>
             <Input
               placeholder="请输入工单标题"
               value={title}
               onChange={setTitle}
-              style={{ background: '#f5f5f5', borderRadius: '8px', padding: '12px', width: '100%', marginBottom: '16px' }}
+              style={{
+                background: '#F9FAFB',
+                border: '1px solid #E5E7EB',
+                borderRadius: '8px',
+                padding: '8px',
+              }}
             />
-            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>工单分类 *</div>
-            <select
-              style={{ width: '100%', padding: '12px 16px', border: '1px solid #E5E7EB', borderRadius: '8px', background: '#F9FAFB', fontSize: '14px', color: selectedCategoryPath ? '#333' : '#999' }}
-              value={selectedCategoryId}
-              onChange={(e) => { const selected = e.target.value; setSelectedCategoryId(selected); const cat = categories.find(c => c.id === selected); setSelectedCategoryPath(cat?.path || cat?.name || ''); }}
-            >
-              <option value="">请选择分类</option>
-              {categories.map((cat) => (<option key={cat.id} value={cat.id}> {cat.path || cat.name}</option>))}
-            </select>
           </div>
         </Card>
 
-        {/* 故障描述 + 上传照片 */}
-        <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
-          <div style={{ padding: '16px 20px' }}>
-            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>故障描述 *</div>
+        {/* 区域选择 */}
+        <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
+          <div style={{ padding: '16px' }}>
+            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>区域 *</div>
+            <Picker
+              columns={[regions.map(r => ({ label: r, value: r }))]}
+              visible={false}
+              onConfirm={(value) => handleRegionChange(value[0])}
+            >
+              {(_, actions) => (
+                <Button
+                  block
+                  onClick={() => actions.open()}
+                  style={{
+                    background: '#F9FAFB',
+                    border: '1px solid #E5E7EB',
+                    borderRadius: '8px',
+                    height: '40px',
+                  }}
+                >
+                  {selectedRegion || '请选择区域'}
+                </Button>
+              )}
+            </Picker>
+          </div>
+        </Card>
+
+        {/* 分类选择 - shown after region is selected */}
+        {categoriesVisible && (
+          <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
+            <div style={{ padding: '16px' }}>
+              <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>分类 *</div>
+              <Picker
+                columns={[filteredCategories.map(c => ({ label: c, value: c }))]}
+                visible={false}
+                onConfirm={(value) => setSelectedCategory(value[0])}
+              >
+                {(_, actions) => (
+                  <Button
+                    block
+                    onClick={() => actions.open()}
+                    style={{
+                      background: '#F9FAFB',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '8px',
+                      height: '40px',
+                    }}
+                  >
+                    {selectedCategory || '请选择分类'}
+                  </Button>
+                )}
+              </Picker>
+            </div>
+          </Card>
+        )}
+
+        {/* 故障描述 */}
+        <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
+          <div style={{ padding: '16px' }}>
+            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>故障描述 *</div>
             <Input
-              placeholder="请输入故障描述"
+              placeholder="请描述故障情况"
               value={description}
               onChange={setDescription}
-              style={{ background: '#f5f5f5', borderRadius: '8px', padding: '12px', minHeight: '80px', width: '100%', marginBottom: '16px' }}
+              style={{
+                background: '#F9FAFB',
+                border: '1px solid #E5E7EB',
+                borderRadius: '8px',
+                padding: '8px',
+                minHeight: '100px',
+              }}
+              textArea
+              rows={4}
             />
-            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>上传照片</div>
+          </div>
+        </Card>
+
+        {/* 照片上传 */}
+        <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
+          <div style={{ padding: '16px' }}>
+            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>上传照片</div>
             <ImageUploader
               upload={handlePhotoUpload}
               multiple
               maxCount={9}
               accept="image/*"
-              showUpload={photoUrls.length < 9}
               deletable
-              onDelete={(item: ImageUploadItem) => { setPhotoUrls(prev => prev.filter(url => url !== item.url)); return Promise.resolve(true); }}
-              style={{ '--cell-size': '80px', '--gap': '8px' }}
             />
           </div>
         </Card>
 
-        {/* 行政区划 + 地址 */}
-        <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
-          <div style={{ padding: '16px 20px' }}>
-            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>行政区划</div>
-            <Button 
-              block size="middle"
-              onClick={async () => { if (divisions.length === 0) { await loadDivisions(); } setDivisionVisible(true); }}
-              style={{ background: '#f5f5f5', borderRadius: '8px', padding: '12px', textAlign: 'left', color: selectedDivision.length > 0 ? '#333' : '#999', marginBottom: '16px' }}
-            >{selectedDivision.length > 0 ? divisions.find(d => d.id === selectedDivision[selectedDivision.length - 1])?.name || '请选择行政区划' : '请选择行政区划'}</Button>
-            <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>地址 *</div>
-            <Input placeholder="请输入详细地址" value={addressDetail} onChange={setAddressDetail} style={{ background: '#f5f5f5', borderRadius: '8px', padding: '12px', width: '100%' }} />
+        {/* 详细地址 */}
+        <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
+          <div style={{ padding: '16px' }}>
+            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>详细地址</div>
+            <Input
+              placeholder="请输入详细地址"
+              value={addressDetail}
+              onChange={setAddressDetail}
+              style={{
+                background: '#F9FAFB',
+                border: '1px solid #E5E7EB',
+                borderRadius: '8px',
+                padding: '8px',
+              }}
+            />
           </div>
         </Card>
 
-        {/* 设为加急 */}
-        <Card style={{ borderRadius: '8px', marginBottom: '12px' }}>
-          <div style={{ padding: '16px 20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: '16px' }}>设为加急</div>
-              <input type="checkbox" checked={isUrgent} onChange={(e) => setIsUrgent(e.target.checked)} />
+        {/* 紧急程度 */}
+        <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
+          <div style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: '14px', color: '#333' }}>是否紧急</div>
+            <div
+              style={{
+                width: '44px',
+                height: '24px',
+                borderRadius: '12px',
+                background: isUrgent ? '#00B578' : '#E5E5E5',
+                position: 'relative',
+                cursor: 'pointer',
+                transition: 'background 0.3s',
+              }}
+              onClick={() => setIsUrgent(!isUrgent)}
+            >
+              <div
+                style={{
+                  width: '20px',
+                  height: '20px',
+                  borderRadius: '50%',
+                  background: '#fff',
+                  position: 'absolute',
+                  top: '2px',
+                  left: isUrgent ? '22px' : '2px',
+                  transition: 'left 0.3s',
+                }}
+              />
             </div>
           </div>
         </Card>
 
-        <Button block size="large" color="primary" onClick={handleSubmit} loading={submitting} style={{ marginTop: '12px' }}>
-          提交工单
+        <Button
+          type="submit"
+          loading={submitting}
+          onClick={handleSubmit}
+          style={{
+            background: '#00B578',
+            borderRadius: '8px',
+            height: '48px',
+            fontSize: '16px',
+            fontWeight: '500',
+          }}
+          block
+        >
+          创建工单
         </Button>
-      </div>      {/* Division Picker */}
-      <Picker
-        columns={[divisions.map(d => ({ label: d.name, value: d.id }))]}
-        visible={divisionVisible}
-        onClose={() => {
-          setDivisionVisible(false)
-        }}
-        onConfirm={(val) => {
-          if (val && val.length > 0) {
-            setSelectedDivision([String(val[0])])
-          }
-        }}
-      />
+      </div>
     </div>
   )
 }

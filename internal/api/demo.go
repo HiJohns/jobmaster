@@ -68,6 +68,9 @@ func RegisterDemoRoutes(r *gin.Engine) {
 	// Auth endpoints
 	demo.POST("/auth/login", handlers.Login)
 
+	// Region endpoints (for demo mode - area/category mapping)
+	demo.GET("/regions", handlers.GetRegions)
+
 	// Categories endpoint
 	demo.GET("/categories", handlers.GetCategories)
 }
@@ -473,4 +476,22 @@ func (h *DemoHandlers) CreateWorkOrderRecord(c *gin.Context) {
 		"photo_urls":    req.PhotoURLs,
 		"created_at":    "2026-04-27T10:00:00Z",
 	})
+}
+
+// GetRegions returns region list and region-category mapping for demo mode
+func (h *DemoHandlers) GetRegions(c *gin.Context) {
+	demoData, err := data.LoadDemoData()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Parse regions data
+	var regionsData map[string]interface{}
+	if err := json.Unmarshal(demoData.Regions, &regionsData); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse regions data: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, regionsData)
 }
