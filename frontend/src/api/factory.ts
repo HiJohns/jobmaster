@@ -31,6 +31,13 @@ export const demoApi = {
     })
     console.log('[DEBUG demoApi.login] response:', response)
     const data = response.data || response
+    
+    // Store session ID for demo mode authentication
+    if (data && data.session) {
+      console.log('[DEBUG demoApi.login] session:', data.session)
+      localStorage.setItem('demo_session_id', data.session)
+    }
+    
     if (data && data.user) {
       console.log('[DEBUG demoApi.login] user:', data.user)
       setDemoUserRole(data.user.role)

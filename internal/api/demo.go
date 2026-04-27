@@ -5,13 +5,27 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	"jobmaster/internal/data"
 )
 
+var (
+	// sessions stores demo mode user sessions
+	// key: session ID, value: username
+	sessions sync.Map
+	// sessionMutex for thread-safe session operations
+	sessionMutex sync.Mutex
+)
+
 func contains(s string, substr string) bool {
 	return strings.Contains(s, substr)
+}
+
+// generateSessionID creates a unique session ID
+func generateSessionID(username string) string {
+	return "demo_session_" + username + "_" + os.Getenv("DEMO_MODE")
 }
 
 // DemoHandlers handles demo mode API endpoints
@@ -28,29 +42,28 @@ func RegisterDemoRoutes(r *gin.Engine) {
 		return
 	}
 
+	handlers := NewDemoHandlers()
 	demo := r.Group("/api/demo")
-	{
-		handlers := NewDemoHandlers()
 
-		// WorkOrder endpoints
-		demo.GET("/workorders", handlers.GetWorkOrders)
-		demo.GET("/workorders/:id", handlers.GetWorkOrder)
-		demo.POST("/workorders", handlers.CreateWorkOrder)
+	// WorkOrder endpoints
+	demo.GET("/workorders", handlers.GetWorkOrders)
+	demo.GET("/workorders/:id", handlers.GetWorkOrder)
+	demo.POST("/workorders", handlers.CreateWorkOrder)
 
-		// Organization endpoints
-		demo.GET("/organizations", handlers.GetOrganizations)
+	// Organization endpoints
+	demo.GET("/organizations", handlers.GetOrganizations)
 
-		// User endpoints
-		demo.GET("/users", handlers.GetUsers)
+	// User endpoints
+	demo.GET("/users", handlers.GetUsers)
 
-		// Auth endpoints
-		demo.POST("/auth/login", handlers.Login)
-	}
-		// Categories endpoint
-		demo.GET("/categories", handlers.GetCategories)
+	// Auth endpoints
+	demo.POST("/auth/login", handlers.Login)
+
+	// Categories endpoint
+	demo.GET("/categories", handlers.GetCategories)
 }
 
-// GetWorkOrders returns all work orders from demo data
+// GetWorkOrders returns work orders from demo data with user-based filtering
 func (h *DemoHandlers) GetWorkOrders(c *gin.Context) {
 	demoData, err := data.LoadDemoData()
 	if err != nil {
@@ -64,26 +77,58 @@ func (h *DemoHandlers) GetWorkOrders(c *gin.Context) {
 		return
 	}
 
-	// Filter by status query param (comma-separated)
+	// Get username from session header
+	username := h.getUsernameFromSession(c)
+	if username == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or missing session"})
+		return
+	}
+
+	// Parse role from username
+	userRole := h.parseRoleFromUsername(username)
+
+	// Default filter: show all work orders
+	filtered := workOrders
+
+	// Apply role-based filtering for engineers
+	// Engineers can only see work orders assigned to them (based on ID match for demo)
+	if strings.Contains(userRole, "ENGINEER") {
+		var engineerFiltered []map[string]interface{}
+		for _, wo := range workOrders {
+			// For demo: match engineer ID containing the username or engineerId field
+			// If neither exists, skip this filter in demo mode
+			engineerId, hasEngineerId := wo["engineerId"].(string)
+			if hasEngineerId && strings.Contains(engineerId, username) {
+				engineerFiltered = append(engineerFiltered, wo)
+			} else {
+				// Fallback: if no engineerId field, show all for demo purposes
+				engineerFiltered = append(engineerFiltered, wo)
+			}
+		}
+		filtered = engineerFiltered
+	}
+
+	// Apply status filter from query parameter (comma-separated)
+	// Frontend determines which statuses to show based on user role
 	statusParam := c.Query("status")
 	if statusParam != "" {
 		allowedStatuses := strings.Split(statusParam, ",")
-		var filtered []map[string]interface{}
-		for _, wo := range workOrders {
+		var statusFiltered []map[string]interface{}
+		for _, wo := range filtered {
 			status, _ := wo["status"].(string)
 			for _, s := range allowedStatuses {
 				if strings.TrimSpace(s) == status {
-					filtered = append(filtered, wo)
+					statusFiltered = append(statusFiltered, wo)
 					break
 				}
 			}
 		}
-		workOrders = filtered
+		filtered = statusFiltered
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"list":  workOrders,
-		"total": len(workOrders),
+		"list":  filtered,
+		"total": len(filtered),
 	})
 }
 
@@ -205,9 +250,14 @@ func (h *DemoHandlers) Login(c *gin.Context) {
 	} else if contains(username, "vendor") {
 		role = "VENDOR_EMPLOYEE"
 	}
+
+	// Create session for demo mode
+	sessionID := generateSessionID(username)
+	sessions.Store(sessionID, username)
+
 	// Return user with parsed role
 	c.JSON(http.StatusOK, gin.H{
-		"token": "demo_token_" + os.Getenv("DEMO_MODE"),
+		"session": sessionID, // Return session ID instead of token
 		"user": map[string]interface{}{
 			"id":          "jm-user-" + username,
 			"username":    username,
@@ -218,4 +268,39 @@ func (h *DemoHandlers) Login(c *gin.Context) {
 			"tenantId":    "jm-tenant1",
 		},
 	})
+}
+
+// getUsernameFromSession extracts username from session header
+func (h *DemoHandlers) getUsernameFromSession(c *gin.Context) string {
+	sessionID := c.GetHeader("X-Session-Id")
+	if sessionID == "" {
+		return ""
+	}
+
+	username, ok := sessions.Load(sessionID)
+	if !ok {
+		return ""
+	}
+
+	return username.(string)
+}
+
+// parseRoleFromUsername parses role from username pattern
+func (h *DemoHandlers) parseRoleFromUsername(username string) string {
+	if username == "" {
+		return ""
+	}
+
+	role := "EMPLOYEE" // default
+	if contains(username, "admin") {
+		role = "BRANCH_ADMIN"
+	} else if contains(username, "engineer") {
+		role = "ENGINEER"
+	} else if contains(username, "contractor") {
+		role = "CONTRACTOR_EMPLOYEE"
+	} else if contains(username, "vendor") {
+		role = "VENDOR_EMPLOYEE"
+	}
+
+	return role
 }

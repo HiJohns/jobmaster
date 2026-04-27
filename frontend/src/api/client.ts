@@ -22,13 +22,22 @@ const apiClient: AxiosInstance = axios.create({
   headers: API_CONFIG.DEFAULT_HEADERS,
 })
 
-// Request interceptor - inject token
+// Request interceptor - inject token and session ID for demo mode
 apiClient.interceptors.request.use(
   (config) => {
     const { token } = useAuthStore.getState()
     
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`
+    }
+    
+    // Add session ID header for demo mode authentication
+    // This allows multiple browser tabs to login as different users
+    if (USE_DEMO_API && config.headers) {
+      const sessionId = localStorage.getItem('demo_session_id')
+      if (sessionId) {
+        config.headers['X-Session-Id'] = sessionId
+      }
     }
     
     return config
