@@ -46,6 +46,13 @@ export const demoApi = {
     })
     return response.data || response
   },
+  getWorkOrderRecords: async (workOrderId: string) => {
+    const response = await apiClient.request({
+      url: `/workorders/${workOrderId}/records`,
+      method: 'GET',
+    })
+    return response.data || response
+  },
   login: async (username: string, password: string) => {
     const response = await apiClient.request({
       url: '/auth/login',

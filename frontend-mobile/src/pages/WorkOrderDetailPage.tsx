@@ -4,6 +4,7 @@ import { Button, Card, Toast, NavBar, Steps, Loading } from 'antd-mobile'
 import { LeftOutline } from 'antd-mobile-icons'
 import { localReservationApi } from '../api/local/reservation'
 import ForwardDialog from '../components/ForwardDialog'
+import WorkOrderRecords from '../components/WorkOrderRecords'
 import QRCodeDisplay from '../components/QRCodeDisplay'
 
 interface WorkOrder {
@@ -306,6 +307,11 @@ export default function WorkOrderDetailPage() {
           </Button>
         )}
 
+
+        {/* 施工记录 */}
+        {workOrder.status === 'WORKING' && (
+          <WorkOrderRecords workOrderId={orderId} />
+        )}
         {/* 预约日志 */}
         <Card title="预约日志" style={{ marginTop: '16px' }}>
           <ReservationLogs workOrderId={orderId} />

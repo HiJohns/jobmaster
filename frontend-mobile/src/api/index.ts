@@ -22,6 +22,13 @@ export const api = {
         data: order || null,
       }
     },
+    getRecords: async (workOrderId: string) => {
+      const res = await demoApi.getWorkOrderRecords(workOrderId)
+      return {
+        code: 200,
+        data: res,
+      }
+    },
   },
   auth: {
     login: async (username: string, password: string) => {
