@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -49,6 +50,8 @@ func RegisterDemoRoutes(r *gin.Engine) {
 	demo.GET("/workorders", handlers.GetWorkOrders)
 	demo.GET("/workorders/:id", handlers.GetWorkOrder)
 	demo.POST("/workorders", handlers.CreateWorkOrder)
+	demo.GET("/workorders/:id/records", handlers.GetWorkOrderRecords)
+	demo.POST("/workorders/:id/records", handlers.CreateWorkOrderRecord)
 
 	// Reservation endpoints
 	demo.GET("/reservations", handlers.GetReservations)
@@ -388,8 +391,8 @@ func (h *DemoHandlers) ConfirmReservation(c *gin.Context) {
 
 	// Demo mode - just return success
 	c.JSON(http.StatusOK, gin.H{
-		"id":     id,
-		"status": "confirmed",
+		"id":      id,
+		"status":  "confirmed",
 		"comment": req.Comment,
 	})
 }
@@ -412,5 +415,62 @@ func (h *DemoHandlers) RejectReservation(c *gin.Context) {
 		"id":     id,
 		"status": "rejected",
 		"reason": req.Reason,
+	})
+}
+
+// GetWorkOrderRecords returns work order records (messages + photos) from demo data
+func (h *DemoHandlers) GetWorkOrderRecords(c *gin.Context) {
+	workOrderID := c.Param("id")
+
+	demoData, err := data.LoadDemoData()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var workRecords []map[string]interface{}
+	if err := json.Unmarshal(demoData.WorkRecords, &workRecords); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse work records: " + err.Error()})
+		return
+	}
+
+	// Filter by work order ID
+	var filtered []map[string]interface{}
+	for _, record := range workRecords {
+		if woID, ok := record["work_order_id"].(string); ok && woID == workOrderID {
+			filtered = append(filtered, record)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"list":  filtered,
+		"total": len(filtered),
+	})
+}
+
+// CreateWorkOrderRecord creates a new work order record (message + photo)
+func (h *DemoHandlers) CreateWorkOrderRecord(c *gin.Context) {
+	workOrderID := c.Param("id")
+
+	var req struct {
+		Message   string   `json:"message"`
+		PhotoURLs []string `json:"photo_urls"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Demo mode - just return success
+	username := h.getUsernameFromSession(c)
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":            "record_" + workOrderID + "_" + fmt.Sprint(os.Getpid()),
+		"work_order_id": workOrderID,
+		"user_name":     username,
+		"message":       req.Message,
+		"photo_urls":    req.PhotoURLs,
+		"created_at":    "2026-04-27T10:00:00Z",
 	})
 }
