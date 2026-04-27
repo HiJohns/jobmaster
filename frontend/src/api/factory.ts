@@ -493,14 +493,59 @@ export const createApi = () => {
       }
     : useDemo
     ? {
-        list: () => Promise.resolve({ code: 200, data: { list: [], total: 0 } }),
-        get: (_id: string) => Promise.resolve({ code: 200, data: null }),
-        confirm: (_id: string, _comment?: string) => Promise.resolve({ code: 200, data: null }),
-        reject: (_id: string, _reason: string) => Promise.resolve({ code: 200, data: null }),
-        reschedule: (_id: string, _newTime: string, _comment?: string) =>
+        list: () => {
+          return demoApi.request({
+            url: '/reservations',
+            method: 'GET'
+          }).then((res: any) => ({
+            code: 200,
+            data: {
+              list: res.list || [],
+              total: res.total || 0,
+            },
+          }))
+        },
+        get: (id: string) => {
+          return demoApi.request({
+            url: `/reservations/${id}`,
+            method: 'GET'
+          }).then((res: any) => ({
+            code: 200,
+            data: res,
+          }))
+        },
+        confirm: (id: string, comment?: string) => {
+          return demoApi.request({
+            url: `/reservations/${id}/confirm`,
+            method: 'POST',
+            data: { comment }
+          }).then((res: any) => ({
+            code: 200,
+            data: res,
+          }))
+        },
+        reject: (id: string, reason: string) => {
+          return demoApi.request({
+            url: `/reservations/${id}/reject`,
+            method: 'POST',
+            data: { reason }
+          }).then((res: any) => ({
+            code: 200,
+            data: res,
+          }))
+        },
+        reschedule: (id: string, newTime: string, comment?: string) =>
           Promise.resolve({ code: 200, data: null }),
-        listByWorkOrder: (_workOrderId: string, _includeRejected?: boolean) =>
-          Promise.resolve({ code: 200, data: { list: [], total: 0 } }),
+        listByWorkOrder: (workOrderId: string, includeRejected?: boolean) => {
+          return demoApi.request({
+            url: `/reservations`,
+            method: 'GET',
+            params: { work_order_id: workOrderId }
+          }).then((res: any) => ({
+            code: 200,
+            data: res,
+          }))
+        },
       }
     : {
         list: () => Promise.resolve({ code: 200, data: { list: [], total: 0 } }),
