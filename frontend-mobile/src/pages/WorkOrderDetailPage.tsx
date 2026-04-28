@@ -39,7 +39,7 @@ const STATUS_STEPS: StatusStep[] = [
 
 const STATUS_CONFIG: Record<string, { text: string; color: string }> = {
   PENDING: { text: '待处理', color: '#999999' },
-  DISPATCHED: { text: '已分配', color: '#0033FF' },
+  DISPATCHED: { text: '流转中', color: '#0033FF' },
   ACCEPTED: { text: '已接单', color: '#00B578' },
   RESERVED: { text: '已预约', color: '#FF8F1F' },
   WORKING: { text: '施工中', color: '#6366F1' },

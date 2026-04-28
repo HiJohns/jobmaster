@@ -24,7 +24,7 @@ interface WorkOrderCardProps {
 
 const STATUS_CONFIG: Record<string, { text: string; color: string; bgColor: string }> = {
   PENDING: { text: '待处理', color: '#999999', bgColor: '#f0f0f0' },
-  DISPATCHED: { text: '已分配', color: '#0033FF', bgColor: '#e6f0ff' },
+  DISPATCHED: { text: '流转中', color: '#0033FF', bgColor: '#e6f0ff' },
   ACCEPTED: { text: '已接单', color: '#00B578', bgColor: '#e6f9f2' },
   RESERVED: { text: '已预约', color: '#FF8F1F', bgColor: '#fff4e6' },
   WORKING: { text: '施工中', color: '#6366F1', bgColor: '#e6e7ff' },
