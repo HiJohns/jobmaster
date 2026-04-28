@@ -4,6 +4,7 @@ import { Button, Card, Toast, NavBar, Steps, Loading } from 'antd-mobile'
 import { LeftOutline } from 'antd-mobile-icons'
 import { demoApi } from '../api/demo'
 import { localReservationApi } from '../api/local/reservation'
+import { useAuthStore } from '../store/useAuthStore'
 import ForwardDialog from '../components/ForwardDialog'
 import WorkOrderRecords from '../components/WorkOrderRecords'
 import QRCodeDisplay from '../components/QRCodeDisplay'
@@ -53,6 +54,7 @@ const STATUS_CONFIG: Record<string, { text: string; color: string }> = {
 export default function WorkOrderDetailPage() {
   const { id: orderId } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { userInfo } = useAuthStore()
   const [workOrder, setWorkOrder] = useState<WorkOrder | null>(null)
   const [loading, setLoading] = useState(true)
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
@@ -217,8 +219,10 @@ export default function WorkOrderDetailPage() {
           </Steps>
         </Card>
         
-        {/* 固定底部主操作按钮 */}
-        {currentStepIndex < STATUS_STEPS.length && (
+        {/* 检查是否有接单权限 (VENDOR 或 VENDOR_ENGINEER) */}
+        {(() => {
+          const canAcceptOrder = ['VENDOR', 'VENDOR_ENGINEER'].includes(userInfo?.role || '')
+          return canAcceptOrder && currentStepIndex < STATUS_STEPS.length && (
           <div style={{
             position: 'fixed',
             bottom: 0,
@@ -247,7 +251,7 @@ export default function WorkOrderDetailPage() {
               </div>
             </Button>
           </div>
-        )}
+        )})()}
 
         {/* 转发工单按钮 */}
         {(workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED') && (
