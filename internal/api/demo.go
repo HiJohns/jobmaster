@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"jobmaster/internal/data"
@@ -19,6 +20,9 @@ var (
 	// sessionMutex for thread-safe session operations
 	sessionMutex sync.Mutex
 )
+var (
+	// sessions stores demo mode user sessions
+	// key: session ID, value: username
 
 func contains(s string, substr string) bool {
 	return strings.Contains(s, substr)
@@ -207,7 +211,6 @@ func (h *DemoHandlers) CreateWorkOrder(c *gin.Context) {
 		"category_id":  req.CategoryID,
 		"created_at":   "2026-01-01T00:00:00Z",
 	})
-}
 }
 
 // GetOrganizations returns all organizations from demo data
