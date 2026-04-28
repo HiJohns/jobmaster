@@ -70,6 +70,7 @@ func RegisterDemoRoutes(r *gin.Engine) {
 
 	// Region endpoints (for demo mode - area/category mapping)
 	demo.GET("/regions", handlers.GetRegions)
+	demo.GET("/regions/:region/categories", handlers.GetRegionCategories)
 
 	// Categories endpoint
 	demo.GET("/categories", handlers.GetCategories)
