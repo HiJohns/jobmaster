@@ -135,39 +135,34 @@ func (h *DemoHandlers) GetWorkOrders(c *gin.Context) {
 		return
 	}
 
-	// Get username from session header
 	username := h.getUsernameFromSession(c)
 	if username == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or missing session"})
 		return
 	}
 
-	// Parse role from username
 	userRole := h.parseRoleFromUsername(username)
 
-	// Default filter: show all work orders
+	createdWorkOrders.Range(func(key, value interface{}) bool {
+		workOrders = append(workOrders, value.(map[string]interface{}))
+		return true
+	})
+
 	filtered := workOrders
 
-	// Apply role-based filtering for engineers
-	// Engineers can only see work orders assigned to them (based on ID match for demo)
 	if strings.Contains(userRole, "ENGINEER") {
 		var engineerFiltered []map[string]interface{}
 		for _, wo := range workOrders {
-			// For demo: match engineer ID containing the username or engineerId field
-			// If neither exists, skip this filter in demo mode
 			engineerId, hasEngineerId := wo["engineerId"].(string)
 			if hasEngineerId && strings.Contains(engineerId, username) {
 				engineerFiltered = append(engineerFiltered, wo)
-			} else {
-				// Fallback: if no engineerId field, show all for demo purposes
+			} else if !hasEngineerId {
 				engineerFiltered = append(engineerFiltered, wo)
 			}
 		}
 		filtered = engineerFiltered
 	}
 
-	// Apply status filter from query parameter (comma-separated)
-	// Frontend determines which statuses to show based on user role
 	statusParam := c.Query("status")
 	if statusParam != "" {
 		allowedStatuses := strings.Split(statusParam, ",")
@@ -183,25 +178,6 @@ func (h *DemoHandlers) GetWorkOrders(c *gin.Context) {
 		}
 		filtered = statusFiltered
 	}
-
-	// Add work orders created in memory (not in static data)
-	createdWorkOrders.Range(func(key, value interface{}) bool {
-		wo := value.(map[string]interface{})
-		// Apply same status filter if specified
-		if statusParam != "" {
-			status, _ := wo["status"].(string)
-			for _, s := range strings.Split(statusParam, ",") {
-				if strings.TrimSpace(s) == status {
-					filtered = append(filtered, wo)
-					break
-				}
-			}
-		} else {
-			// No status filter, add all
-			filtered = append(filtered, wo)
-		}
-		return true
-	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"list":  filtered,
@@ -230,6 +206,11 @@ func (h *DemoHandlers) GetWorkOrder(c *gin.Context) {
 			c.JSON(http.StatusOK, wo)
 			return
 		}
+	}
+
+	if value, ok := createdWorkOrders.Load(id); ok {
+		c.JSON(http.StatusOK, value.(map[string]interface{}))
+		return
 	}
 
 	c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
