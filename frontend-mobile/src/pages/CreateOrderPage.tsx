@@ -289,7 +289,7 @@ export default function CreateOrderPage() {
                 {selectedCategory || '请选择分类'}
               </Button>
               <Picker
-                columns={[filteredCategories.map(c => ({ label: c, value: c }))]}
+                columns={[filteredCategories.map(c => ({ label: c, value: c, key: c }))]}
                 visible={categoryPickerVisible}
                 onClose={() => setCategoryPickerVisible(false)}
                 onConfirm={(value) => {
@@ -323,7 +323,7 @@ export default function CreateOrderPage() {
                   {selectedContractor || '请选择劳务公司'}
                 </Button>
                 <Picker
-                  columns={[contractors.map(c => ({ label: c.name, value: c.id }))]}
+                  columns={[contractors.map(c => ({ label: c.name, value: c.id, key: c.id }))]}
                   visible={contractorPickerVisible}
                   onClose={() => setContractorPickerVisible(false)}
                   onConfirm={(value) => {
