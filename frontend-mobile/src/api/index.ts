@@ -22,6 +22,13 @@ export const api = {
         data: order || null,
       }
     },
+    create: async (data: Record<string, unknown>) => {
+      const res = await demoApi.createWorkOrder(data)
+      return {
+        code: 200,
+        data: res,
+      }
+    },
     getRecords: async (workOrderId: string) => {
       const res = await demoApi.getWorkOrderRecords(workOrderId)
       return {

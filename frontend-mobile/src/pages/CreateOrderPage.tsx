@@ -2,14 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Button, Input, Dialog, Toast, NavBar, ImageUploader, Picker } from 'antd-mobile'
 import { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
-import { localWorkorderApi } from '../api/local/workorder'
+import { api } from '../api'
 import { demoApi } from '../api/demo'
-
-interface Category {
-  id: string
-  name: string
-  path: string
-}
 
 export default function CreateOrderPage() {
   const navigate = useNavigate()
@@ -115,9 +109,9 @@ export default function CreateOrderPage() {
         division_id: null, // Deprecated, keeping for compatibility
       }
 
-      const response = await localWorkorderApi.create(requestData as any)
+      const response = await api.workorder.create(requestData)
       
-      if (response.code === 200 || response.success) {
+      if (response.code === 200) {
         Toast.show({
           content: '工单创建成功',
           icon: 'success',
@@ -138,7 +132,7 @@ export default function CreateOrderPage() {
           navigate(-1)
         }, 1000)
       } else {
-        throw new Error(response.message || '创建失败')
+        throw new Error('创建失败')
       }
     } catch (error) {
       console.error('Failed to create work order:', error)
@@ -262,8 +256,6 @@ export default function CreateOrderPage() {
                 padding: '8px',
                 minHeight: '100px',
               }}
-              textArea
-              rows={4 as any} // NativeInputProps type issue workaround
             />
           </div>
         </Card>

@@ -88,14 +88,7 @@ export const demoApi = {
     })
     return response.data || response
   },
-  finishWorkOrder: async (
-    id: string,
-    description: string,
-    photo_urls: string[],
-    labor_fee: number,
-    material_fee: number,
-    other_fee: number
-  ) => {
+  finishWorkOrder: async (id: string, description: string, photo_urls: string[], labor_fee: number, material_fee: number, other_fee: number) => {
     const response = await apiClient.request({
       url: `/workorders/${id}/finish`,
       method: 'POST',
@@ -154,6 +147,24 @@ export const demoApi = {
     const response = await apiClient.request({
       url: `/regions/${encodeURIComponent(region)}/categories`,
       method: 'GET',
+    })
+    return response.data || response
+  },
+  createWorkOrder: async (data: {
+    title: string
+    description: string
+    category_id: string
+    category_path: string
+    photo_urls: string[]
+    priority: number
+    is_urgent: boolean
+    address_detail: string
+    division_id?: string | null
+  }) => {
+    const response = await apiClient.request({
+      url: '/workorders',
+      method: 'POST',
+      data,
     })
     return response.data || response
   },
