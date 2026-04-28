@@ -119,6 +119,9 @@ export const demoApi = {
     if (response.data && response.data.user) {
       currentUserRole = response.data.user.role
     }
+    if (response.data && response.data.session) {
+      localStorage.setItem('demo_session_id', response.data.session)
+    }
     return response.data || response
   },
   getWorkOrderRecords: async (workOrderId: string) => {
