@@ -241,62 +241,54 @@ export default function CreateOrderPage() {
           </div>
         </Card>
 
-        {/* 区域和分类选择 - 合并在一个 Card */}
+        {/* 故障描述 */}
         <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
           <div style={{ padding: '16px' }}>
-            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>区域 *</div>
-            <Button
-              block
-              onClick={() => setRegionPickerVisible(true)}
+            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>故障描述 *</div>
+            <Input
+              placeholder="请描述故障情况"
+              value={description}
+              onChange={setDescription}
               style={{
                 background: '#F9FAFB',
                 border: '1px solid #E5E7EB',
                 borderRadius: '8px',
-                height: '40px',
-              }}
-            >
-              {selectedRegion || '请选择区域'}
-            </Button>
-            <Picker
-              columns={[regions.map(r => ({ label: r, value: r, key: r }))]}
-              visible={regionPickerVisible}
-              onClose={() => setRegionPickerVisible(false)}
-              onConfirm={(value) => {
-                if (value && value[0]) {
-                  handleRegionChange(String(value[0]))
-                }
-                setRegionPickerVisible(false)
+                padding: '8px',
+                minHeight: '100px',
               }}
             />
+          </div>
+        </Card>
 
-            {categoriesVisible && (
-              <>
-                <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px', marginTop: '16px' }}>分类 *</div>
-                <Button
-                  block
-                  onClick={() => setCategoryPickerVisible(true)}
-                  style={{
-                    background: '#F9FAFB',
-                    border: '1px solid #E5E7EB',
-                    borderRadius: '8px',
-                    height: '40px',
-                  }}
-                >
-                  {selectedCategory || '请选择分类'}
-                </Button>
-                <Picker
-                  columns={[filteredCategories.map(c => ({ label: c, value: c, key: c }))]}
-                  visible={categoryPickerVisible}
-                  onClose={() => setCategoryPickerVisible(false)}
-                  onConfirm={(value) => {
-                    if (value && value[0]) {
-                      setSelectedCategory(String(value[0]))
-                    }
-                    setCategoryPickerVisible(false)
-                  }}
-                />
-              </>
-            )}
+        {/* 照片上传 */}
+        <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
+          <div style={{ padding: '16px' }}>
+            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>上传照片</div>
+            <ImageUploader
+              upload={handlePhotoUpload}
+              multiple
+              maxCount={9}
+              accept="image/*"
+              deletable
+            />
+          </div>
+        </Card>
+
+        {/* 详细地址 */}
+        <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
+          <div style={{ padding: '16px' }}>
+            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>详细地址</div>
+            <Input
+              placeholder="请输入详细地址"
+              value={addressDetail}
+              onChange={setAddressDetail}
+              style={{
+                background: '#F9FAFB',
+                border: '1px solid #E5E7EB',
+                borderRadius: '8px',
+                padding: '8px',
+              }}
+            />
           </div>
         </Card>
 
@@ -421,57 +413,6 @@ export default function CreateOrderPage() {
                 />
               </div>
             </div>
-          </div>
-        </Card>
-
-        {/* 故障描述 */}
-        <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
-          <div style={{ padding: '16px' }}>
-            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>故障描述 *</div>
-            <Input
-              placeholder="请描述故障情况"
-              value={description}
-              onChange={setDescription}
-              style={{
-                background: '#F9FAFB',
-                border: '1px solid #E5E7EB',
-                borderRadius: '8px',
-                padding: '8px',
-                minHeight: '100px',
-              }}
-            />
-          </div>
-        </Card>
-
-        {/* 照片上传 */}
-        <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
-          <div style={{ padding: '16px' }}>
-            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>上传照片</div>
-            <ImageUploader
-              upload={handlePhotoUpload}
-              multiple
-              maxCount={9}
-              accept="image/*"
-              deletable
-            />
-          </div>
-        </Card>
-
-        {/* 详细地址 */}
-        <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
-          <div style={{ padding: '16px' }}>
-            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>详细地址</div>
-            <Input
-              placeholder="请输入详细地址"
-              value={addressDetail}
-              onChange={setAddressDetail}
-              style={{
-                background: '#F9FAFB',
-                border: '1px solid #E5E7EB',
-                borderRadius: '8px',
-                padding: '8px',
-              }}
-            />
           </div>
         </Card>
 
