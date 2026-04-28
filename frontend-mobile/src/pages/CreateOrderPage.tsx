@@ -245,6 +245,7 @@ export default function CreateOrderPage() {
               value={title}
               onChange={setTitle}
               style={{
+                width: '100%',
                 background: '#F9FAFB',
                 border: '1px solid #E5E7EB',
                 borderRadius: '8px',
@@ -263,6 +264,7 @@ export default function CreateOrderPage() {
               value={addressDetail}
               onChange={setAddressDetail}
               style={{
+                width: '100%',
                 background: '#F9FAFB',
                 border: '1px solid #E5E7EB',
                 borderRadius: '8px',
@@ -275,6 +277,7 @@ export default function CreateOrderPage() {
               block
               onClick={() => setRegionPickerVisible(true)}
               style={{
+                width: '100%',
                 background: '#F9FAFB',
                 border: '1px solid #E5E7EB',
                 borderRadius: '8px',
@@ -302,6 +305,7 @@ export default function CreateOrderPage() {
                   block
                   onClick={() => setCategoryPickerVisible(true)}
                   style={{
+                    width: '100%',
                     background: '#F9FAFB',
                     border: '1px solid #E5E7EB',
                     borderRadius: '8px',
@@ -335,6 +339,7 @@ export default function CreateOrderPage() {
               value={description}
               onChange={setDescription}
               style={{
+                width: '100%',
                 background: '#F9FAFB',
                 border: '1px solid #E5E7EB',
                 borderRadius: '8px',
@@ -365,6 +370,7 @@ export default function CreateOrderPage() {
                   block
                   onClick={() => setContractorPickerVisible(true)}
                   style={{
+                    width: '100%',
                     background: '#F9FAFB',
                     border: '1px solid #E5E7EB',
                     borderRadius: '8px',
