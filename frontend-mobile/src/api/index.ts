@@ -1,7 +1,5 @@
 import { demoApi } from './demo'
 
-const USE_DEMO = true
-
 export const api = {
   workorder: {
     list: async (params?: Record<string, unknown>) => {
@@ -22,7 +20,17 @@ export const api = {
         data: order || null,
       }
     },
-    create: async (data: Record<string, unknown>) => {
+    create: async (data: {
+      title: string
+      description: string
+      category_id: string
+      category_path: string
+      photo_urls: string[]
+      priority: number
+      is_urgent: boolean
+      address_detail: string
+      division_id?: string | null
+    }) => {
       const res = await demoApi.createWorkOrder(data)
       return {
         code: 200,

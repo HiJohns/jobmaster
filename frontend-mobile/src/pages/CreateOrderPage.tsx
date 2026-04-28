@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Input, Dialog, Toast, NavBar, ImageUploader, Picker } from 'antd-mobile'
+import { Card, Button, Input, Toast, NavBar, ImageUploader, Picker } from 'antd-mobile'
 import { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import { api } from '../api'
 import { demoApi } from '../api/demo'
@@ -201,7 +201,7 @@ export default function CreateOrderPage() {
               onClose={() => setRegionPickerVisible(false)}
               onConfirm={(value) => {
                 if (value && value[0]) {
-                  handleRegionChange(value[0])
+                  handleRegionChange(String(value[0]))
                 }
                 setRegionPickerVisible(false)
               }}
@@ -232,7 +232,7 @@ export default function CreateOrderPage() {
                 onClose={() => setCategoryPickerVisible(false)}
                 onConfirm={(value) => {
                   if (value && value[0]) {
-                    setSelectedCategory(value[0])
+                    setSelectedCategory(String(value[0]))
                   }
                   setCategoryPickerVisible(false)
                 }}

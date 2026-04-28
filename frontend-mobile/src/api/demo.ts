@@ -21,7 +21,7 @@ export const demoApi = {
     const response = await apiClient.request(config)
     return response
   },
-  getWorkOrders: async (params?: Record<string, unknown>) => {
+  getWorkOrders: async (_params?: Record<string, unknown>) => {
     let statusFilter = ''
     
     if (currentUserRole === 'BRANCH_ADMIN' || currentUserRole === 'EMPLOYEE') {

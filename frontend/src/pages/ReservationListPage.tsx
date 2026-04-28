@@ -15,7 +15,8 @@ export default function ReservationListPage() {
   const fetchReservations = async () => {
     try {
       const response = await api.reservation.list()
-      const list = response?.data?.list || response?.list || []
+      // Handle nested data structure: response.data.list
+      const list = (response as any)?.data?.list || (response as any)?.list || []
       setReservations(list as any[])
     } catch (error) {
       console.error('Failed to fetch reservations:', error)

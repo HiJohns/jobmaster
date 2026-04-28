@@ -13,10 +13,8 @@ import {
   Button,
   TextArea,
   Card,
-  Cascader,
 } from 'antd-mobile'
 import { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
-import { LocationOutline } from 'antd-mobile-icons'
 import { api } from '../api/factory'
 import { CreateWorkOrderRequest } from '../api/workorder'
 import { useAuthStore } from '../store/useAuthStore'
@@ -57,7 +55,6 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
   const [filteredCategories, setFilteredCategories] = useState<any[]>([])
   
   // Division state (kept for backward compatibility)
-  const [divisionData, setDivisionData] = useState<any[]>([])
   const [selectedDivisionPath, setSelectedDivisionPath] = useState<string[]>([])
   
   const { userInfo } = useAuthStore()
@@ -94,13 +91,9 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
   }
 
   // Load categories for selected region
-  // Load categories for selected region
   const loadCategoriesForRegion = async (region: string) => {
     try {
-      const response = await demoApi.request({
-        url: `/regions/${encodeURIComponent(region)}/categories`,
-        method: "GET",
-      });
+      const response = await api.region.getCategories(region);
       const data = response.data || response;
       if (data.categories && Array.isArray(data.categories)) {
         setFilteredCategories(data.categories.map((cat: string, idx: number) => ({
@@ -157,7 +150,8 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
         setCategoriesVisible(false)
         setSelectedDivisionPath([])
       } else {
-        throw new Error(response.message || '创建失败')
+        const errorMsg = (response as any).message || '创建失败'
+        throw new Error(errorMsg)
       }
     } catch (error) {
       console.error('Failed to create work order:', error)
@@ -175,80 +169,79 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
       visible={visible}
       onClose={onClose}
       title="创建工单"
-      contentStyle={{ padding: '16px' }}
-    >
-      <Form
-        form={form}
-        onFinish={handleSubmit}
-        initialValues={{
-          priority: 0,
-        }}
-        style={{ maxHeight: '80vh', overflowY: 'auto' }}
-      >
-        <div style={{ paddingBottom: '100px' }}>
-          {/* 工单标题 */}
-          <Card style={{ borderRadius: '12px', marginBottom: '12px', background: '#fff' }}>
-            <div style={{ padding: '16px 20px' }}>
-              <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>工单标题 *</div>
-              <Form.Item
-                name="title"
-                noStyle
-                rules={[
-                  { required: true, message: '请输入工单标题' },
-                  { min: 5, message: '标题至少需要5个字' },
-                ]}
-              >
-                <Input
-                  placeholder="例如：二楼打印机卡纸"
-                  style={{
-                    background: '#F9FAFB',
-                    border: '1px solid #E5E7EB',
-                    borderRadius: '8px',
-                    padding: '12px 16px',
-                  }}
-                />
-              </Form.Item>
-            </div>
-          </Card>
-
-          {/* 区域选择 */}
-          <Card style={{ borderRadius: '12px', marginBottom: '12px', background: '#fff' }}>
-            <div style={{ padding: '16px 20px' }}>
-              <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>区域 *</div>
-              <Form.Item noStyle>
-                <div style={{ position: 'relative' }}>
-                  <select
+      content={
+        <Form
+          form={form}
+          onFinish={handleSubmit}
+          initialValues={{
+            priority: 0,
+          }}
+          style={{ maxHeight: '80vh', overflowY: 'auto' }}
+        >
+          <div style={{ paddingBottom: '100px' }}>
+            {/* 工单标题 */}
+            <Card style={{ borderRadius: '12px', marginBottom: '12px', background: '#fff' }}>
+              <div style={{ padding: '16px 20px' }}>
+                <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>工单标题 *</div>
+                <Form.Item
+                  name="title"
+                  noStyle
+                  rules={[
+                    { required: true, message: '请输入工单标题' },
+                    { min: 5, message: '标题至少需要5个字' },
+                  ]}
+                >
+                  <Input
+                    placeholder="例如：二楼打印机卡纸"
                     style={{
-                      width: '100%',
-                      padding: '12px 16px',
+                      background: '#F9FAFB',
                       border: '1px solid #E5E7EB',
                       borderRadius: '8px',
-                      background: '#F9FAFB',
-                      fontSize: '14px',
-                      color: '#333',
-                      appearance: 'none',
-                      cursor: 'pointer',
+                      padding: '12px 16px',
                     }}
-                    onChange={(e) => handleRegionChange(e.target.value)}
-                    value={selectedRegion}
-                  >
-                    <option value="">请选择区域</option>
-                    {(regions || []).map((region: string) => (
-                      <option key={region} value={region}>
-                        {region}
-                      </option>
-                    ))}
-                  </select>
-                  <div style={{
-                    position: 'absolute',
-                    right: '16px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    pointerEvents: 'none',
-                    color: '#999',
-                  }}>
-                    ▼
-                  </div>
+                  />
+                </Form.Item>
+              </div>
+            </Card>
+
+            {/* 区域选择 */}
+            <Card style={{ borderRadius: '12px', marginBottom: '12px', background: '#fff' }}>
+              <div style={{ padding: '16px 20px' }}>
+                <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>区域 *</div>
+                <Form.Item noStyle>
+                  <div style={{ position: 'relative' }}>
+                    <select
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: '1px solid #E5E7EB',
+                        borderRadius: '8px',
+                        background: '#F9FAFB',
+                        fontSize: '14px',
+                        color: '#333',
+                        appearance: 'none',
+                        cursor: 'pointer',
+                      }}
+                      onChange={(e) => handleRegionChange(e.target.value)}
+                      value={selectedRegion}
+                    >
+                      <option value="">请选择区域</option>
+                      {(regions || []).map((region: string) => (
+                        <option key={region} value={region}>
+                          {region}
+                        </option>
+                      ))}
+                    </select>
+                    <div style={{
+                      position: 'absolute',
+                      right: '16px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      pointerEvents: 'none',
+                      color: '#999',
+                    }}>
+                      ▼
+                    </div>
                 </div>
               </Form.Item>
             </div>
@@ -373,6 +366,7 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
           </Button>
         </div>
       </Form>
-    </Modal>
-  )
+    }
+  />
+)
 }

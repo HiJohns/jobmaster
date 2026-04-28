@@ -6,7 +6,6 @@ import WorkOrderCard from '../components/WorkOrderCard'
 import TabBar from '../components/TabBar'
 import { useAuthStore } from '../store/useAuthStore'
 import { theme } from '../styles/theme'
-import { api } from '../api'
 import { demoApi } from '../api/demo'
 
 interface WorkOrderStats {

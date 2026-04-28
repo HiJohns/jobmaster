@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Form, Input, Button, Card, Space, Toast } from 'antd-mobile'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/useAuthStore'
-import { localAuthApi, initializeMockData } from '../api/local'
 import { demoApi } from '../api/demo'
 
 const DEMO_ACCOUNTS = [
