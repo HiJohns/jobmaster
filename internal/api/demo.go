@@ -20,8 +20,9 @@ var (
 	// sessionMutex for thread-safe session operations
 	sessionMutex sync.Mutex
 )
-	// sessions stores demo mode user sessions
-	// key: session ID, value: username
+
+// sessions stores demo mode user sessions
+// key: session ID, value: username
 
 func contains(s string, substr string) bool {
 	return strings.Contains(s, substr)
@@ -55,6 +56,7 @@ func RegisterDemoRoutes(r *gin.Engine) {
 	demo.POST("/workorders", handlers.CreateWorkOrder)
 	demo.GET("/workorders/:id/records", handlers.GetWorkOrderRecords)
 	demo.POST("/workorders/:id/records", handlers.CreateWorkOrderRecord)
+	demo.POST("/workorders/:id/finish", handlers.FinishWorkOrder)
 
 	// Reservation endpoints
 	demo.GET("/reservations", handlers.GetReservations)
@@ -198,17 +200,17 @@ func (h *DemoHandlers) CreateWorkOrder(c *gin.Context) {
 
 	// Demo mode - return created work order
 	c.JSON(http.StatusOK, gin.H{
-		"id":           "demo-wo-" + fmt.Sprint(time.Now().Unix()),
-		"order_no":     "WO-" + fmt.Sprint(time.Now().Unix()),
-		"title":        req.Title,
-		"description":  req.Description,
-		"status":       "PENDING",
-		"photo_urls":   req.PhotoURLs,
-		"priority":     req.Priority,
-		"is_urgent":    req.IsUrgent,
+		"id":             "demo-wo-" + fmt.Sprint(time.Now().Unix()),
+		"order_no":       "WO-" + fmt.Sprint(time.Now().Unix()),
+		"title":          req.Title,
+		"description":    req.Description,
+		"status":         "PENDING",
+		"photo_urls":     req.PhotoURLs,
+		"priority":       req.Priority,
+		"is_urgent":      req.IsUrgent,
 		"address_detail": req.AddressDetail,
-		"category_id":  req.CategoryID,
-		"created_at":   "2026-01-01T00:00:00Z",
+		"category_id":    req.CategoryID,
+		"created_at":     "2026-01-01T00:00:00Z",
 	})
 }
 
@@ -513,7 +515,6 @@ func (h *DemoHandlers) CreateWorkOrderRecord(c *gin.Context) {
 	})
 }
 
-
 // GetRegions returns region list for demo mode
 func (h *DemoHandlers) GetRegions(c *gin.Context) {
 	demoData, err := data.LoadDemoData()
@@ -576,5 +577,29 @@ func (h *DemoHandlers) GetRegionCategories(c *gin.Context) {
 	// Return empty array if region not found
 	c.JSON(http.StatusOK, gin.H{
 		"categories": []string{},
+	})
+}
+
+// FinishWorkOrder completes the work for a work order (ENGINEER only)
+func (h *DemoHandlers) FinishWorkOrder(c *gin.Context) {
+	workOrderID := c.Param("id")
+
+	var req struct {
+		Description string   `json:"description"`
+		PhotoURLs   []string `json:"photo_urls"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Demo mode - just return success with status change to OBSERVING
+	c.JSON(http.StatusOK, gin.H{
+		"id":          workOrderID,
+		"status":      "observing", // Changed from WORKING to OBSERVING
+		"description": req.Description,
+		"photo_urls":  req.PhotoURLs,
+		"finished_at": time.Now().Format(time.RFC3339),
 	})
 }

@@ -44,6 +44,13 @@ export const api = {
         data: res,
       }
     },
+    finish: async (workOrderId: string, data: {description: string, photo_urls?: string[]}) => {
+      const res = await demoApi.finishWorkOrder(workOrderId, data)
+      return {
+        code: 200,
+        data: res,
+      }
+    },
   },
   auth: {
     login: async (username: string, password: string) => {
@@ -55,3 +62,5 @@ export const api = {
     },
   },
 }
+
+export default api

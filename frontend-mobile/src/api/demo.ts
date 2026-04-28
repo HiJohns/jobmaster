@@ -88,14 +88,6 @@ export const demoApi = {
     })
     return response.data || response
   },
-  finishWorkOrder: async (id: string, description: string, photo_urls: string[], labor_fee: number, material_fee: number, other_fee: number) => {
-    const response = await apiClient.request({
-      url: `/workorders/${id}/finish`,
-      method: 'POST',
-      data: { description, photo_urls, labor_fee, material_fee, other_fee },
-    })
-    return response.data || response
-  },
   verifyWorkOrder: async (id: string) => {
     const response = await apiClient.request({
       url: `/workorders/${id}/verify`,
@@ -165,6 +157,14 @@ export const demoApi = {
       url: '/workorders',
       method: 'POST',
       data,
+    })
+    return response.data || response
+  },
+  finishWorkOrder: async (workOrderId: string, data: {description: string, photo_urls?: string[]}) => {
+    const response = await apiClient.request({
+      url: `/workorders/${workOrderId}/finish`,
+      method: "POST",
+      data
     })
     return response.data || response
   },

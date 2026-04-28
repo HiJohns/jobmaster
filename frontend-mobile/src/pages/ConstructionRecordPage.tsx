@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Form, TextArea, ImageUploader, Toast, NavBar } from 'antd-mobile'
 import { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import { LeftOutline } from 'antd-mobile-icons'
+import { api } from '../api'
 
 interface ConstructionRecord {
   order_id: string
@@ -148,23 +149,65 @@ export default function ConstructionRecordPage() {
           form={form}
           layout="vertical"
           footer={
-            <Button
-              block
-              type="submit"
-              color="primary"
-              size="large"
-              loading={loading}
-              onClick={handleSubmit}
-              style={{ 
-                '--background-color': '#0033FF',
-                '--border-radius': '8px',
-                height: '48px',
-                fontSize: '16px',
-                fontWeight: 500
-              }}
-            >
-              提交记录
-            </Button>
+            <div style={{display: "flex", flexDirection: "column", gap: "12px", marginTop: "16px"}}>
+              <Button
+                block
+                type="button"
+                color="success"
+                size="large"
+                onClick={async () => {
+                  try {
+                    const values = form.getFieldsValue()
+                    const res = await api.workorder.finish(orderId!, {
+                      description: values.message || '',
+                      photo_urls: uploadedPhotos
+                    })
+                    if (res.code === 200) {
+                      Toast.show({
+                        content: '离场申请已提交',
+                        icon: 'success',
+                        duration: 2000
+                      })
+                      setTimeout(() => {
+                        navigate('/wechat/orders')
+                      }, 2000)
+                    }
+                  } catch (error) {
+                    Toast.show({
+                      content: '提交失败：' + (error instanceof Error ? error.message : '未知错误'),
+                      icon: 'fail',
+                      duration: 2000
+                    })
+                  }
+                }}
+                style={{ 
+                  '--background-color': '#00B578',
+                  '--border-radius': '8px',
+                  height: '48px',
+                  fontSize: '16px',
+                  fontWeight: 500
+                }}
+              >
+                离场申请
+              </Button>
+              <Button
+                block
+                type="submit"
+                color="primary"
+                size="large"
+                loading={loading}
+                onClick={handleSubmit}
+                style={{ 
+                  '--background-color': '#0033FF',
+                  '--border-radius': '8px',
+                  height: '48px',
+                  fontSize: '16px',
+                  fontWeight: 500
+                }}
+              >
+                提交记录
+              </Button>
+            </div>
           }
         >
           {/* 文字留言 */}
