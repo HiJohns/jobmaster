@@ -21,12 +21,11 @@ const apiClient = axios.create({
 
 // Request interceptor - add session ID for demo mode
 apiClient.interceptors.request.use(
-  (config) => {
+  (config: any) => {
     // Add session ID header for demo mode authentication
     const sessionId = localStorage.getItem('demo_session_id')
     if (sessionId && config.headers) {
-      // Use bracket notation or type assertion to avoid type issues
-      (config.headers as any)['X-Session-Id'] = sessionId
+      config.headers['X-Session-Id'] = sessionId
     }
     
     return config
@@ -36,4 +35,6 @@ apiClient.interceptors.request.use(
   }
 )
 
+// Export the instance with session interceptor for demo.ts to use
+export const demoApiClient = apiClient
 export default apiClient

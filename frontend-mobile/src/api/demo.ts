@@ -1,16 +1,6 @@
-import axios, { AxiosInstance } from 'axios'
-
-const API_BASE_URL = '/api/demo'
+import { demoApiClient } from './client'
 
 let currentUserRole = ''
-
-const apiClient: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-})
 
 export const demoApi = {
   setUserRole: (role: string) => {
@@ -18,7 +8,7 @@ export const demoApi = {
   },
   getUserRole: () => currentUserRole,
   request: async (config: { url: string; method: string; data?: unknown; params?: Record<string, unknown> }) => {
-    const response = await apiClient.request(config)
+    const response = await demoApiClient.request(config)
     return response
   },
   getWorkOrders: async (_params?: Record<string, unknown>) => {
@@ -34,7 +24,7 @@ export const demoApi = {
       statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING'
     }
     
-    const response = await apiClient.request({
+    const response = await demoApiClient.request({
       url: '/workorders',
       method: 'GET',
       params: { status: statusFilter },
@@ -42,14 +32,14 @@ export const demoApi = {
     return response.data || response
   },
   getWorkOrder: async (id: string) => {
-    const response = await apiClient.request({
+    const response = await demoApiClient.request({
       url: `/workorders/${id}`,
       method: 'GET',
     })
     return response.data || response
   },
   updateWorkOrder: async (id: string, data: Record<string, unknown>) => {
-    const response = await apiClient.request({
+    const response = await demoApiClient.request({
       url: `/workorders/${id}`,
       method: 'PUT',
       data,
@@ -57,7 +47,7 @@ export const demoApi = {
     return response.data || response
   },
   dispatchWorkOrder: async (id: string, vendor_id: string, engineer_id?: string) => {
-    const response = await apiClient.request({
+    const response = await demoApiClient.request({
       url: `/workorders/${id}/dispatch`,
       method: 'POST',
       data: { vendor_id, engineer_id },
@@ -65,7 +55,7 @@ export const demoApi = {
     return response.data || response
   },
   acceptWorkOrder: async (id: string, scheduled_at: string) => {
-    const response = await apiClient.request({
+    const response = await demoApiClient.request({
       url: `/workorders/${id}/accept`,
       method: 'POST',
       data: { scheduled_at },
@@ -73,7 +63,7 @@ export const demoApi = {
     return response.data || response
   },
   reserveWorkOrder: async (id: string, appointed_at: string) => {
-    const response = await apiClient.request({
+    const response = await demoApiClient.request({
       url: `/workorders/${id}/reserve`,
       method: 'POST',
       data: { appointed_at },
@@ -81,7 +71,7 @@ export const demoApi = {
     return response.data || response
   },
   arriveWorkOrder: async (id: string, latitude: number, longitude: number) => {
-    const response = await apiClient.request({
+    const response = await demoApiClient.request({
       url: `/workorders/${id}/arrive`,
       method: 'POST',
       data: { latitude, longitude },
@@ -89,14 +79,14 @@ export const demoApi = {
     return response.data || response
   },
   verifyWorkOrder: async (id: string) => {
-    const response = await apiClient.request({
+    const response = await demoApiClient.request({
       url: `/workorders/${id}/verify`,
       method: 'POST',
     })
     return response.data
   },
   rejectWorkOrder: async (id: string, reason: string) => {
-    const response = await apiClient.request({
+    const response = await demoApiClient.request({
       url: `/workorders/${id}/reject`,
       method: 'POST',
       data: { reason },
@@ -104,14 +94,14 @@ export const demoApi = {
     return response.data
   },
   generateQRCode: async (id: string) => {
-    const response = await apiClient.request({
+    const response = await demoApiClient.request({
       url: `/workorders/${id}/qrcode`,
       method: 'GET',
     })
     return response.data
   },
   login: async (username: string, password: string) => {
-    const response = await apiClient.request({
+    const response = await demoApiClient.request({
       url: '/auth/login',
       method: 'POST',
       data: { username, password },
@@ -125,21 +115,21 @@ export const demoApi = {
     return response.data || response
   },
   getWorkOrderRecords: async (workOrderId: string) => {
-    const response = await apiClient.request({
+    const response = await demoApiClient.request({
       url: `/workorders/${workOrderId}/records`,
       method: 'GET',
     })
     return response.data || response
   },
   getRegions: async () => {
-    const response = await apiClient.request({
+    const response = await demoApiClient.request({
       url: '/regions',
       method: 'GET',
     })
     return response.data || response
   },
   getRegionCategories: async (region: string) => {
-    const response = await apiClient.request({
+    const response = await demoApiClient.request({
       url: `/regions/${encodeURIComponent(region)}/categories`,
       method: 'GET',
     })
@@ -156,7 +146,7 @@ export const demoApi = {
     address_detail: string
     division_id?: string | null
   }) => {
-    const response = await apiClient.request({
+    const response = await demoApiClient.request({
       url: '/workorders',
       method: 'POST',
       data,
@@ -164,7 +154,7 @@ export const demoApi = {
     return response.data || response
   },
   finishWorkOrder: async (workOrderId: string, data: {description: string, photo_urls?: string[]}) => {
-    const response = await apiClient.request({
+    const response = await demoApiClient.request({
       url: `/workorders/${workOrderId}/finish`,
       method: "POST",
       data
@@ -172,5 +162,3 @@ export const demoApi = {
     return response.data || response
   },
 }
-
-export default apiClient
