@@ -300,6 +300,65 @@ export default function CreateOrderPage() {
           </div>
         </Card>
 
+        {/* 区域和分类选择 - 合并在一个 Card */}
+        <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
+          <div style={{ padding: '16px' }}>
+            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>区域 *</div>
+            <Button
+              block
+              onClick={() => setRegionPickerVisible(true)}
+              style={{
+                background: '#F9FAFB',
+                border: '1px solid #E5E7EB',
+                borderRadius: '8px',
+                height: '40px',
+              }}
+            >
+              {selectedRegion || '请选择区域'}
+            </Button>
+            <Picker
+              columns={[regions.map((r, i) => ({ label: r, value: r, key: `region-${i}` }))]}
+              visible={regionPickerVisible}
+              onClose={() => setRegionPickerVisible(false)}
+              onConfirm={(value) => {
+                if (value && value[0]) {
+                  handleRegionChange(String(value[0]))
+                }
+                setRegionPickerVisible(false)
+              }}
+            />
+
+            {categoriesVisible && (
+              <>
+                <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px', marginTop: '16px' }}>分类 *</div>
+                <Button
+                  block
+                  onClick={() => setCategoryPickerVisible(true)}
+                  style={{
+                    background: '#F9FAFB',
+                    border: '1px solid #E5E7EB',
+                    borderRadius: '8px',
+                    height: '40px',
+                  }}
+                >
+                  {selectedCategory || '请选择分类'}
+                </Button>
+                <Picker
+                  columns={[filteredCategories.map((c, i) => ({ label: c, value: c, key: `category-${i}` }))]}
+                  visible={categoryPickerVisible}
+                  onClose={() => setCategoryPickerVisible(false)}
+                  onConfirm={(value) => {
+                    if (value && value[0]) {
+                      setSelectedCategory(String(value[0]))
+                    }
+                    setCategoryPickerVisible(false)
+                  }}
+                />
+              </>
+            )}
+          </div>
+        </Card>
+
         {/* 指派和紧急程度 - 合并在一个 Card */}
         <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
           <div style={{ padding: '16px' }}>
@@ -320,7 +379,7 @@ export default function CreateOrderPage() {
                   {selectedContractor || '请选择劳务公司'}
                 </Button>
                 <Picker
-                  columns={[contractors.map(c => ({ label: c.name, value: c.id, key: c.id }))]}
+                  columns={[contractors.map((c, i) => ({ label: c.name, value: c.id, key: `contractor-${i}` }))]}
                   visible={contractorPickerVisible}
                   onClose={() => setContractorPickerVisible(false)}
                   onConfirm={(value) => {
