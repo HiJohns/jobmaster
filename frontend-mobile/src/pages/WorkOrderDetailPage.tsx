@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Button, Card, Toast, NavBar, Steps, Loading } from 'antd-mobile'
+import { Button, Card, Toast, NavBar, Steps, Loading, Radio } from 'antd-mobile'
 import { LeftOutline } from 'antd-mobile-icons'
 import { demoApi } from '../api/demo'
 import { localReservationApi } from '../api/local/reservation'
@@ -60,6 +60,7 @@ export default function WorkOrderDetailPage() {
   const [loading, setLoading] = useState(true)
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
   const [forwardDialogVisible, setForwardDialogVisible] = useState(false)
+  const [dispatchType, setDispatchType] = useState<'assign' | 'distribute'>('assign')
 
   if (!orderId) {
     Toast.show('无效的工单ID')
@@ -257,24 +258,85 @@ export default function WorkOrderDetailPage() {
           </div>
         )})()}
 
-        {/* 指派按钮 - 仅工程公司可见 */}
+        {/* 指派/分配按钮 - 细粒度权限控制 */}
         {(() => {
-          const canDispatch = ['MAIN_CONTRACTOR', 'VENDOR'].includes(userInfo?.role || '')
-          return canDispatch && (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED') && (
-            <Button
-              block
-              style={{
-                '--background-color': '#FF8F1F',
-                '--border-radius': '8px',
-                height: '48px',
-                fontSize: '16px',
-                marginBottom: '16px'
-              }}
-              onClick={() => setForwardDialogVisible(true)}
-            >
-              指派
-            </Button>
-          )
+          const role = userInfo?.role || ''
+          const isBranch = role === 'BRANCH_ADMIN' || role === 'EMPLOYEE'
+          const isContractor = role === 'MAIN_CONTRACTOR' || role === 'CONTRACTOR_EMPLOYEE'
+          const isVendor = role === 'VENDOR' || role === 'VENDOR_EMPLOYEE'
+          
+          // 指派(给公司): branch 或 contractor，跳数<2（简化为始终显示）
+          const canAssign = (isBranch || isContractor) && (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED')
+          // 分配(给工程师): contractor 或 vendor
+          const canDistribute = (isContractor || isVendor) && (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED')
+          
+          // 如果 contractor 同时可见两个按钮，显示单选框
+          if (isContractor && canAssign && canDistribute) {
+            return (
+              <div style={{ marginBottom: '16px' }}>
+                <Radio.Group 
+                  value={dispatchType} 
+                  onChange={val => setDispatchType(val as 'assign' | 'distribute')}
+                >
+                  <Radio value="assign" style={{ marginRight: '24px' }}>指派</Radio>
+                  <Radio value="distribute">分配</Radio>
+                </Radio.Group>
+                <Button
+                  block
+                  style={{
+                    '--background-color': '#FF8F1F',
+                    '--border-radius': '8px',
+                    height: '48px',
+                    fontSize: '16px',
+                    marginTop: '12px',
+                  }}
+                  onClick={() => setForwardDialogVisible(true)}
+                >
+                  {dispatchType === 'assign' ? '确认指派' : '确认分配'}
+                </Button>
+              </div>
+            )
+          }
+          
+          // 仅指派可见
+          if (canAssign) {
+            return (
+              <Button
+                block
+                style={{
+                  '--background-color': '#FF8F1F',
+                  '--border-radius': '8px',
+                  height: '48px',
+                  fontSize: '16px',
+                  marginBottom: '16px'
+                }}
+                onClick={() => setForwardDialogVisible(true)}
+              >
+                指派
+              </Button>
+            )
+          }
+          
+          // 仅分配可见
+          if (canDistribute) {
+            return (
+              <Button
+                block
+                style={{
+                  '--background-color': '#FF8F1F',
+                  '--border-radius': '8px',
+                  height: '48px',
+                  fontSize: '16px',
+                  marginBottom: '16px'
+                }}
+                onClick={() => setForwardDialogVisible(true)}
+              >
+                分配
+              </Button>
+            )
+          }
+          
+          return null
         })()}
 
         {/* 拒单查看 */}
