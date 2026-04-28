@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Input, Toast, NavBar, ImageUploader, Picker } from 'antd-mobile'
+import { Card, Button, Input, Toast, NavBar, ImageUploader, Picker, TextArea } from 'antd-mobile'
 import { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import { api } from '../api'
 import { demoApi } from '../api/demo'
@@ -236,7 +236,7 @@ export default function CreateOrderPage() {
       </NavBar>
 
       <div style={{ padding: '16px' }}>
-        {/* 工单基本信息：标题 + 描述 + 照片 */}
+        {/* 工单标题 */}
         <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
           <div style={{ padding: '16px' }}>
             <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>工单标题 *</div>
@@ -250,29 +250,6 @@ export default function CreateOrderPage() {
                 borderRadius: '8px',
                 padding: '8px',
               }}
-            />
-
-            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px', marginTop: '16px' }}>故障描述 *</div>
-            <Input
-              placeholder="请描述故障情况"
-              value={description}
-              onChange={setDescription}
-              style={{
-                background: '#F9FAFB',
-                border: '1px solid #E5E7EB',
-                borderRadius: '8px',
-                padding: '8px',
-                minHeight: '100px',
-              }}
-            />
-
-            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px', marginTop: '16px' }}>上传照片</div>
-            <ImageUploader
-              upload={handlePhotoUpload}
-              multiple
-              maxCount={9}
-              accept="image/*"
-              deletable
             />
           </div>
         </Card>
@@ -349,7 +326,35 @@ export default function CreateOrderPage() {
           </div>
         </Card>
 
-        {/* 指派和紧急程度 - 合并在一个 Card */}
+        {/* 故障描述 + 照片 */}
+        <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
+          <div style={{ padding: '16px' }}>
+            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>故障描述 *</div>
+            <TextArea
+              placeholder="请描述故障情况"
+              value={description}
+              onChange={setDescription}
+              style={{
+                background: '#F9FAFB',
+                border: '1px solid #E5E7EB',
+                borderRadius: '8px',
+                padding: '8px',
+                minHeight: '100px',
+              }}
+            />
+
+            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px', marginTop: '16px' }}>上传照片</div>
+            <ImageUploader
+              upload={handlePhotoUpload}
+              multiple
+              maxCount={9}
+              accept="image/*"
+              deletable
+            />
+          </div>
+        </Card>
+
+        {/* 指派和紧急程度 */}
         <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
           <div style={{ padding: '16px' }}>
             {/* 指派给 - 仅 Branch 角色显示 */}
