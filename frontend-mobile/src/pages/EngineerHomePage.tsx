@@ -16,6 +16,7 @@ interface WorkOrderStats {
 interface WorkOrder {
   id: string
   order_no: string
+  title?: string
   status: string
   store_name: string
   address_detail: string
