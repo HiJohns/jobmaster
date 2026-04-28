@@ -76,6 +76,7 @@ export default function EngineerHomePage() {
       const mockOrders: WorkOrder[] = (res.list || []).map((o: any) => ({
         id: o.id,
         order_no: o.order_no,
+        title: o.title,
         status: o.status,
         store_name: o.store_name,
         address_detail: o.address_detail,
