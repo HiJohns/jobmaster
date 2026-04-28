@@ -303,37 +303,70 @@ export default function CreateOrderPage() {
           </Card>
         )}
 
-        {/* 指派给 - 仅 Branch 角色显示 */}
-        {isBranchRole && contractors.length > 0 && (
-          <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
-            <div style={{ padding: '16px' }}>
-              <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>指派给</div>
-              <Button
-                block
-                onClick={() => setContractorPickerVisible(true)}
+        {/* 指派和紧急程度 - 合并在一个 Card */}
+        <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
+          <div style={{ padding: '16px' }}>
+            {/* 指派给 - 仅 Branch 角色显示 */}
+            {isBranchRole && contractors.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>指派给</div>
+                <Button
+                  block
+                  onClick={() => setContractorPickerVisible(true)}
+                  style={{
+                    background: '#F9FAFB',
+                    border: '1px solid #E5E7EB',
+                    borderRadius: '8px',
+                    height: '40px',
+                  }}
+                >
+                  {selectedContractor || '请选择劳务公司'}
+                </Button>
+                <Picker
+                  columns={[contractors.map(c => ({ label: c.name, value: c.id }))]}
+                  visible={contractorPickerVisible}
+                  onClose={() => setContractorPickerVisible(false)}
+                  onConfirm={(value) => {
+                    if (value && value[0]) {
+                      setSelectedContractor(String(value[0]))
+                    }
+                    setContractorPickerVisible(false)
+                  }}
+                />
+              </div>
+            )}
+
+            {/* 是否紧急 */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: '14px', color: '#333' }}>是否紧急</div>
+              <div
                 style={{
-                  background: '#F9FAFB',
-                  border: '1px solid #E5E7EB',
-                  borderRadius: '8px',
-                  height: '40px',
+                  width: '44px',
+                  height: '24px',
+                  borderRadius: '12px',
+                  background: isUrgent ? '#00B578' : '#E5E5E5',
+                  position: 'relative',
+                  cursor: 'pointer',
+                  transition: 'background 0.3s',
                 }}
+                onClick={() => setIsUrgent(!isUrgent)}
               >
-                {selectedContractor || '请选择劳务公司'}
-              </Button>
-              <Picker
-                columns={[contractors.map(c => ({ label: c.name, value: c.id }))]}
-                visible={contractorPickerVisible}
-                onClose={() => setContractorPickerVisible(false)}
-                onConfirm={(value) => {
-                  if (value && value[0]) {
-                    setSelectedContractor(String(value[0]))
-                  }
-                  setContractorPickerVisible(false)
-                }}
-              />
+                <div
+                  style={{
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    background: '#fff',
+                    position: 'absolute',
+                    top: '2px',
+                    left: isUrgent ? '22px' : '2px',
+                    transition: 'left 0.3s',
+                  }}
+                />
+              </div>
             </div>
-          </Card>
-        )}
+          </div>
+        </Card>
 
         {/* 故障描述 */}
         <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
@@ -383,38 +416,6 @@ export default function CreateOrderPage() {
                 padding: '8px',
               }}
             />
-          </div>
-        </Card>
-
-        {/* 紧急程度 */}
-        <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
-          <div style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: '14px', color: '#333' }}>是否紧急</div>
-            <div
-              style={{
-                width: '44px',
-                height: '24px',
-                borderRadius: '12px',
-                background: isUrgent ? '#00B578' : '#E5E5E5',
-                position: 'relative',
-                cursor: 'pointer',
-                transition: 'background 0.3s',
-              }}
-              onClick={() => setIsUrgent(!isUrgent)}
-            >
-              <div
-                style={{
-                  width: '20px',
-                  height: '20px',
-                  borderRadius: '50%',
-                  background: '#fff',
-                  position: 'absolute',
-                  top: '2px',
-                  left: isUrgent ? '22px' : '2px',
-                  transition: 'left 0.3s',
-                }}
-              />
-            </div>
           </div>
         </Card>
 
