@@ -48,20 +48,13 @@ export default function EngineerHomePage() {
    */
   const fetchStats = async () => {
     try {
-      // 模拟 API 调用
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      const mockStats: WorkOrderStats = {
-        total: 12,
-        by_status: {
-          'DISPATCHED': 3,
-          'ACCEPTED': 2,
-          'RESERVED': 4,
-          'WORKING': 3,
-        }
-      }
-      
-      setStats(mockStats)
+      const res = await demoApi.getWorkOrders()
+      const orders = res.list || []
+      const by_status: Record<string, number> = {}
+      orders.forEach((o: any) => {
+        by_status[o.status] = (by_status[o.status] || 0) + 1
+      })
+      setStats({ total: orders.length, by_status })
     } catch (error) {
       console.error('Failed to fetch stats:', error)
     }
