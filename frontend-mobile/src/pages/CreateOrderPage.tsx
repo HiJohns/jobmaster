@@ -223,7 +223,7 @@ export default function CreateOrderPage() {
       </NavBar>
 
       <div style={{ padding: '16px' }}>
-        {/* 工单标题 */}
+        {/* 工单基本信息：标题 + 描述 + 照片 */}
         <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
           <div style={{ padding: '16px' }}>
             <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>工单标题 *</div>
@@ -238,13 +238,8 @@ export default function CreateOrderPage() {
                 padding: '8px',
               }}
             />
-          </div>
-        </Card>
 
-        {/* 故障描述 */}
-        <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
-          <div style={{ padding: '16px' }}>
-            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>故障描述 *</div>
+            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px', marginTop: '16px' }}>故障描述 *</div>
             <Input
               placeholder="请描述故障情况"
               value={description}
@@ -257,13 +252,8 @@ export default function CreateOrderPage() {
                 minHeight: '100px',
               }}
             />
-          </div>
-        </Card>
 
-        {/* 照片上传 */}
-        <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
-          <div style={{ padding: '16px' }}>
-            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>上传照片</div>
+            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px', marginTop: '16px' }}>上传照片</div>
             <ImageUploader
               upload={handlePhotoUpload}
               multiple
@@ -274,7 +264,7 @@ export default function CreateOrderPage() {
           </div>
         </Card>
 
-        {/* 详细地址 */}
+        {/* 位置信息：地址 + 区域 + 分类 */}
         <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
           <div style={{ padding: '16px' }}>
             <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>详细地址</div>
@@ -289,13 +279,8 @@ export default function CreateOrderPage() {
                 padding: '8px',
               }}
             />
-          </div>
-        </Card>
 
-        {/* 区域和分类选择 - 合并在一个 Card */}
-        <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
-          <div style={{ padding: '16px' }}>
-            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>区域 *</div>
+            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px', marginTop: '16px' }}>区域 *</div>
             <Button
               block
               onClick={() => setRegionPickerVisible(true)}
