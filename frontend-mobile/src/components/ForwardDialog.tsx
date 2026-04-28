@@ -16,8 +16,8 @@ interface Organization {
 }
 
 /**
- * ForwardDialog - 转发工单对话框
- * 功能：选择目标组织（供应商/工程公司）并转发工单
+ * ForwardDialog - 指派工单对话框
+ * 功能：选择目标组织（供应商/工程公司）并指派工单
  */
 export default function ForwardDialog({ visible, onClose, workOrderId, onSuccess }: ForwardDialogProps) {
   const [targetOrg, setTargetOrg] = useState<string[]>([])
@@ -70,7 +70,7 @@ export default function ForwardDialog({ visible, onClose, workOrderId, onSuccess
       {visible && (
         <Dialog
           visible={visible}
-          title="转发工单"
+          title="指派工单"
           content={
             <div style={{ padding: '16px 0' }}>
               <Selector
@@ -89,7 +89,7 @@ export default function ForwardDialog({ visible, onClose, workOrderId, onSuccess
           onClose={onClose}
           actions={[
             [{ key: 'cancel', text: '取消', onClick: onClose }],
-            [{ key: 'confirm', text: '确认转发', onClick: handleForward, disabled: !targetOrg[0] || loading }],
+            [{ key: 'confirm', text: '确认指派', onClick: handleForward, disabled: !targetOrg[0] || loading }],
           ]}
         />
       )}

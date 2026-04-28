@@ -188,22 +188,25 @@ export default function WorkOrderDetailPage() {
           </div>
         </Card>
 
-        {/* 二维码显示 */}
-        {(workOrder.status === 'DISPATCHED' || 
-          workOrder.status === 'ACCEPTED' || 
-          workOrder.status === 'RESERVED' || 
-          workOrder.status === 'WORKING') && (
-          <Card title="扫码确认" style={{ marginBottom: '16px' }}>
-            <Button 
-              block 
-              style={{ marginBottom: '12px', height: '48px' }}
-              onClick={() => navigate('/wechat/scan-arrive')}
-            >
-              扫码进场
-            </Button>
-            <QRCodeDisplay workOrderId={workOrder.id} />
-          </Card>
-        )}
+        {/* 二维码显示 - 仅工程师可见 */}
+        {(() => {
+          const canScan = ['ENGINEER', 'VENDOR_ENGINEER'].includes(userInfo?.role || '')
+          return canScan && (workOrder.status === 'DISPATCHED' || 
+            workOrder.status === 'ACCEPTED' || 
+            workOrder.status === 'RESERVED' || 
+            workOrder.status === 'WORKING') && (
+            <Card title="扫码确认" style={{ marginBottom: '16px' }}>
+              <Button 
+                block 
+                style={{ marginBottom: '12px', height: '48px' }}
+                onClick={() => navigate('/wechat/scan-arrive')}
+              >
+                扫码进场
+              </Button>
+              <QRCodeDisplay workOrderId={workOrder.id} />
+            </Card>
+          )
+        })()}
 
         {/* Step Flow - 当前步骤大按钮 */}
                 {/* 操作步骤 */}
@@ -254,22 +257,25 @@ export default function WorkOrderDetailPage() {
           </div>
         )})()}
 
-        {/* 转发工单按钮 */}
-        {(workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED') && (
-          <Button
-            block
-            style={{
-              '--background-color': '#FF8F1F',
-              '--border-radius': '8px',
-              height: '48px',
-              fontSize: '16px',
-              marginBottom: '16px'
-            }}
-            onClick={() => setForwardDialogVisible(true)}
-          >
-            转发工单
-          </Button>
-        )}
+        {/* 指派按钮 - 仅工程公司可见 */}
+        {(() => {
+          const canDispatch = ['MAIN_CONTRACTOR', 'VENDOR'].includes(userInfo?.role || '')
+          return canDispatch && (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED') && (
+            <Button
+              block
+              style={{
+                '--background-color': '#FF8F1F',
+                '--border-radius': '8px',
+                height: '48px',
+                fontSize: '16px',
+                marginBottom: '16px'
+              }}
+              onClick={() => setForwardDialogVisible(true)}
+            >
+              指派
+            </Button>
+          )
+        })()}
 
         {/* 拒单查看 */}
         {workOrder.status === 'PENDING' && (workOrder as any).rejection_reason && (
