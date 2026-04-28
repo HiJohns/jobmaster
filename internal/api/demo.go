@@ -20,7 +20,6 @@ var (
 	// sessionMutex for thread-safe session operations
 	sessionMutex sync.Mutex
 )
-var (
 	// sessions stores demo mode user sessions
 	// key: session ID, value: username
 
