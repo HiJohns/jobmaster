@@ -19,10 +19,10 @@ var (
 	sessions sync.Map
 	// sessionMutex for thread-safe session operations
 	sessionMutex sync.Mutex
+	// createdWorkOrders stores newly created work orders in memory
+	// key: work order ID, value: work order map
+	createdWorkOrders sync.Map
 )
-
-// sessions stores demo mode user sessions
-// key: session ID, value: username
 
 func contains(s string, substr string) bool {
 	return strings.Contains(s, substr)
@@ -144,6 +144,25 @@ func (h *DemoHandlers) GetWorkOrders(c *gin.Context) {
 		filtered = statusFiltered
 	}
 
+	// Add work orders created in memory (not in static data)
+	createdWorkOrders.Range(func(key, value interface{}) bool {
+		wo := value.(map[string]interface{})
+		// Apply same status filter if specified
+		if statusParam != "" {
+			status, _ := wo["status"].(string)
+			for _, s := range strings.Split(statusParam, ",") {
+				if strings.TrimSpace(s) == status {
+					filtered = append(filtered, wo)
+					break
+				}
+			}
+		} else {
+			// No status filter, add all
+			filtered = append(filtered, wo)
+		}
+		return true
+	})
+
 	c.JSON(http.StatusOK, gin.H{
 		"list":  filtered,
 		"total": len(filtered),
@@ -198,8 +217,8 @@ func (h *DemoHandlers) CreateWorkOrder(c *gin.Context) {
 		return
 	}
 
-	// Demo mode - return created work order
-	c.JSON(http.StatusOK, gin.H{
+	// Create new work order object
+	newOrder := map[string]interface{}{
 		"id":             "demo-wo-" + fmt.Sprint(time.Now().Unix()),
 		"order_no":       "WO-" + fmt.Sprint(time.Now().Unix()),
 		"title":          req.Title,
@@ -210,8 +229,17 @@ func (h *DemoHandlers) CreateWorkOrder(c *gin.Context) {
 		"is_urgent":      req.IsUrgent,
 		"address_detail": req.AddressDetail,
 		"category_id":    req.CategoryID,
-		"created_at":     "2026-01-01T00:00:00Z",
-	})
+		"created_at":     time.Now().Format(time.RFC3339),
+		"store_id":       "jm-branch1",
+		"store_name":     "Branch 001",
+		"brand_name":     "Unknown",
+		"category_path":  req.CategoryID,
+	}
+
+	// Save to memory
+	createdWorkOrders.Store(newOrder["id"].(string), newOrder)
+
+	c.JSON(http.StatusOK, newOrder)
 }
 
 // GetOrganizations returns all organizations from demo data
