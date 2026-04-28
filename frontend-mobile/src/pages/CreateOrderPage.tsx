@@ -26,6 +26,10 @@ export default function CreateOrderPage() {
   const [categoriesVisible, setCategoriesVisible] = useState(false)
   const [filteredCategories, setFilteredCategories] = useState<string[]>([])
   const [selectedCategory, setSelectedCategory] = useState('')
+  
+  // Picker visibility states
+  const [regionPickerVisible, setRegionPickerVisible] = useState(false)
+  const [categoryPickerVisible, setCategoryPickerVisible] = useState(false)
 
   const handlePhotoUpload = async (file: File): Promise<ImageUploadItem> => {
     const url = URL.createObjectURL(file)
@@ -185,26 +189,29 @@ export default function CreateOrderPage() {
         <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
           <div style={{ padding: '16px' }}>
             <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>区域 *</div>
+            <Button
+              block
+              onClick={() => setRegionPickerVisible(true)}
+              style={{
+                background: '#F9FAFB',
+                border: '1px solid #E5E7EB',
+                borderRadius: '8px',
+                height: '40px',
+              }}
+            >
+              {selectedRegion || '请选择区域'}
+            </Button>
             <Picker
               columns={[regions.map(r => ({ label: r, value: r }))]}
-              visible={false}
-              onConfirm={(value) => handleRegionChange(value[0])}
-            >
-              {(_, actions) => (
-                <Button
-                  block
-                  onClick={() => actions.open()}
-                  style={{
-                    background: '#F9FAFB',
-                    border: '1px solid #E5E7EB',
-                    borderRadius: '8px',
-                    height: '40px',
-                  }}
-                >
-                  {selectedRegion || '请选择区域'}
-                </Button>
-              )}
-            </Picker>
+              visible={regionPickerVisible}
+              onClose={() => setRegionPickerVisible(false)}
+              onConfirm={(value) => {
+                if (value && value[0]) {
+                  handleRegionChange(value[0])
+                }
+                setRegionPickerVisible(false)
+              }}
+            />
           </div>
         </Card>
 
@@ -213,26 +220,29 @@ export default function CreateOrderPage() {
           <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
             <div style={{ padding: '16px' }}>
               <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>分类 *</div>
+              <Button
+                block
+                onClick={() => setCategoryPickerVisible(true)}
+                style={{
+                  background: '#F9FAFB',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '8px',
+                  height: '40px',
+                }}
+              >
+                {selectedCategory || '请选择分类'}
+              </Button>
               <Picker
                 columns={[filteredCategories.map(c => ({ label: c, value: c }))]}
-                visible={false}
-                onConfirm={(value) => setSelectedCategory(value[0])}
-              >
-                {(_, actions) => (
-                  <Button
-                    block
-                    onClick={() => actions.open()}
-                    style={{
-                      background: '#F9FAFB',
-                      border: '1px solid #E5E7EB',
-                      borderRadius: '8px',
-                      height: '40px',
-                    }}
-                  >
-                    {selectedCategory || '请选择分类'}
-                  </Button>
-                )}
-              </Picker>
+                visible={categoryPickerVisible}
+                onClose={() => setCategoryPickerVisible(false)}
+                onConfirm={(value) => {
+                  if (value && value[0]) {
+                    setSelectedCategory(value[0])
+                  }
+                  setCategoryPickerVisible(false)
+                }}
+              />
             </div>
           </Card>
         )}
@@ -253,7 +263,7 @@ export default function CreateOrderPage() {
                 minHeight: '100px',
               }}
               textArea
-              rows={4}
+              rows={4 as any} // NativeInputProps type issue workaround
             />
           </div>
         </Card>
