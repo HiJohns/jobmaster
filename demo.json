@@ -85,6 +85,160 @@
     }
   ],
   "jm_categories": {
+    "墙面维修": [
+      {
+        "id": "cat-general-1",
+        "name": "墙面维修",
+        "code": "WALL_REPAIR"
+      }
+    ],
+    "地面维修": [
+      {
+        "id": "cat-general-2",
+        "name": "地面维修",
+        "code": "FLOOR_REPAIR"
+      }
+    ],
+    "天花板维修": [
+      {
+        "id": "cat-general-3",
+        "name": "天花板维修",
+        "code": "CEILING_REPAIR"
+      }
+    ],
+    "门窗维修": [
+      {
+        "id": "cat-general-4",
+        "name": "门窗维修",
+        "code": "DOOR_WINDOW_REPAIR"
+      }
+    ],
+    "外立面LOGO维修": [
+      {
+        "id": "cat-sign-1",
+        "name": "外立面LOGO维修",
+        "code": "FACADE_LOGO_REPAIR"
+      }
+    ],
+    "室内展板更换": [
+      {
+        "id": "cat-sign-2",
+        "name": "室内展板更换",
+        "code": "INDOOR_DISPLAY_REPLACE"
+      }
+    ],
+    "POS机维修": [
+      {
+        "id": "cat-pos-1",
+        "name": "POS机维修",
+        "code": "POS_REPAIR"
+      }
+    ],
+    "排烟系统维修": [
+      {
+        "id": "cat-kitchen-1",
+        "name": "排烟系统维修",
+        "code": "EXHAUST_REPAIR"
+      }
+    ],
+    "燃气系统维修": [
+      {
+        "id": "cat-kitchen-2",
+        "name": "燃气系统维修",
+        "code": "GAS_REPAIR"
+      }
+    ],
+    "电气设备维修": [
+      {
+        "id": "cat-kitchen-3",
+        "name": "电气设备维修",
+        "code": "ELECTRICAL_REPAIR"
+      }
+    ],
+    "水路系统维修": [
+      {
+        "id": "cat-kitchen-4",
+        "name": "水路系统维修",
+        "code": "PLUMBING_REPAIR"
+      }
+    ],
+    "洗手盆维修": [
+      {
+        "id": "cat-sushi-1",
+        "name": "洗手盆维修",
+        "code": "SINK_REPAIR"
+      }
+    ],
+    "工作台维修": [
+      {
+        "id": "cat-sushi-2",
+        "name": "工作台维修",
+        "code": "WORKSTATION_REPAIR"
+      }
+    ],
+    "单星盆维修": [
+      {
+        "id": "cat-clean-1",
+        "name": "单星盆维修",
+        "code": "SINGLE_SINK_REPAIR"
+      }
+    ],
+    "三星盆维修": [
+      {
+        "id": "cat-clean-2",
+        "name": "三星盆维修",
+        "code": "TRIPLE_SINK_REPAIR"
+      }
+    ],
+    "洗手台维修": [
+      {
+        "id": "cat-cook-1",
+        "name": "洗手台维修",
+        "code": "WASH_STATION_REPAIR"
+      }
+    ],
+    "自助洗米机维修": [
+      {
+        "id": "cat-cook-2",
+        "name": "自助洗米机维修",
+        "code": "RICE_WASHER_REPAIR"
+      }
+    ],
+    "醋饭混合机维修": [
+      {
+        "id": "cat-cook-3",
+        "name": "醋饭混合机维修",
+        "code": "VINEGAR_MIXER_REPAIR"
+      }
+    ],
+    "配电箱维修": [
+      {
+        "id": "cat-power-1",
+        "name": "配电箱维修",
+        "code": "DISTRIBUTION_BOX_REPAIR"
+      }
+    ],
+    "灭火弹检查": [
+      {
+        "id": "cat-power-2",
+        "name": "灭火弹检查",
+        "code": "FIRE_EXTINGUISHER_CHECK"
+      }
+    ],
+    "鞋柜维修": [
+      {
+        "id": "cat-rest-1",
+        "name": "鞋柜维修",
+        "code": "SHOE_CABINET_REPAIR"
+      }
+    ],
+    "更衣室维修": [
+      {
+        "id": "cat-rest-2",
+        "name": "更衣室维修",
+        "code": "LOCKER_ROOM_REPAIR"
+      }
+    ],
     "空调维修": [
       {
         "id": "cat-1",
@@ -97,8 +251,469 @@
     "regions": [
       "入口",
       "收银区",
-      "前厅"
-    ]
+      "前厅",
+      "中菜厨房",
+      "明档",
+      "后区",
+      "寿司吧",
+      "刺身制作区",
+      "厨房后区",
+      "洗净室",
+      "炊饭间",
+      "强电间",
+      "员工休息室",
+      "标识"
+    ],
+    "region_categories": {
+      "入口": [
+        {
+          "id": "cat-general-1",
+          "name": "墙面维修",
+          "code": "WALL_REPAIR"
+        },
+        {
+          "id": "cat-general-2",
+          "name": "地面维修",
+          "code": "FLOOR_REPAIR"
+        },
+        {
+          "id": "cat-general-3",
+          "name": "天花板维修",
+          "code": "CEILING_REPAIR"
+        },
+        {
+          "id": "cat-general-4",
+          "name": "门窗维修",
+          "code": "DOOR_WINDOW_REPAIR"
+        },
+        {
+          "id": "cat-sign-1",
+          "name": "外立面LOGO维修",
+          "code": "FACADE_LOGO_REPAIR"
+        },
+        {
+          "id": "cat-sign-2",
+          "name": "室内展板更换",
+          "code": "INDOOR_DISPLAY_REPLACE"
+        }
+      ],
+      "收银区": [
+        {
+          "id": "cat-general-1",
+          "name": "墙面维修",
+          "code": "WALL_REPAIR"
+        },
+        {
+          "id": "cat-general-2",
+          "name": "地面维修",
+          "code": "FLOOR_REPAIR"
+        },
+        {
+          "id": "cat-general-3",
+          "name": "天花板维修",
+          "code": "CEILING_REPAIR"
+        },
+        {
+          "id": "cat-general-4",
+          "name": "门窗维修",
+          "code": "DOOR_WINDOW_REPAIR"
+        },
+        {
+          "id": "cat-pos-1",
+          "name": "POS机维修",
+          "code": "POS_REPAIR"
+        }
+      ],
+      "前厅": [
+        {
+          "id": "cat-general-1",
+          "name": "墙面维修",
+          "code": "WALL_REPAIR"
+        },
+        {
+          "id": "cat-general-2",
+          "name": "地面维修",
+          "code": "FLOOR_REPAIR"
+        },
+        {
+          "id": "cat-general-3",
+          "name": "天花板维修",
+          "code": "CEILING_REPAIR"
+        },
+        {
+          "id": "cat-general-4",
+          "name": "门窗维修",
+          "code": "DOOR_WINDOW_REPAIR"
+        },
+        {
+          "id": "cat-sign-1",
+          "name": "外立面LOGO维修",
+          "code": "FACADE_LOGO_REPAIR"
+        },
+        {
+          "id": "cat-sign-2",
+          "name": "室内展板更换",
+          "code": "INDOOR_DISPLAY_REPLACE"
+        }
+      ],
+      "中菜厨房": [
+        {
+          "id": "cat-kitchen-1",
+          "name": "排烟系统维修",
+          "code": "EXHAUST_REPAIR"
+        },
+        {
+          "id": "cat-kitchen-2",
+          "name": "燃气系统维修",
+          "code": "GAS_REPAIR"
+        },
+        {
+          "id": "cat-kitchen-3",
+          "name": "电气设备维修",
+          "code": "ELECTRICAL_REPAIR"
+        },
+        {
+          "id": "cat-kitchen-4",
+          "name": "水路系统维修",
+          "code": "PLUMBING_REPAIR"
+        }
+      ],
+      "明档": [
+        {
+          "id": "cat-general-1",
+          "name": "墙面维修",
+          "code": "WALL_REPAIR"
+        },
+        {
+          "id": "cat-general-2",
+          "name": "地面维修",
+          "code": "FLOOR_REPAIR"
+        },
+        {
+          "id": "cat-general-3",
+          "name": "天花板维修",
+          "code": "CEILING_REPAIR"
+        },
+        {
+          "id": "cat-general-4",
+          "name": "门窗维修",
+          "code": "DOOR_WINDOW_REPAIR"
+        },
+        {
+          "id": "cat-kitchen-1",
+          "name": "排烟系统维修",
+          "code": "EXHAUST_REPAIR"
+        },
+        {
+          "id": "cat-kitchen-2",
+          "name": "燃气系统维修",
+          "code": "GAS_REPAIR"
+        },
+        {
+          "id": "cat-kitchen-3",
+          "name": "电气设备维修",
+          "code": "ELECTRICAL_REPAIR"
+        },
+        {
+          "id": "cat-kitchen-4",
+          "name": "水路系统维修",
+          "code": "PLUMBING_REPAIR"
+        }
+      ],
+      "后区": [
+        {
+          "id": "cat-general-1",
+          "name": "墙面维修",
+          "code": "WALL_REPAIR"
+        },
+        {
+          "id": "cat-general-2",
+          "name": "地面维修",
+          "code": "FLOOR_REPAIR"
+        },
+        {
+          "id": "cat-general-3",
+          "name": "天花板维修",
+          "code": "CEILING_REPAIR"
+        },
+        {
+          "id": "cat-general-4",
+          "name": "门窗维修",
+          "code": "DOOR_WINDOW_REPAIR"
+        },
+        {
+          "id": "cat-kitchen-1",
+          "name": "排烟系统维修",
+          "code": "EXHAUST_REPAIR"
+        },
+        {
+          "id": "cat-kitchen-2",
+          "name": "燃气系统维修",
+          "code": "GAS_REPAIR"
+        },
+        {
+          "id": "cat-kitchen-3",
+          "name": "电气设备维修",
+          "code": "ELECTRICAL_REPAIR"
+        },
+        {
+          "id": "cat-kitchen-4",
+          "name": "水路系统维修",
+          "code": "PLUMBING_REPAIR"
+        }
+      ],
+      "寿司吧": [
+        {
+          "id": "cat-general-1",
+          "name": "墙面维修",
+          "code": "WALL_REPAIR"
+        },
+        {
+          "id": "cat-general-2",
+          "name": "地面维修",
+          "code": "FLOOR_REPAIR"
+        },
+        {
+          "id": "cat-general-3",
+          "name": "天花板维修",
+          "code": "CEILING_REPAIR"
+        },
+        {
+          "id": "cat-general-4",
+          "name": "门窗维修",
+          "code": "DOOR_WINDOW_REPAIR"
+        },
+        {
+          "id": "cat-sushi-1",
+          "name": "洗手盆维修",
+          "code": "SINK_REPAIR"
+        },
+        {
+          "id": "cat-sushi-2",
+          "name": "工作台维修",
+          "code": "WORKSTATION_REPAIR"
+        }
+      ],
+      "刺身制作区": [
+        {
+          "id": "cat-general-1",
+          "name": "墙面维修",
+          "code": "WALL_REPAIR"
+        },
+        {
+          "id": "cat-general-2",
+          "name": "地面维修",
+          "code": "FLOOR_REPAIR"
+        },
+        {
+          "id": "cat-general-3",
+          "name": "天花板维修",
+          "code": "CEILING_REPAIR"
+        },
+        {
+          "id": "cat-general-4",
+          "name": "门窗维修",
+          "code": "DOOR_WINDOW_REPAIR"
+        },
+        {
+          "id": "cat-sushi-1",
+          "name": "洗手盆维修",
+          "code": "SINK_REPAIR"
+        },
+        {
+          "id": "cat-sushi-2",
+          "name": "工作台维修",
+          "code": "WORKSTATION_REPAIR"
+        }
+      ],
+      "厨房后区": [
+        {
+          "id": "cat-general-1",
+          "name": "墙面维修",
+          "code": "WALL_REPAIR"
+        },
+        {
+          "id": "cat-general-2",
+          "name": "地面维修",
+          "code": "FLOOR_REPAIR"
+        },
+        {
+          "id": "cat-general-3",
+          "name": "天花板维修",
+          "code": "CEILING_REPAIR"
+        },
+        {
+          "id": "cat-general-4",
+          "name": "门窗维修",
+          "code": "DOOR_WINDOW_REPAIR"
+        },
+        {
+          "id": "cat-kitchen-1",
+          "name": "排烟系统维修",
+          "code": "EXHAUST_REPAIR"
+        },
+        {
+          "id": "cat-kitchen-2",
+          "name": "燃气系统维修",
+          "code": "GAS_REPAIR"
+        },
+        {
+          "id": "cat-kitchen-3",
+          "name": "电气设备维修",
+          "code": "ELECTRICAL_REPAIR"
+        },
+        {
+          "id": "cat-kitchen-4",
+          "name": "水路系统维修",
+          "code": "PLUMBING_REPAIR"
+        }
+      ],
+      "洗净室": [
+        {
+          "id": "cat-general-1",
+          "name": "墙面维修",
+          "code": "WALL_REPAIR"
+        },
+        {
+          "id": "cat-general-2",
+          "name": "地面维修",
+          "code": "FLOOR_REPAIR"
+        },
+        {
+          "id": "cat-general-3",
+          "name": "天花板维修",
+          "code": "CEILING_REPAIR"
+        },
+        {
+          "id": "cat-general-4",
+          "name": "门窗维修",
+          "code": "DOOR_WINDOW_REPAIR"
+        },
+        {
+          "id": "cat-clean-1",
+          "name": "单星盆维修",
+          "code": "SINGLE_SINK_REPAIR"
+        },
+        {
+          "id": "cat-clean-2",
+          "name": "三星盆维修",
+          "code": "TRIPLE_SINK_REPAIR"
+        }
+      ],
+      "炊饭间": [
+        {
+          "id": "cat-general-1",
+          "name": "墙面维修",
+          "code": "WALL_REPAIR"
+        },
+        {
+          "id": "cat-general-2",
+          "name": "地面维修",
+          "code": "FLOOR_REPAIR"
+        },
+        {
+          "id": "cat-general-3",
+          "name": "天花板维修",
+          "code": "CEILING_REPAIR"
+        },
+        {
+          "id": "cat-general-4",
+          "name": "门窗维修",
+          "code": "DOOR_WINDOW_REPAIR"
+        },
+        {
+          "id": "cat-cook-1",
+          "name": "洗手台维修",
+          "code": "WASH_STATION_REPAIR"
+        },
+        {
+          "id": "cat-cook-2",
+          "name": "自助洗米机维修",
+          "code": "RICE_WASHER_REPAIR"
+        },
+        {
+          "id": "cat-cook-3",
+          "name": "醋饭混合机维修",
+          "code": "VINEGAR_MIXER_REPAIR"
+        }
+      ],
+      "强电间": [
+        {
+          "id": "cat-general-1",
+          "name": "墙面维修",
+          "code": "WALL_REPAIR"
+        },
+        {
+          "id": "cat-general-2",
+          "name": "地面维修",
+          "code": "FLOOR_REPAIR"
+        },
+        {
+          "id": "cat-general-3",
+          "name": "天花板维修",
+          "code": "CEILING_REPAIR"
+        },
+        {
+          "id": "cat-general-4",
+          "name": "门窗维修",
+          "code": "DOOR_WINDOW_REPAIR"
+        },
+        {
+          "id": "cat-power-1",
+          "name": "配电箱维修",
+          "code": "DISTRIBUTION_BOX_REPAIR"
+        },
+        {
+          "id": "cat-power-2",
+          "name": "灭火弹检查",
+          "code": "FIRE_EXTINGUISHER_CHECK"
+        }
+      ],
+      "员工休息室": [
+        {
+          "id": "cat-general-1",
+          "name": "墙面维修",
+          "code": "WALL_REPAIR"
+        },
+        {
+          "id": "cat-general-2",
+          "name": "地面维修",
+          "code": "FLOOR_REPAIR"
+        },
+        {
+          "id": "cat-general-3",
+          "name": "天花板维修",
+          "code": "CEILING_REPAIR"
+        },
+        {
+          "id": "cat-general-4",
+          "name": "门窗维修",
+          "code": "DOOR_WINDOW_REPAIR"
+        },
+        {
+          "id": "cat-rest-1",
+          "name": "鞋柜维修",
+          "code": "SHOE_CABINET_REPAIR"
+        },
+        {
+          "id": "cat-rest-2",
+          "name": "更衣室维修",
+          "code": "LOCKER_ROOM_REPAIR"
+        }
+      ],
+      "标识": [
+        {
+          "id": "cat-sign-1",
+          "name": "外立面LOGO维修",
+          "code": "FACADE_LOGO_REPAIR"
+        },
+        {
+          "id": "cat-sign-2",
+          "name": "室内展板更换",
+          "code": "INDOOR_DISPLAY_REPLACE"
+        }
+      ]
+    }
   },
   "branch_contractors": {
     "jm-branch1": [
