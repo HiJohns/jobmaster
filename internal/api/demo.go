@@ -173,9 +173,41 @@ func (h *DemoHandlers) GetWorkOrder(c *gin.Context) {
 
 // CreateWorkOrder creates a new work order in demo mode
 func (h *DemoHandlers) CreateWorkOrder(c *gin.Context) {
-	// For demo mode, we would need to save to file or memory
-	// This is a simplified implementation
-	c.JSON(http.StatusNotImplemented, gin.H{"error": "Create not implemented in demo mode"})
+	var req struct {
+		Title         string   `json:"title" binding:"required"`
+		Description   string   `json:"description" binding:"required"`
+		PhotoURLs     []string `json:"photo_urls"`
+		Priority      int      `json:"priority"`
+		IsUrgent      bool     `json:"is_urgent"`
+		AddressDetail string   `json:"address_detail"`
+		CategoryID    string   `json:"category_id"`
+		Coordinates   *struct {
+			Lat float64 `json:"lat"`
+			Lng float64 `json:"lng"`
+		} `json:"coordinates"`
+		DivisionID string `json:"division_id"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Demo mode - return created work order
+	c.JSON(http.StatusOK, gin.H{
+		"id":           "demo-wo-" + fmt.Sprint(time.Now().Unix()),
+		"order_no":     "WO-" + fmt.Sprint(time.Now().Unix()),
+		"title":        req.Title,
+		"description":  req.Description,
+		"status":       "PENDING",
+		"photo_urls":   req.PhotoURLs,
+		"priority":     req.Priority,
+		"is_urgent":    req.IsUrgent,
+		"address_detail": req.AddressDetail,
+		"category_id":  req.CategoryID,
+		"created_at":   "2026-01-01T00:00:00Z",
+	})
+}
 }
 
 // GetOrganizations returns all organizations from demo data
