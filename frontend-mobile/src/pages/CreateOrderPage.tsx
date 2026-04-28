@@ -4,9 +4,16 @@ import { Card, Button, Input, Toast, NavBar, ImageUploader, Picker } from 'antd-
 import { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import { api } from '../api'
 import { demoApi } from '../api/demo'
+import { useAuthStore } from '../store/useAuthStore'
+
+interface Contractor {
+  id: string
+  name: string
+}
 
 export default function CreateOrderPage() {
   const navigate = useNavigate()
+  const { userInfo } = useAuthStore()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [addressDetail, setAddressDetail] = useState('')
@@ -21,9 +28,17 @@ export default function CreateOrderPage() {
   const [filteredCategories, setFilteredCategories] = useState<string[]>([])
   const [selectedCategory, setSelectedCategory] = useState('')
   
+  // Contractor states (for Branch role)
+  const [contractors, setContractors] = useState<Contractor[]>([])
+  const [selectedContractor, setSelectedContractor] = useState<string>('')
+  const [contractorPickerVisible, setContractorPickerVisible] = useState(false)
+  
   // Picker visibility states
   const [regionPickerVisible, setRegionPickerVisible] = useState(false)
   const [categoryPickerVisible, setCategoryPickerVisible] = useState(false)
+
+  // Check if user is Branch role
+  const isBranchRole = userInfo?.role === 'BRANCH_ADMIN' || userInfo?.role === 'EMPLOYEE'
 
   const handlePhotoUpload = async (file: File): Promise<ImageUploadItem> => {
     const url = URL.createObjectURL(file)
@@ -33,7 +48,10 @@ export default function CreateOrderPage() {
 
   useEffect(() => {
     loadRegions()
-  }, [])
+    if (isBranchRole) {
+      loadContractors()
+    }
+  }, [isBranchRole])
 
   // Load regions
   const loadRegions = async () => {
@@ -46,6 +64,28 @@ export default function CreateOrderPage() {
     } catch (error) {
       console.error('Failed to load regions:', error)
       Toast.show('加载区域失败')
+    }
+  }
+
+  // Load contractors for Branch role
+  const loadContractors = async () => {
+    try {
+      const response = await demoApi.getDispatchableTargets()
+      const data = response.data || response
+      if (data.list && Array.isArray(data.list)) {
+        const contractorList: Contractor[] = data.list.map((org: any) => ({
+          id: org.id,
+          name: org.name,
+        }))
+        setContractors(contractorList)
+        // Auto-select first contractor
+        if (contractorList.length > 0) {
+          setSelectedContractor(contractorList[0].id)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load contractors:', error)
+      Toast.show('加载指派目标失败')
     }
   }
 
@@ -109,13 +149,32 @@ export default function CreateOrderPage() {
         division_id: null, // Deprecated, keeping for compatibility
       }
 
-      const response = await api.workorder.create(requestData)
+      const response = await api.workorder.create(requestData) as any
       
-      if (response.code === 200) {
-        Toast.show({
-          content: '工单创建成功',
-          icon: 'success',
-        })
+      if (response.code === 200 || response.id) {
+        const workOrderId = response.id || response.data?.id
+        
+        // If Branch role and contractor selected, dispatch the order
+        if (isBranchRole && selectedContractor && workOrderId) {
+          try {
+            await demoApi.dispatchWorkOrder(workOrderId, selectedContractor)
+            Toast.show({
+              content: '工单已指派给劳务公司',
+              icon: 'success',
+            })
+          } catch (dispatchError) {
+            console.error('Failed to dispatch work order:', dispatchError)
+            Toast.show({
+              content: '工单创建成功，但指派失败',
+              icon: 'fail',
+            })
+          }
+        } else {
+          Toast.show({
+            content: '工单创建成功',
+            icon: 'success',
+          })
+        }
         
         // Reset form
         setTitle('')
@@ -126,6 +185,9 @@ export default function CreateOrderPage() {
         setSelectedRegion('')
         setSelectedCategory('')
         setCategoriesVisible(false)
+        if (isBranchRole && contractors.length > 0) {
+          setSelectedContractor(contractors[0]?.id || '')
+        }
         
         // Navigate back
         setTimeout(() => {
@@ -235,6 +297,38 @@ export default function CreateOrderPage() {
                     setSelectedCategory(String(value[0]))
                   }
                   setCategoryPickerVisible(false)
+                }}
+              />
+            </div>
+          </Card>
+        )}
+
+        {/* 指派给 - 仅 Branch 角色显示 */}
+        {isBranchRole && contractors.length > 0 && (
+          <Card style={{ borderRadius: '12px', marginBottom: '12px' }}>
+            <div style={{ padding: '16px' }}>
+              <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>指派给</div>
+              <Button
+                block
+                onClick={() => setContractorPickerVisible(true)}
+                style={{
+                  background: '#F9FAFB',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '8px',
+                  height: '40px',
+                }}
+              >
+                {selectedContractor || '请选择劳务公司'}
+              </Button>
+              <Picker
+                columns={[contractors.map(c => ({ label: c.name, value: c.id }))]}
+                visible={contractorPickerVisible}
+                onClose={() => setContractorPickerVisible(false)}
+                onConfirm={(value) => {
+                  if (value && value[0]) {
+                    setSelectedContractor(String(value[0]))
+                  }
+                  setContractorPickerVisible(false)
                 }}
               />
             </div>

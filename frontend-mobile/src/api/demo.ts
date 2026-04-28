@@ -161,4 +161,26 @@ export const demoApi = {
     })
     return response.data || response
   },
+  getDispatchableTargets: async () => {
+    const response = await demoApiClient.request({
+      url: '/dispatchable-targets',
+      method: 'GET',
+    })
+    return response.data || response
+  },
+  getOrganizationEngineers: async (orgId: string) => {
+    const response = await demoApiClient.request({
+      url: `/organizations/${orgId}/engineers`,
+      method: 'GET',
+    })
+    return response.data || response
+  },
+  assignWorkOrder: async (workOrderId: string, engineerId: string) => {
+    const response = await demoApiClient.request({
+      url: `/workorders/${workOrderId}/assign`,
+      method: 'POST',
+      data: { engineer_id: engineerId },
+    })
+    return response.data || response
+  },
 }
