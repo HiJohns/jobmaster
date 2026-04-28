@@ -731,6 +731,10 @@
         "其它2",
         "其它3"
       ]
+      }
     }
+  },
+  "branch_contractors": {
+    "jm-branch1": ["jm-contractor1", "jm-contractor2"]
   }
 }

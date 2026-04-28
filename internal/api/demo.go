@@ -94,6 +94,8 @@ func RegisterDemoRoutes(r *gin.Engine) {
 	demo.GET("/workorders", handlers.GetWorkOrders)
 	demo.GET("/workorders/:id", handlers.GetWorkOrder)
 	demo.POST("/workorders", handlers.CreateWorkOrder)
+	demo.POST("/workorders/:id/dispatch", handlers.DispatchWorkOrder)
+	demo.POST("/workorders/:id/assign", handlers.AssignWorkOrder)
 	demo.GET("/workorders/:id/records", handlers.GetWorkOrderRecords)
 	demo.POST("/workorders/:id/records", handlers.CreateWorkOrderRecord)
 	demo.POST("/workorders/:id/finish", handlers.FinishWorkOrder)
@@ -119,6 +121,12 @@ func RegisterDemoRoutes(r *gin.Engine) {
 
 	// Categories endpoint
 	demo.GET("/categories", handlers.GetCategories)
+
+	// Dispatchable targets endpoint
+	demo.GET("/dispatchable-targets", handlers.GetDispatchableTargets)
+
+	// Organization engineers endpoint
+	demo.GET("/organizations/:id/engineers", handlers.GetOrganizationEngineers)
 }
 
 // GetWorkOrders returns work orders from demo data with user-based filtering
@@ -148,7 +156,27 @@ func (h *DemoHandlers) GetWorkOrders(c *gin.Context) {
 		return true
 	})
 
+	orgId, _ := getOrgFromUsername(username)
+
 	filtered := workOrders
+
+	// Organization-based filtering for Contractor and Vendor roles
+	if strings.Contains(userRole, "CONTRACTOR") || strings.Contains(userRole, "VENDOR") {
+		var orgFiltered []map[string]interface{}
+		for _, wo := range workOrders {
+			// Check if the order's vendor_id matches the user's org
+			if vendorID, exists := wo["vendor_id"]; exists {
+				if vendorID == orgId {
+					orgFiltered = append(orgFiltered, wo)
+				}
+			} else {
+				// For orders without vendor_id (e.g., PENDING), include them
+				// This allows contractors/vendors to see and claim new orders
+				orgFiltered = append(orgFiltered, wo)
+			}
+		}
+		filtered = orgFiltered
+	}
 
 	if strings.Contains(userRole, "ENGINEER") {
 		var engineerFiltered []map[string]interface{}
@@ -266,6 +294,61 @@ func (h *DemoHandlers) CreateWorkOrder(c *gin.Context) {
 	c.JSON(http.StatusOK, newOrder)
 }
 
+// DispatchWorkOrder dispatches a work order to a vendor/contractor
+func (h *DemoHandlers) DispatchWorkOrder(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		VendorID string `json:"vendor_id" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Update the work order in createdWorkOrders
+	if value, ok := createdWorkOrders.Load(id); ok {
+		workOrder := value.(map[string]interface{})
+		workOrder["status"] = "DISPATCHED"
+		workOrder["vendor_id"] = req.VendorID
+		workOrder["vendor_name"] = req.VendorID // In demo mode, use ID as name
+		createdWorkOrders.Store(id, workOrder)
+		persistDemoState()
+		c.JSON(http.StatusOK, workOrder)
+		return
+	}
+
+	c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
+}
+
+// AssignWorkOrder assigns a work order to an engineer
+func (h *DemoHandlers) AssignWorkOrder(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		EngineerID string `json:"engineer_id" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Update the work order in createdWorkOrders
+	if value, ok := createdWorkOrders.Load(id); ok {
+		workOrder := value.(map[string]interface{})
+		workOrder["engineer_id"] = req.EngineerID
+		workOrder["engineer_name"] = req.EngineerID // In demo mode, use ID as name
+		createdWorkOrders.Store(id, workOrder)
+		persistDemoState()
+		c.JSON(http.StatusOK, workOrder)
+		return
+	}
+
+	c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
+}
+
 // GetOrganizations returns all organizations from demo data
 func (h *DemoHandlers) GetOrganizations(c *gin.Context) {
 	demoData, err := data.LoadDemoData()
@@ -352,6 +435,9 @@ func (h *DemoHandlers) Login(c *gin.Context) {
 		role = "VENDOR_EMPLOYEE"
 	}
 
+	// Get org from username
+	orgId, orgName := getOrgFromUsername(username)
+
 	// Create session for demo mode
 	sessionID := generateSessionID(username)
 	sessions.Store(sessionID, username)
@@ -367,8 +453,8 @@ func (h *DemoHandlers) Login(c *gin.Context) {
 			"username":    username,
 			"displayName": username,
 			"role":        role,
-			"orgId":       "jm-branch1",
-			"orgName":     "Branch 001",
+			"orgId":       orgId,
+			"orgName":     orgName,
 			"tenantId":    "jm-tenant1",
 		},
 	})
@@ -407,6 +493,35 @@ func (h *DemoHandlers) parseRoleFromUsername(username string) string {
 	}
 
 	return role
+}
+
+// getOrgFromUsername determines orgId and orgName from username pattern
+func getOrgFromUsername(username string) (orgId string, orgName string) {
+	// Default fallback
+	orgId = "jm-branch1"
+	orgName = "Branch 001"
+
+	if contains(username, "@branch1") {
+		orgId = "jm-branch1"
+		orgName = "Branch 001"
+	} else if contains(username, "@branch2") {
+		orgId = "jm-branch2"
+		orgName = "Branch 002"
+	} else if contains(username, "@contractor1") {
+		orgId = "jm-contractor1"
+		orgName = "Contractor A"
+	} else if contains(username, "@contractor2") {
+		orgId = "jm-contractor2"
+		orgName = "Contractor B"
+	} else if contains(username, "@vendor1") {
+		orgId = "jm-vendor1"
+		orgName = "Vendor X"
+	} else if contains(username, "@vendor2") {
+		orgId = "jm-vendor2"
+		orgName = "Vendor Y"
+	}
+
+	return orgId, orgName
 }
 
 // GetReservations returns all reservations from demo data
@@ -594,6 +709,88 @@ func (h *DemoHandlers) GetRegions(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"regions": []string{},
+	})
+}
+
+// GetDispatchableTargets returns dispatchable targets based on user's organization
+func (h *DemoHandlers) GetDispatchableTargets(c *gin.Context) {
+	username := h.getUsernameFromSession(c)
+	if username == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or missing session"})
+		return
+	}
+
+	userRole := h.parseRoleFromUsername(username)
+	_, orgName := getOrgFromUsername(username)
+
+	demoData, err := data.LoadDemoData()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var organizations []map[string]interface{}
+	if err := json.Unmarshal(demoData.Organizations, &organizations); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse organizations"})
+		return
+	}
+
+	var targets []map[string]interface{}
+
+	// BRANCH_ADMIN or EMPLOYEE can dispatch to MAIN_CONTRACTOR
+	if strings.Contains(userRole, "BRANCH") || userRole == "EMPLOYEE" {
+		for _, org := range organizations {
+			if org["type"] == "MAIN_CONTRACTOR" {
+				targets = append(targets, org)
+			}
+		}
+	}
+	// CONTRACTOR_EMPLOYEE or CONTRACTOR_ADMIN can dispatch to VENDOR
+	if strings.Contains(userRole, "CONTRACTOR") {
+		for _, org := range organizations {
+			if org["type"] == "VENDOR" && org["parent_id"] == orgName {
+				targets = append(targets, org)
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"list":  targets,
+		"total": len(targets),
+	})
+}
+
+// GetOrganizationEngineers returns engineers for a specific organization
+func (h *DemoHandlers) GetOrganizationEngineers(c *gin.Context) {
+	orgID := c.Param("id")
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Organization ID is required"})
+		return
+	}
+
+	demoData, err := data.LoadDemoData()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var users []map[string]interface{}
+	if err := json.Unmarshal(demoData.Users, &users); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse users"})
+		return
+	}
+
+	var engineers []map[string]interface{}
+	for _, user := range users {
+		// Check if user belongs to the org and has ENGINEER role
+		if user["org_id"] == orgID && strings.Contains(user["role"].(string), "ENGINEER") {
+			engineers = append(engineers, user)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"list":  engineers,
+		"total": len(engineers),
 	})
 }
 
