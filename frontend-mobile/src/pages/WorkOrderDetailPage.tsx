@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Card, Toast, NavBar, Steps, Loading } from 'antd-mobile'
 import { LeftOutline } from 'antd-mobile-icons'
+import { demoApi } from '../api/demo'
 import { localReservationApi } from '../api/local/reservation'
 import ForwardDialog from '../components/ForwardDialog'
 import WorkOrderRecords from '../components/WorkOrderRecords'
@@ -64,31 +65,17 @@ export default function WorkOrderDetailPage() {
   }
 
   /**
-   * 模拟获取工单数据
+   * 获取工单数据
    */
   useEffect(() => {
     const fetchWorkOrder = async () => {
       try {
-        // 模拟 API 调用
-        await new Promise(resolve => setTimeout(resolve, 800))
-        
-        const mockWorkOrder: WorkOrder = {
-          id: orderId,
-          order_no: `WO-20240413-001`,
-          status: 'DISPATCHED',
-          store_name: 'Store 001',
-          address_detail: '123 Main St, City',
-          category_path: '内装/卖场/消防门',
-          brand_name: 'Apple',
-          description: '设备故障，需要维修',
-          engineer_name: '工程师A',
-          created_at: new Date().toISOString()
-        }
-        
-        setWorkOrder(mockWorkOrder)
+        const response = await demoApi.getWorkOrder(orderId)
+        const workOrderData = response.data || response
+        setWorkOrder(workOrderData)
         
         // 根据状态设置当前步骤
-        const stepIndex = STATUS_STEPS.findIndex(step => step.status === mockWorkOrder.status)
+        const stepIndex = STATUS_STEPS.findIndex(step => step.status === workOrderData.status)
         if (stepIndex !== -1) {
           setCurrentStepIndex(stepIndex)
         }
