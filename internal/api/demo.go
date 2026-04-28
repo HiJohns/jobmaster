@@ -33,6 +33,31 @@ func generateSessionID(username string) string {
 	return "demo_session_" + username + "_" + os.Getenv("DEMO_MODE")
 }
 
+// persistDemoState saves current memory state to file
+func persistDemoState() {
+	state := &data.DemoState{
+		Sessions:          make(map[string]string),
+		CreatedWorkOrders: make([]map[string]interface{}, 0),
+	}
+
+	// Export sessions
+	sessions.Range(func(key, value interface{}) bool {
+		state.Sessions[key.(string)] = value.(string)
+		return true
+	})
+
+	// Export created work orders
+	createdWorkOrders.Range(func(key, value interface{}) bool {
+		state.CreatedWorkOrders = append(state.CreatedWorkOrders, value.(map[string]interface{}))
+		return true
+	})
+
+	// Save to file
+	if err := data.SaveDemoState(state); err != nil {
+		fmt.Printf("[WARN] Failed to save demo state: %v\n", err)
+	}
+}
+
 // DemoHandlers handles demo mode API endpoints
 type DemoHandlers struct{}
 
@@ -48,6 +73,21 @@ func RegisterDemoRoutes(r *gin.Engine) {
 	}
 
 	handlers := NewDemoHandlers()
+
+	// Load persistent demo state from file
+	if state, err := data.LoadDemoState(); err == nil {
+		// Restore sessions
+		for sessionID, username := range state.Sessions {
+			sessions.Store(sessionID, username)
+		}
+		// Restore created work orders
+		for _, wo := range state.CreatedWorkOrders {
+			if id, ok := wo["id"].(string); ok {
+				createdWorkOrders.Store(id, wo)
+			}
+		}
+	}
+
 	demo := r.Group("/api/demo")
 
 	// WorkOrder endpoints
@@ -239,6 +279,9 @@ func (h *DemoHandlers) CreateWorkOrder(c *gin.Context) {
 	// Save to memory
 	createdWorkOrders.Store(newOrder["id"].(string), newOrder)
 
+	// Persist state to file
+	persistDemoState()
+
 	c.JSON(http.StatusOK, newOrder)
 }
 
@@ -331,6 +374,9 @@ func (h *DemoHandlers) Login(c *gin.Context) {
 	// Create session for demo mode
 	sessionID := generateSessionID(username)
 	sessions.Store(sessionID, username)
+
+	// Persist state to file
+	persistDemoState()
 
 	// Return user with parsed role
 	c.JSON(http.StatusOK, gin.H{
