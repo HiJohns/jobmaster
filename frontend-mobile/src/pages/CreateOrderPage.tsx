@@ -11,6 +11,12 @@ interface Contractor {
   name: string
 }
 
+interface Category {
+  id: string
+  name: string
+  code: string
+}
+
 export default function CreateOrderPage() {
   const navigate = useNavigate()
   const { userInfo } = useAuthStore()
@@ -25,7 +31,7 @@ export default function CreateOrderPage() {
   const [regions, setRegions] = useState<string[]>([])
   const [selectedRegion, setSelectedRegion] = useState('')
   const [categoriesVisible, setCategoriesVisible] = useState(false)
-  const [filteredCategories, setFilteredCategories] = useState<string[]>([])
+  const [filteredCategories, setFilteredCategories] = useState<Category[]>([])
   const [selectedCategory, setSelectedCategory] = useState('')
   
   // Contractor states (for Branch role)
@@ -105,7 +111,12 @@ export default function CreateOrderPage() {
       const response = await demoApi.getRegionCategories(region)
       const data = response.data || response
       if (data.categories && Array.isArray(data.categories)) {
-        setFilteredCategories(data.categories)
+        const cats: Category[] = data.categories.map((c: any) => ({
+          id: c.id || '',
+          name: c.name || '',
+          code: c.code || '',
+        }))
+        setFilteredCategories(cats)
       } else {
         setFilteredCategories([])
       }
@@ -137,16 +148,18 @@ export default function CreateOrderPage() {
     setSubmitting(true)
 
     try {
+      const selectedCategoryName = selectedCategory ? filteredCategories.find(c => c.id === selectedCategory)?.name || '' : ''
+
       const requestData = {
         title,
         description,
         category_id: selectedCategory,
-        category_path: selectedCategory,
+        category_path: selectedCategoryName,
         photo_urls: photoUrls,
         priority: isUrgent ? 1 : 0,
         is_urgent: isUrgent,
         address_detail: addressDetail,
-        division_id: null, // Deprecated, keeping for compatibility
+        division_id: null,
       }
 
       const response = await api.workorder.create(requestData) as any
@@ -318,10 +331,10 @@ export default function CreateOrderPage() {
                     height: '40px',
                   }}
                 >
-                  {selectedCategory || '请选择分类'}
+                  {selectedCategory ? filteredCategories.find(c => c.id === selectedCategory)?.name || '请选择分类' : '请选择分类'}
                 </Button>
                 <Picker
-                  columns={[filteredCategories.map((c, i) => ({ label: c, value: c, key: `category-${i}` }))]}
+                  columns={[filteredCategories.map((c, i) => ({ label: c.name, value: c.id, key: `category-${i}` }))]}
                   visible={categoryPickerVisible}
                   onClose={() => setCategoryPickerVisible(false)}
                   onConfirm={(value) => {
