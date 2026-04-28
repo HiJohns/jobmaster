@@ -81,7 +81,8 @@
       "description": "测试工单",
       "photo_urls": [],
       "is_urgent": false,
-      "address_detail": "北京市朝阳区建国路88号"
+      "address_detail": "北京市朝阳区建国路88号",
+      "title": "测试工单"
     }
   ],
   "jm_categories": {

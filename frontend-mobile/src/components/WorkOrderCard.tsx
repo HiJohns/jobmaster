@@ -4,6 +4,7 @@ import { theme } from '../styles/theme'
 export interface WorkOrder {
   id: string
   order_no: string
+  title?: string
   status: string
   store_name: string
   address_detail: string
@@ -51,9 +52,9 @@ export default function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
       onClick={() => onClick(order.id)}
     >
       <div style={{ padding: '16px' }}>
-        {/* 工单头部 */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#333' }}>
+        {/* 工单头部：工单号 + 状态 */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <div style={{ fontSize: '12px', color: '#666' }}>
             {order.order_no}
           </div>
           <div
@@ -71,8 +72,13 @@ export default function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
           </div>
         </div>
 
-        {/* 工单内容 - 优先级：地址 > 网点 */}
-        <div style={{ marginTop: '8px' }}>
+        {/* 工单标题 - 视觉中心 */}
+        <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#333', marginBottom: '12px' }}>
+          {order.title || order.description}
+        </div>
+
+        {/* 工单内容 - 地址 > 网点 */}
+        <div>
           <div style={{ fontSize: '14px', color: theme.textSecondary, marginBottom: '8px' }}>
             {order.address_detail}
           </div>

@@ -12,6 +12,7 @@ import QRCodeDisplay from '../components/QRCodeDisplay'
 interface WorkOrder {
   id: string
   order_no: string
+  title: string
   status: string
   store_name: string
   address_detail: string
@@ -173,6 +174,7 @@ export default function WorkOrderDetailPage() {
         <Card title="工单信息" style={{ marginBottom: '16px' }}>
           <div style={{ lineHeight: 1.8 }}>
             <div><strong>工单号：</strong>{workOrder.order_no}</div>
+            <div><strong>工单标题：</strong>{workOrder.title || workOrder.description}</div>
             <div><strong>状态：</strong>
               <span style={{ color: STATUS_CONFIG[workOrder.status].color, fontWeight: 500 }}>
                 {STATUS_CONFIG[workOrder.status].text}
@@ -181,7 +183,6 @@ export default function WorkOrderDetailPage() {
             <div><strong>网点：</strong>{workOrder.store_name}</div>
             <div><strong>地址：</strong>{workOrder.address_detail}</div>
             <div><strong>分类：</strong>{workOrder.category_path}</div>
-            <div><strong>品牌：</strong>{workOrder.brand_name}</div>
             <div><strong>描述：</strong>{workOrder.description}</div>
             <div><strong>工程师：</strong>{workOrder.engineer_name || '未分配'}</div>
           </div>
