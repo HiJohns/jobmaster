@@ -57,9 +57,9 @@ export const demoApi = {
     } else if (userRole === 'ENGINEER') {
       statusFilter = 'ACCEPTED,RESERVED,WORKING'
     } else if (userRole === 'CONTRACTOR_EMPLOYEE' || userRole === 'CONTRACTOR_ADMIN') {
-      statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING'
+      statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING,FINISHED'
     } else if (userRole === 'VENDOR_EMPLOYEE' || userRole === 'VENDOR_ADMIN') {
-      statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING'
+      statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING,FINISHED'
     }
     
     console.log('[DEBUG demoApi.getWorkOrders] requesting with status:', statusFilter)
