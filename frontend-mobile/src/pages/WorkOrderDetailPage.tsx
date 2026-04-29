@@ -125,7 +125,7 @@ export default function WorkOrderDetailPage() {
     const isContractor = role === 'CONTRACTOR_ADMIN' || role === 'CONTRACTOR_EMPLOYEE'
     const isVendor = role === 'VENDOR_ADMIN' || role === 'VENDOR_EMPLOYEE'
 
-    const canAssign = (isBranch || isContractor) && (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED')
+    const canAssign = (isBranch && workOrder.status === 'PENDING') || ((isBranch || isContractor) && (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED'))
     const canDistribute = (isContractor || isVendor) && (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED')
 
     if (!canAssign && !canDistribute) return
@@ -324,7 +324,7 @@ export default function WorkOrderDetailPage() {
           const isContractor = role === 'CONTRACTOR_ADMIN' || role === 'CONTRACTOR_EMPLOYEE'
           const isVendor = role === 'VENDOR_ADMIN' || role === 'VENDOR_EMPLOYEE'
 
-          const canAssign = (isBranch || isContractor) && (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED')
+          const canAssign = (isBranch && workOrder.status === 'PENDING') || ((isBranch || isContractor) && (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED'))
           const canDistribute = (isContractor || isVendor) && (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED')
 
           if (!canAssign && !canDistribute) return null

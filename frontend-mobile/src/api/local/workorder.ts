@@ -667,8 +667,8 @@ export const localWorkorderApi = {
       throw new Error('工单不存在')
     }
 
-    if (workorders[idx].status !== 'DISPATCHED' && workorders[idx].status !== 'ACCEPTED') {
-      throw new Error('当前状态无法转发')
+    if (workorders[idx].status !== 'PENDING' && workorders[idx].status !== 'DISPATCHED' && workorders[idx].status !== 'ACCEPTED') {
+      throw new Error('当前状态无法指派')
     }
 
     const now = new Date().toISOString()
@@ -677,12 +677,16 @@ export const localWorkorderApi = {
     const orgs = storage.get<Organization[]>(STORAGE_KEYS.ORGANIZATIONS) || []
     const targetOrg = orgs.find((o) => o.id === target_org_id)
 
+    const oldStatus = workorders[idx].status
+    const newStatus = oldStatus === 'PENDING' ? 'DISPATCHED' : oldStatus
+
     workorders[idx] = {
       ...workorders[idx],
       owner_org_id: target_org_id,
       owner_org_name: targetOrg?.name || target_org_id,
       handler_id: user.id,
       handler_name: user.display_name,
+      status: newStatus,
       hop_count: (workorders[idx].hop_count || 0) + 1,
       updated_at: now,
     }
@@ -696,8 +700,8 @@ export const localWorkorderApi = {
       user_name: user.display_name,
       action: 'FORWARD',
       details: `从 ${oldOwnerOrg} 指派到 ${targetOrg?.name || target_org_id}`,
-      old_status: workorders[idx].status,
-      new_status: workorders[idx].status,
+      old_status: oldStatus,
+      new_status: newStatus,
       created_at: now,
     })
     storage.set(STORAGE_KEYS.WORK_RECORDS, records)
