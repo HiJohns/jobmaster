@@ -96,7 +96,11 @@ func RegisterDemoRoutes(r *gin.Engine) {
 	demo.POST("/workorders", handlers.CreateWorkOrder)
 	demo.POST("/workorders/:id/dispatch", handlers.DispatchWorkOrder)
 	demo.POST("/workorders/:id/assign", handlers.AssignWorkOrder)
+	demo.POST("/workorders/:id/accept", handlers.AcceptWorkOrder)
 	demo.POST("/workorders/:id/reserve", handlers.ReserveWorkOrder)
+	demo.POST("/workorders/:id/arrive", handlers.ArriveWorkOrder)
+	demo.POST("/workorders/:id/verify", handlers.VerifyWorkOrder)
+	demo.POST("/workorders/:id/reject", handlers.RejectWorkOrder)
 	demo.GET("/workorders/:id/records", handlers.GetWorkOrderRecords)
 	demo.POST("/workorders/:id/records", handlers.CreateWorkOrderRecord)
 	demo.POST("/workorders/:id/finish", handlers.FinishWorkOrder)
@@ -978,6 +982,123 @@ func (h *DemoHandlers) ReserveWorkOrder(c *gin.Context) {
 
 	workOrder["appointed_at"] = req.AppointedAt
 	workOrder["status"] = "RESERVED"
+	createdWorkOrders.Store(id, workOrder)
+	persistDemoState()
+
+	c.JSON(http.StatusOK, workOrder)
+}
+
+// AcceptWorkOrder accepts a work order (engineer accepts the job)
+func (h *DemoHandlers) AcceptWorkOrder(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		ScheduledAt string `json:"scheduled_at"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	workOrder, found := findWorkOrder(id)
+	if !found {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
+		return
+	}
+
+	if status, ok := workOrder["status"].(string); !ok || status != "DISPATCHED" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Work order must be in DISPATCHED status to accept"})
+		return
+	}
+
+	workOrder["status"] = "ACCEPTED"
+	if req.ScheduledAt != "" {
+		workOrder["scheduled_at"] = req.ScheduledAt
+	}
+	createdWorkOrders.Store(id, workOrder)
+	persistDemoState()
+
+	c.JSON(http.StatusOK, workOrder)
+}
+
+// ArriveWorkOrder marks engineer arrival at the work site
+func (h *DemoHandlers) ArriveWorkOrder(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		Latitude  float64 `json:"latitude"`
+		Longitude float64 `json:"longitude"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	workOrder, found := findWorkOrder(id)
+	if !found {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
+		return
+	}
+
+	if status, ok := workOrder["status"].(string); !ok || status != "RESERVED" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Work order must be in RESERVED status to arrive"})
+		return
+	}
+
+	workOrder["status"] = "WORKING"
+	workOrder["started_at"] = time.Now().Format(time.RFC3339)
+	createdWorkOrders.Store(id, workOrder)
+	persistDemoState()
+
+	c.JSON(http.StatusOK, workOrder)
+}
+
+// VerifyWorkOrder verifies/complete a work order
+func (h *DemoHandlers) VerifyWorkOrder(c *gin.Context) {
+	id := c.Param("id")
+
+	workOrder, found := findWorkOrder(id)
+	if !found {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
+		return
+	}
+
+	if status, ok := workOrder["status"].(string); !ok || status != "WORKING" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Work order must be in WORKING status to verify"})
+		return
+	}
+
+	workOrder["status"] = "FINISHED"
+	workOrder["finished_at"] = time.Now().Format(time.RFC3339)
+	createdWorkOrders.Store(id, workOrder)
+	persistDemoState()
+
+	c.JSON(http.StatusOK, workOrder)
+}
+
+// RejectWorkOrder rejects a work order
+func (h *DemoHandlers) RejectWorkOrder(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		Reason string `json:"reason"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	workOrder, found := findWorkOrder(id)
+	if !found {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
+		return
+	}
+
+	workOrder["status"] = "PENDING"
+	workOrder["rejection_reason"] = req.Reason
 	createdWorkOrders.Store(id, workOrder)
 	persistDemoState()
 
