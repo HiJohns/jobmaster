@@ -3,6 +3,8 @@ import { Form, Input, Button, Card, Space, Toast } from 'antd-mobile'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/useAuthStore'
 import { demoApi } from '../api/demo'
+import { storage } from '../api/local/storage'
+import { STORAGE_KEYS } from '../api/local/mockData'
 
 const DEMO_ACCOUNTS = [
   { username: 'admin@branch1', displayName: 'Branch Admin', role: 'BRANCH_ADMIN', password: 'demo123' },
@@ -59,14 +61,40 @@ export default function LoginPage() {
       const user = response.user || {}
       const demoAccount = DEMO_ACCOUNTS.find(acc => acc.username === values.username)
       
+      const finalUserId = user.id || response.userId || response.user_id || ''
+      const finalUsername = user.username || response.username || values.username
+      const finalDisplayName = user.displayName || user.display_name || response.displayName || response.display_name || demoAccount?.displayName || values.username
+      const finalRole = user.role || response.role || demoAccount?.role || 'EMPLOYEE'
+      const finalOrgId = user.orgId || user.org_id || response.orgId || response.org_id || ''
+      const finalOrgName = user.orgName || user.org_name || user.displayName || demoAccount?.displayName || '未分配'
+      const finalTenantId = user.tenantId || user.tenant_id || response.tenantId || response.tenant_id || ''
+
       login(response.token, {
-        userId: user.id || response.userId || response.user_id || '',
-        username: user.username || response.username || values.username,
-        displayName: user.displayName || user.display_name || response.displayName || response.display_name || demoAccount?.displayName || values.username,
-        role: user.role || response.role || demoAccount?.role || 'EMPLOYEE',
-        orgId: user.orgId || user.org_id || response.orgId || response.org_id || '',
-        orgName: user.orgName || user.org_name || user.displayName || demoAccount?.displayName || '未分配',
-        tenantId: user.tenantId || user.tenant_id || response.tenantId || response.tenant_id || '',
+        userId: finalUserId,
+        username: finalUsername,
+        displayName: finalDisplayName,
+        role: finalRole,
+        orgId: finalOrgId,
+        orgName: finalOrgName,
+        tenantId: finalTenantId,
+      })
+
+      // 同步用户信息到 localStorage（供 localWorkorderApi 使用）
+      storage.set(STORAGE_KEYS.SESSION, {
+        user: {
+          id: finalUserId,
+          username: finalUsername,
+          email: finalUsername,
+          display_name: finalDisplayName,
+          role: finalRole,
+          org_id: finalOrgId,
+          org_name: finalOrgName,
+          tenant_id: finalTenantId,
+          is_shadow: false,
+          status: 1,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
       })
 
       if (values.remember) {

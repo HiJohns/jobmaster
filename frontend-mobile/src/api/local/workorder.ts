@@ -62,19 +62,15 @@ export const localWorkorderApi = {
       workorders = workorders.filter((wo) => wo.store_id === user.org_id)
     } else if (user.role === 'CONTRACTOR_ADMIN' || user.role === 'CONTRACTOR_EMPLOYEE') {
       const orgs = storage.get<Organization[]>(STORAGE_KEYS.ORGANIZATIONS) || []
-      const vendorIds = orgs
-        .filter(
-          (o) =>
-            o.parent_id === user.org_id ||
-            o.id === user.org_id
-        )
+      const childOrgIds = orgs
+        .filter((o) => o.parent_id === user.org_id || o.id === user.org_id)
         .map((o) => o.id)
       workorders = workorders.filter(
         (wo) =>
-          wo.vendor_id === user.org_id || vendorIds.includes(wo.vendor_id || '')
+          wo.owner_org_id === user.org_id || childOrgIds.includes(wo.owner_org_id || '')
       )
     } else if (user.role === 'VENDOR_ADMIN' || user.role === 'VENDOR_EMPLOYEE') {
-      workorders = workorders.filter((wo) => wo.vendor_id === user.org_id)
+      workorders = workorders.filter((wo) => wo.owner_org_id === user.org_id)
     }
 
     if (params?.status && params.status !== 'ALL') {
@@ -186,7 +182,7 @@ export const localWorkorderApi = {
     return newWorkOrder
   },
 
-  dispatch: async (id: string, vendor_id: string, engineer_id?: string) => {
+  dispatch: async (id: string, target_org_id: string, engineer_id?: string) => {
     const user = getCurrentUser()
     if (!user) {
       throw new Error('未登录')
@@ -204,7 +200,7 @@ export const localWorkorderApi = {
     }
 
     const orgs = storage.get<Organization[]>(STORAGE_KEYS.ORGANIZATIONS) || []
-    const vendor = orgs.find((o) => o.id === vendor_id)
+    const targetOrg = orgs.find((o) => o.id === target_org_id)
 
     const users = storage.get<User[]>(STORAGE_KEYS.USERS) || []
     const engineer = engineer_id
@@ -214,8 +210,10 @@ export const localWorkorderApi = {
     const now = new Date().toISOString()
     workorders[idx] = {
       ...workorders[idx],
-      vendor_id,
-      vendor_name: vendor?.name,
+      owner_org_id: target_org_id,
+      owner_org_name: targetOrg?.name || target_org_id,
+      handler_id: user.id,
+      handler_name: user.display_name,
       engineer_id,
       engineer_name: engineer?.display_name,
       status: 'DISPATCHED',
@@ -230,7 +228,7 @@ export const localWorkorderApi = {
       user_id: user.id,
       user_name: user.display_name,
       action: 'DISPATCH',
-      details: `分配给 ${vendor?.name}`,
+      details: `分配给 ${targetOrg?.name || target_org_id}`,
       old_status: 'PENDING',
       new_status: 'DISPATCHED',
       created_at: now,
@@ -676,10 +674,15 @@ export const localWorkorderApi = {
     const now = new Date().toISOString()
     const oldOwnerOrg = workorders[idx].owner_org_name || '未知组织'
 
+    const orgs = storage.get<Organization[]>(STORAGE_KEYS.ORGANIZATIONS) || []
+    const targetOrg = orgs.find((o) => o.id === target_org_id)
+
     workorders[idx] = {
       ...workorders[idx],
       owner_org_id: target_org_id,
-      owner_org_name: target_org_id, // 简化为ID，实际应用中应该查询组织名称
+      owner_org_name: targetOrg?.name || target_org_id,
+      handler_id: user.id,
+      handler_name: user.display_name,
       hop_count: (workorders[idx].hop_count || 0) + 1,
       updated_at: now,
     }
@@ -692,7 +695,7 @@ export const localWorkorderApi = {
       user_id: user.id,
       user_name: user.display_name,
       action: 'FORWARD',
-      details: `从 ${oldOwnerOrg} 转发到 ${target_org_id}`,
+      details: `从 ${oldOwnerOrg} 指派到 ${targetOrg?.name || target_org_id}`,
       old_status: workorders[idx].status,
       new_status: workorders[idx].status,
       created_at: now,
@@ -733,6 +736,8 @@ export const localWorkorderApi = {
       ...workorders[idx],
       engineer_id,
       engineer_name: engineer.display_name,
+      handler_id: user.id,
+      handler_name: user.display_name,
       updated_at: now,
     }
 

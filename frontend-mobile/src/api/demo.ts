@@ -46,11 +46,11 @@ export const demoApi = {
     })
     return response.data || response
   },
-  dispatchWorkOrder: async (id: string, vendor_id: string, engineer_id?: string) => {
+  dispatchWorkOrder: async (id: string, target_org_id: string, engineer_id?: string) => {
     const response = await demoApiClient.request({
       url: `/workorders/${id}/dispatch`,
       method: 'POST',
-      data: { vendor_id, engineer_id },
+      data: { target_org_id, engineer_id },
     })
     return response.data || response
   },
