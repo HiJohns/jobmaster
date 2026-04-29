@@ -5,6 +5,8 @@ import Dashboard from './pages/Dashboard'
 import Home from './pages/Home'
 import WorkOrderList from './pages/WorkOrderList'
 import WorkOrderDetail from './pages/WorkOrderDetail'
+import QuotationList from './pages/QuotationList'
+import QuotationDetail from './pages/QuotationDetail'
 import AssetList from './pages/AssetList'
 import AssetDetail from './pages/AssetDetail'
 import AssetMonitor from './pages/AssetMonitor'
@@ -32,6 +34,8 @@ function AppRouter() {
             <Route path="/home" element={<Home />} />
             <Route path="/workorders" element={<WorkOrderList />} />
             <Route path="/workorder/:id" element={<WorkOrderDetail />} />
+            <Route path="/quotations" element={<QuotationList />} />
+            <Route path="/quotations/:id" element={<QuotationDetail />} />
             <Route path="/assets" element={<AssetList />} />
             <Route path="/assets/:id" element={<AssetDetail />} />
             <Route path="/asset-monitor" element={<AssetMonitor />} />

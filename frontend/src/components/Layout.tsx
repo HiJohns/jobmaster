@@ -102,7 +102,15 @@ function AppLayout() {
     icon: <FileTextTwoTone twoToneColor={logoColor} />,
     label: '工单管理',
   })
-  
+
+  if (!isEngineer) {
+    menuItems.push({
+      key: '/quotations',
+      icon: <FileTextTwoTone twoToneColor={logoColor} />,
+      label: '报价管理',
+    })
+  }
+
   if (!isEngineer) {
     menuItems.push({
       key: '/settings',
@@ -178,6 +186,17 @@ function AppLayout() {
         }
       })
       items.push({ title: '工单详情' })
+    } else if (path.startsWith('/quotations/')) {
+      items.push({
+        title: '报价管理',
+        onClick: (e: React.MouseEvent) => {
+          e.preventDefault()
+          navigate('/quotations')
+        }
+      })
+      items.push({ title: '报价详情' })
+    } else if (path.startsWith('/quotations')) {
+      items.push({ title: '报价管理' })
     } else if (path.startsWith('/assets')) {
       items.push({ title: '资产监控' })
     } else if (path.startsWith('/admin/tenants')) {
