@@ -4,7 +4,6 @@ import { Button, Card, Toast, NavBar, Steps, Loading, Radio, Selector } from 'an
 import { LeftOutline } from 'antd-mobile-icons'
 import { demoApi } from '../api/demo'
 import { localReservationApi } from '../api/local/reservation'
-import { localWorkorderApi } from '../api/local/workorder'
 import { useAuthStore } from '../store/useAuthStore'
 import { storage } from '../api/local/storage'
 import { STORAGE_KEYS, Organization } from '../api/local/mockData'
@@ -340,9 +339,9 @@ export default function WorkOrderDetailPage() {
             try {
               Toast.show({ content: '处理中...', icon: 'loading', duration: 0 })
               if (dispatchType === 'assign') {
-                await localWorkorderApi.forward(workOrder.id, targetOrg[0])
+                await demoApi.dispatchWorkOrder(workOrder.id, targetOrg[0])
               } else {
-                await localWorkorderApi.assignEngineer(workOrder.id, targetOrg[0])
+                await demoApi.assignWorkOrder(workOrder.id, targetOrg[0])
               }
               Toast.clear()
               Toast.show(dispatchType === 'assign' ? '指派成功' : '分配成功')
