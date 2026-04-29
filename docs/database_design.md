@@ -99,8 +99,9 @@
 | title | VARCHAR(100) | 工单标题（必填） |
 | status | SMALLINT | 状态：1-PENDING 2-DISPATCHED 3-ACCEPTED 4-RESERVED 5-WORKING 6-FINISHED 7-CLOSED |
 | store_id | UUID | 分公司 ID（组织 ID） |
-| vendor_id | UUID | 供应商 ID（组织 ID，可空） |
 | engineer_id | UUID | 工程师 ID（用户 ID，可空） |
+| owner_org_id | UUID | 当前负责组织 ID（可空） |
+| handler_id | UUID | 当前责任人 ID（用户 ID，可空） |
 | category_path | VARCHAR(100) | 分类路径（可选，如：内装/卖场/消防门） |
 | brand_name | VARCHAR(50) | 品牌名称（可选） |
 | info | JSONB | 扩展信息（故障描述、照片数组、是否加急等） |
@@ -125,7 +126,8 @@
 - `idx_order_tenant`: (tenant_id, deleted_at)
 - `idx_order_status`: (tenant_id, status)
 - `idx_order_store`: (tenant_id, store_id)
-- `idx_order_vendor`: (tenant_id, vendor_id)
+- `idx_order_owner_org`: (tenant_id, owner_org_id)
+- `idx_order_handler`: (tenant_id, handler_id)
 - `idx_order_engineer`: (tenant_id, engineer_id)
 - `idx_order_appointed`: (tenant_id, appointed_at)
 - `idx_order_no`: (order_no) - 唯一

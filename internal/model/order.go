@@ -58,8 +58,9 @@ type Order struct {
 	// Organization relationships
 	StoreID          uuid.UUID  `gorm:"type:uuid;not null;index" json:"store_id"`
 	MainContractorID *uuid.UUID `gorm:"type:uuid;index" json:"main_contractor_id,omitempty"`
-	VendorID         *uuid.UUID `gorm:"type:uuid;index" json:"vendor_id,omitempty"`
+	OwnerOrgID       *uuid.UUID `gorm:"type:uuid;index" json:"owner_org_id,omitempty"`
 	EngineerID       *uuid.UUID `gorm:"type:uuid;index" json:"engineer_id,omitempty"`
+	HandlerID        *uuid.UUID `gorm:"type:uuid;index" json:"handler_id,omitempty"`
 
 	// Equipment info (stored in JSONB)
 	EquipmentInfo datatypes.JSON `gorm:"type:jsonb" json:"equipment_info"`
@@ -104,7 +105,8 @@ type Order struct {
 	// Relationships
 	Store          Organization  `gorm:"foreignKey:StoreID" json:"store,omitempty"`
 	MainContractor *Organization `gorm:"foreignKey:MainContractorID" json:"main_contractor,omitempty"`
-	Vendor         *Organization `gorm:"foreignKey:VendorID" json:"vendor,omitempty"`
+	OwnerOrg       *Organization `gorm:"foreignKey:OwnerOrgID" json:"owner_org,omitempty"`
+	Handler        *User         `gorm:"foreignKey:HandlerID" json:"handler,omitempty"`
 	Engineer       *User         `gorm:"foreignKey:EngineerID" json:"engineer,omitempty"`
 }
 

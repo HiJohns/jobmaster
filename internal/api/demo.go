@@ -164,14 +164,11 @@ func (h *DemoHandlers) GetWorkOrders(c *gin.Context) {
 	if strings.Contains(userRole, "CONTRACTOR") || strings.Contains(userRole, "VENDOR") {
 		var orgFiltered []map[string]interface{}
 		for _, wo := range workOrders {
-			// Check if the order's vendor_id matches the user's org
-			if vendorID, exists := wo["vendor_id"]; exists {
-				if vendorID == orgId {
+			if ownerOrgID, exists := wo["owner_org_id"]; exists {
+				if ownerOrgID == orgId {
 					orgFiltered = append(orgFiltered, wo)
 				}
 			} else {
-				// For orders without vendor_id (e.g., PENDING), include them
-				// This allows contractors/vendors to see and claim new orders
 				orgFiltered = append(orgFiltered, wo)
 			}
 		}
@@ -299,7 +296,7 @@ func (h *DemoHandlers) DispatchWorkOrder(c *gin.Context) {
 	id := c.Param("id")
 
 	var req struct {
-		VendorID string `json:"vendor_id" binding:"required"`
+		TargetOrgID string `json:"target_org_id" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -307,12 +304,15 @@ func (h *DemoHandlers) DispatchWorkOrder(c *gin.Context) {
 		return
 	}
 
-	// Update the work order in createdWorkOrders
+	username := h.getUsernameFromSession(c)
+
 	if value, ok := createdWorkOrders.Load(id); ok {
 		workOrder := value.(map[string]interface{})
 		workOrder["status"] = "DISPATCHED"
-		workOrder["vendor_id"] = req.VendorID
-		workOrder["vendor_name"] = req.VendorID // In demo mode, use ID as name
+		workOrder["owner_org_id"] = req.TargetOrgID
+		workOrder["owner_org_name"] = req.TargetOrgID
+		workOrder["handler_id"] = username
+		workOrder["handler_name"] = username
 		createdWorkOrders.Store(id, workOrder)
 		persistDemoState()
 		c.JSON(http.StatusOK, workOrder)
@@ -335,11 +335,14 @@ func (h *DemoHandlers) AssignWorkOrder(c *gin.Context) {
 		return
 	}
 
-	// Update the work order in createdWorkOrders
+	username := h.getUsernameFromSession(c)
+
 	if value, ok := createdWorkOrders.Load(id); ok {
 		workOrder := value.(map[string]interface{})
 		workOrder["engineer_id"] = req.EngineerID
-		workOrder["engineer_name"] = req.EngineerID // In demo mode, use ID as name
+		workOrder["engineer_name"] = req.EngineerID
+		workOrder["handler_id"] = username
+		workOrder["handler_name"] = username
 		createdWorkOrders.Store(id, workOrder)
 		persistDemoState()
 		c.JSON(http.StatusOK, workOrder)

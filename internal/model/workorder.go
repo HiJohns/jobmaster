@@ -216,8 +216,9 @@ type WorkOrder struct {
 	Division   *AdminDivision `gorm:"foreignKey:DivisionID" json:"division,omitempty"`
 
 	// Assignment fields
-	VendorID         *uuid.UUID `gorm:"type:uuid;index" json:"vendor_id,omitempty"`
+	OwnerOrgID       *uuid.UUID `gorm:"type:uuid;index" json:"owner_org_id,omitempty"`
 	EngineerID       *uuid.UUID `gorm:"type:uuid;index" json:"engineer_id,omitempty"`
+	HandlerID        *uuid.UUID `gorm:"type:uuid;index" json:"handler_id,omitempty"`
 	ParentProviderID *uuid.UUID `gorm:"type:uuid;index" json:"parent_provider_id,omitempty"` // 单据级临时上下级关系
 
 	// Transfer control
@@ -267,8 +268,9 @@ type WorkOrder struct {
 
 	// Relationships
 	Store          Organization  `gorm:"foreignKey:StoreID" json:"store,omitempty"`
-	Vendor         *Organization `gorm:"foreignKey:VendorID" json:"vendor,omitempty"`
+	OwnerOrg       *Organization `gorm:"foreignKey:OwnerOrgID" json:"owner_org,omitempty"`
 	Engineer       *User         `gorm:"foreignKey:EngineerID" json:"engineer,omitempty"`
+	Handler        *User         `gorm:"foreignKey:HandlerID" json:"handler,omitempty"`
 	Creator        User          `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`
 	ParentProvider *Organization `gorm:"foreignKey:ParentProviderID" json:"parent_provider,omitempty"` // 临时上级 Provider
 }
@@ -394,10 +396,17 @@ func EngineerScope(engineerID uuid.UUID) func(db *gorm.DB) *gorm.DB {
 	}
 }
 
-// VendorScope filters work orders by vendor ID
-func VendorScope(vendorID uuid.UUID) func(db *gorm.DB) *gorm.DB {
+// OwnerOrgScope filters work orders by owner organization ID
+func OwnerOrgScope(orgID uuid.UUID) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("vendor_id = ?", vendorID)
+		return db.Where("owner_org_id = ?", orgID)
+	}
+}
+
+// HandlerScope filters work orders by handler user ID
+func HandlerScope(handlerID uuid.UUID) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("handler_id = ?", handlerID)
 	}
 }
 

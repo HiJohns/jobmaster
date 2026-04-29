@@ -195,7 +195,7 @@
 ```json
 {
   "contractor_id": "uuid",
-  "vendor_id": "uuid"
+  "owner_org_id": "uuid"
 }
 ```
 
@@ -423,7 +423,7 @@
 ```json
 {
   "order_id": "uuid",
-  "vendor_id": "uuid"
+  "target_org_id": "uuid"
 }
 ```
 
@@ -1022,7 +1022,7 @@
    - `GET /api/v1/tenants/:id`
 
 2. **POST/PUT/PATCH 请求**：ID 移至请求体，避免高基数问题
-   - `POST /api/v1/orders/dispatch` → body: `{ "order_id": "...", "vendor_id": "..." }`
+   - `POST /api/v1/orders/dispatch` → body: `{ "order_id": "...", "target_org_id": "..." }`
    - `PUT /api/v1/tenants` → body: `{ "id": "...", "name": "..." }`
 
 3. **DELETE 请求**：ID 通过 query parameter 传递

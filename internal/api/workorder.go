@@ -78,8 +78,8 @@ type ListWorkOrdersRequest struct {
 
 // DispatchWorkOrderRequest represents the request to dispatch a work order
 type DispatchWorkOrderRequest struct {
-	VendorID   *uuid.UUID `json:"vendor_id"`
-	EngineerID *uuid.UUID `json:"engineer_id"`
+	TargetOrgID *uuid.UUID `json:"target_org_id"`
+	EngineerID  *uuid.UUID `json:"engineer_id"`
 }
 
 // AcceptWorkOrderRequest represents the request to accept a work order
@@ -164,12 +164,13 @@ type WorkOrderDetailResponse struct {
 
 	// Organization info
 	Store          OrganizationBrief  `json:"store"`
-	Vendor         *OrganizationBrief `json:"vendor,omitempty"`
+	OwnerOrg       *OrganizationBrief `json:"owner_org,omitempty"`
 	MainContractor *OrganizationBrief `json:"main_contractor,omitempty"`
 
 	// People info
 	Creator  UserBrief  `json:"creator"`
 	Engineer *UserBrief `json:"engineer,omitempty"`
+	Handler  *UserBrief `json:"handler,omitempty"`
 
 	// Contact info (from info JSONB)
 	ContactName  string `json:"contact_name,omitempty"`
@@ -314,13 +315,13 @@ func CreateWorkOrder(c *gin.Context) {
 
 	workOrder := model.WorkOrder{
 		DivisionID: req.DivisionID,
-		OrderNo:   orderNo,
-		TenantID:  tenantID,
-		StoreID:   orgID,
-		CreatedBy: userID,
-		Status:    model.WorkOrderStatusPending,
-		Info:      info,
-		Logs:      make(model.WorkOrderLogs, 0),
+		OrderNo:    orderNo,
+		TenantID:   tenantID,
+		StoreID:    orgID,
+		CreatedBy:  userID,
+		Status:     model.WorkOrderStatusPending,
+		Info:       info,
+		Logs:       make(model.WorkOrderLogs, 0),
 	}
 
 	// Get user name for audit log
@@ -512,8 +513,8 @@ func DispatchWorkOrder(c *gin.Context) {
 		return
 	}
 
-	if req.VendorID == nil && req.EngineerID == nil {
-		response.BadRequest(c, "must specify either vendor_id or engineer_id")
+	if req.TargetOrgID == nil && req.EngineerID == nil {
+		response.BadRequest(c, "must specify either target_org_id or engineer_id")
 		return
 	}
 
@@ -524,7 +525,7 @@ func DispatchWorkOrder(c *gin.Context) {
 	}
 	userName := getCurrentUserName(c, userID)
 
-	order, err := OrderService.Dispatch(c, orderID, userID, userName, req.VendorID, req.EngineerID)
+	order, err := OrderService.Dispatch(c, orderID, userID, userName, req.TargetOrgID, req.EngineerID)
 	if err != nil {
 		if err == model.ErrInvalidStateTransition {
 			response.BadRequest(c, err.Error())
@@ -696,7 +697,7 @@ func ListMyTasks(c *gin.Context) {
 	if role == model.UserRoleEngineer {
 		query = query.Scopes(model.EngineerScope(userID))
 	} else if role == model.UserRoleVendor {
-		query = query.Scopes(model.VendorScope(orgID))
+		query = query.Scopes(model.OwnerOrgScope(orgID))
 	}
 
 	// Apply calendar date range filter on appointed_at
@@ -806,7 +807,7 @@ func GetTaskStatistics(c *gin.Context) {
 	if role == model.UserRoleEngineer {
 		query = query.Where("engineer_id = ?", userID)
 	} else if role == model.UserRoleVendor {
-		query = query.Where("vendor_id = ?", orgID)
+		query = query.Where("owner_org_id = ?", orgID)
 	}
 
 	// Group by status
@@ -1075,7 +1076,7 @@ func GetWorkOrderDetail(c *gin.Context) {
 	role := model.UserRole(userRole)
 
 	var workOrder model.WorkOrder
-	query := db.Preload("Store").Preload("Vendor").Preload("Engineer").Preload("Creator")
+	query := db.Preload("Store").Preload("OwnerOrg").Preload("Engineer").Preload("Handler").Preload("Creator")
 
 	// Apply tenant scope
 	query = query.Where("tenant_id = ? AND id = ?", tenantID, orderID)
@@ -1087,7 +1088,7 @@ func GetWorkOrderDetail(c *gin.Context) {
 		query = query.Where("store_id = ?", orgID)
 	case model.UserRoleVendor:
 		// Vendor can only see orders assigned to them
-		query = query.Where("vendor_id = ?", orgID)
+		query = query.Where("owner_org_id = ?", orgID)
 	case model.UserRoleEngineer:
 		// Engineer can only see orders assigned to them
 		query = query.Where("engineer_id = ?", userID)
@@ -1166,12 +1167,21 @@ func buildWorkOrderDetail(wo *model.WorkOrder, role model.UserRole) WorkOrderDet
 		Logs: wo.Logs,
 	}
 
-	// Vendor info (if assigned)
-	if wo.Vendor != nil {
-		detail.Vendor = &OrganizationBrief{
-			ID:   wo.Vendor.ID,
-			Name: wo.Vendor.Name,
-			Type: string(wo.Vendor.Type),
+	// OwnerOrg info (if assigned)
+	if wo.OwnerOrg != nil {
+		detail.OwnerOrg = &OrganizationBrief{
+			ID:   wo.OwnerOrg.ID,
+			Name: wo.OwnerOrg.Name,
+			Type: string(wo.OwnerOrg.Type),
+		}
+	}
+
+	// Handler info (if assigned)
+	if wo.Handler != nil {
+		detail.Handler = &UserBrief{
+			ID:          wo.Handler.ID,
+			DisplayName: wo.Handler.DisplayName,
+			Phone:       wo.Handler.Phone,
 		}
 	}
 

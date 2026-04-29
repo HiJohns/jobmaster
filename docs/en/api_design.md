@@ -195,7 +195,7 @@ This document describes all API interface designs for the JobMaster system.
 ```json
 {
   "contractor_id": "uuid",
-  "vendor_id": "uuid"
+  "owner_org_id": "uuid"
 }
 ```
 
@@ -420,7 +420,7 @@ This document describes all API interface designs for the JobMaster system.
 ```json
 {
   "order_id": "uuid",
-  "vendor_id": "uuid"
+  "target_org_id": "uuid"
 }
 ```
 
@@ -739,7 +739,7 @@ Or
    - `GET /api/v1/tenants/:id`
 
 2. **POST/PUT/PATCH Requests**: ID moved to request body to avoid high-cardinality issues
-   - `POST /api/v1/orders/dispatch` → body: `{ "order_id": "...", "vendor_id": "..." }`
+   - `POST /api/v1/orders/dispatch` → body: `{ "order_id": "...", "target_org_id": "..." }`
    - `PUT /api/v1/tenants` → body: `{ "id": "...", "name": "..." }`
 
 3. **DELETE Requests**: ID passed via query parameter

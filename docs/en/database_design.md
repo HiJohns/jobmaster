@@ -98,8 +98,9 @@ This document describes the database structure design for the JobMaster system. 
 | order_no | VARCHAR(30) | Work order number (unique) |
 | status | SMALLINT | Status: 1-PENDING 2-DISPATCHED 3-ACCEPTED 4-RESERVED 5-WORKING 6-FINISHED 7-CLOSED |
 | store_id | UUID | Branch ID (organization ID) |
-| vendor_id | UUID | Vendor ID (organization ID, nullable) |
 | engineer_id | UUID | Engineer ID (user ID, nullable) |
+| owner_org_id | UUID | Current responsible organization ID (nullable) |
+| handler_id | UUID | Current handler user ID (nullable) |
 | category_path | VARCHAR(100) | Category path (e.g., Interior/Showroom/Fire Door) |
 | brand_name | VARCHAR(50) | Brand name |
 | info | JSONB | Extended info (fault description, photo array, is urgent, etc.) |
@@ -123,7 +124,8 @@ This document describes the database structure design for the JobMaster system. 
 - `idx_order_tenant`: (tenant_id, deleted_at)
 - `idx_order_status`: (tenant_id, status)
 - `idx_order_store`: (tenant_id, store_id)
-- `idx_order_vendor`: (tenant_id, vendor_id)
+- `idx_order_owner_org`: (tenant_id, owner_org_id)
+- `idx_order_handler`: (tenant_id, handler_id)
 - `idx_order_engineer`: (tenant_id, engineer_id)
 - `idx_order_appointed`: (tenant_id, appointed_at)
 - `idx_order_no`: (order_no) - Unique

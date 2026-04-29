@@ -100,11 +100,10 @@ func (s *OrderService) handleStateEntry(tx *gorm.DB, order *model.WorkOrder, sta
 	return nil
 }
 
-// Dispatch assigns a work order to a vendor or engineer
-// This is a specialized transition from PENDING to DISPATCHED
-func (s *OrderService) Dispatch(ctx context.Context, orderID uuid.UUID, userID uuid.UUID, userName string, vendorID *uuid.UUID, engineerID *uuid.UUID) (*model.WorkOrder, error) {
-	if vendorID == nil && engineerID == nil {
-		return nil, fmt.Errorf("must specify either vendor_id or engineer_id")
+// Dispatch assigns a work order to an organization or engineer
+func (s *OrderService) Dispatch(ctx context.Context, orderID uuid.UUID, userID uuid.UUID, userName string, targetOrgID *uuid.UUID, engineerID *uuid.UUID) (*model.WorkOrder, error) {
+	if targetOrgID == nil && engineerID == nil {
+		return nil, fmt.Errorf("must specify either target_org_id or engineer_id")
 	}
 
 	db, err := database.GetDB()
@@ -144,34 +143,35 @@ func (s *OrderService) Dispatch(ctx context.Context, orderID uuid.UUID, userID u
 		}
 
 		// Update assignment
-		order.VendorID = vendorID
+		order.OwnerOrgID = targetOrgID
+		order.HandlerID = &userID
 		order.EngineerID = engineerID
 		order.Status = model.WorkOrderStatusDispatched
 		order.CurrentHop++
 		order.HopLimit = hopLimit
 
 		// Set ParentProviderID for temporary parent-child relationship
-		if vendorID != nil {
-			// Check if the vendor has a parent organization
-			var vendorOrg model.Organization
-			if err := tx.First(&vendorOrg, "id = ?", vendorID).Error; err == nil && vendorOrg.ParentID != nil {
-				order.ParentProviderID = vendorOrg.ParentID
+		if targetOrgID != nil {
+			// Check if the target org has a parent organization
+			var targetOrg model.Organization
+			if err := tx.First(&targetOrg, "id = ?", targetOrgID).Error; err == nil && targetOrg.ParentID != nil {
+				order.ParentProviderID = targetOrg.ParentID
 			}
 
-			// Append vendor ID to dispatch path
+			// Append target org ID to dispatch path
 			var dispatchPath []uuid.UUID
 			if order.DispatchPath != nil {
 				_ = json.Unmarshal(order.DispatchPath, &dispatchPath)
 			}
-			dispatchPath = append(dispatchPath, *vendorID)
+			dispatchPath = append(dispatchPath, *targetOrgID)
 			pathJSON, _ := json.Marshal(dispatchPath)
 			order.DispatchPath = pathJSON
 		}
 
 		// Build log details
 		details := "Assigned to"
-		if vendorID != nil {
-			details += fmt.Sprintf(" vendor %s", vendorID.String())
+		if targetOrgID != nil {
+			details += fmt.Sprintf(" org %s", targetOrgID.String())
 		}
 		if engineerID != nil {
 			details += fmt.Sprintf(" engineer %s", engineerID.String())
@@ -326,7 +326,8 @@ func (s *OrderService) Reject(ctx context.Context, orderID uuid.UUID, userID uui
 		}
 
 		// Clear assignment
-		order.VendorID = nil
+		order.OwnerOrgID = nil
+		order.HandlerID = nil
 		order.EngineerID = nil
 		order.Status = model.WorkOrderStatusPending
 
@@ -361,9 +362,9 @@ func (s *OrderService) Reserve(ctx context.Context, orderID uuid.UUID, userID uu
 			return fmt.Errorf("work order not found: %w", err)
 		}
 
-		// Validate ownership - must be assigned to this vendor or engineer
-		if order.VendorID != nil && *order.VendorID != orgID {
-			return fmt.Errorf("not assigned to this order: vendor mismatch")
+		// Validate ownership - must be assigned to this org or engineer
+		if order.OwnerOrgID != nil && *order.OwnerOrgID != orgID {
+			return fmt.Errorf("not assigned to this order: org mismatch")
 		}
 		if order.EngineerID != nil && *order.EngineerID != userID {
 			return fmt.Errorf("not assigned to this order: engineer mismatch")
@@ -409,12 +410,12 @@ func (s *OrderService) Arrive(ctx context.Context, orderID uuid.UUID, userID uui
 			return fmt.Errorf("work order not found: %w", err)
 		}
 
-		// Validate ownership - must be assigned to this engineer or vendor
+		// Validate ownership - must be assigned to this engineer or org
 		if order.EngineerID != nil && *order.EngineerID != userID {
 			return fmt.Errorf("not assigned to this order: engineer mismatch")
 		}
-		if order.EngineerID == nil && order.VendorID != nil && *order.VendorID != orgID {
-			return fmt.Errorf("not assigned to this order: vendor mismatch")
+		if order.EngineerID == nil && order.OwnerOrgID != nil && *order.OwnerOrgID != orgID {
+			return fmt.Errorf("not assigned to this order: org mismatch")
 		}
 
 		// Validate transition to ARRIVED
