@@ -291,6 +291,78 @@ func (h *DemoHandlers) CreateWorkOrder(c *gin.Context) {
 	c.JSON(http.StatusOK, newOrder)
 }
 
+// findWorkOrder looks up a work order by ID.
+// It checks createdWorkOrders first, then falls back to demo data.
+// If found in demo data, it copies the work order into createdWorkOrders for mutation.
+func findWorkOrder(id string) (map[string]interface{}, bool) {
+	if value, ok := createdWorkOrders.Load(id); ok {
+		return value.(map[string]interface{}), true
+	}
+
+	demoData, err := data.LoadDemoData()
+	if err != nil {
+		return nil, false
+	}
+
+	var workOrders []map[string]interface{}
+	if err := json.Unmarshal(demoData.WorkOrders, &workOrders); err != nil {
+		return nil, false
+	}
+
+	for _, wo := range workOrders {
+		if woID, ok := wo["id"].(string); ok && woID == id {
+			clone := make(map[string]interface{})
+			for k, v := range wo {
+				clone[k] = v
+			}
+			createdWorkOrders.Store(id, clone)
+			return clone, true
+		}
+	}
+
+	return nil, false
+}
+
+// findOrgName looks up an organization name by ID from demo data.
+func findOrgName(orgID string) string {
+	demoData, err := data.LoadDemoData()
+	if err != nil {
+		return orgID
+	}
+	var orgs []map[string]interface{}
+	if err := json.Unmarshal(demoData.Organizations, &orgs); err != nil {
+		return orgID
+	}
+	for _, org := range orgs {
+		if id, ok := org["id"].(string); ok && id == orgID {
+			if name, ok := org["name"].(string); ok {
+				return name
+			}
+		}
+	}
+	return orgID
+}
+
+// findEngineerName looks up an engineer's display name by ID from demo data.
+func findEngineerName(engineerID string) string {
+	demoData, err := data.LoadDemoData()
+	if err != nil {
+		return engineerID
+	}
+	var users []map[string]interface{}
+	if err := json.Unmarshal(demoData.Users, &users); err != nil {
+		return engineerID
+	}
+	for _, u := range users {
+		if id, ok := u["id"].(string); ok && id == engineerID {
+			if name, ok := u["display_name"].(string); ok {
+				return name
+			}
+		}
+	}
+	return engineerID
+}
+
 // DispatchWorkOrder dispatches a work order to a vendor/contractor
 func (h *DemoHandlers) DispatchWorkOrder(c *gin.Context) {
 	id := c.Param("id")
@@ -306,20 +378,22 @@ func (h *DemoHandlers) DispatchWorkOrder(c *gin.Context) {
 
 	username := h.getUsernameFromSession(c)
 
-	if value, ok := createdWorkOrders.Load(id); ok {
-		workOrder := value.(map[string]interface{})
-		workOrder["status"] = "DISPATCHED"
-		workOrder["owner_org_id"] = req.TargetOrgID
-		workOrder["owner_org_name"] = req.TargetOrgID
-		workOrder["handler_id"] = username
-		workOrder["handler_name"] = username
-		createdWorkOrders.Store(id, workOrder)
-		persistDemoState()
-		c.JSON(http.StatusOK, workOrder)
+	workOrder, found := findWorkOrder(id)
+	if !found {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
 		return
 	}
 
-	c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
+	orgName := findOrgName(req.TargetOrgID)
+
+	workOrder["status"] = "DISPATCHED"
+	workOrder["owner_org_id"] = req.TargetOrgID
+	workOrder["owner_org_name"] = orgName
+	workOrder["handler_id"] = username
+	workOrder["handler_name"] = username
+	createdWorkOrders.Store(id, workOrder)
+	persistDemoState()
+	c.JSON(http.StatusOK, workOrder)
 }
 
 // AssignWorkOrder assigns a work order to an engineer
@@ -337,19 +411,21 @@ func (h *DemoHandlers) AssignWorkOrder(c *gin.Context) {
 
 	username := h.getUsernameFromSession(c)
 
-	if value, ok := createdWorkOrders.Load(id); ok {
-		workOrder := value.(map[string]interface{})
-		workOrder["engineer_id"] = req.EngineerID
-		workOrder["engineer_name"] = req.EngineerID
-		workOrder["handler_id"] = username
-		workOrder["handler_name"] = username
-		createdWorkOrders.Store(id, workOrder)
-		persistDemoState()
-		c.JSON(http.StatusOK, workOrder)
+	workOrder, found := findWorkOrder(id)
+	if !found {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
 		return
 	}
 
-	c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
+	engineerName := findEngineerName(req.EngineerID)
+
+	workOrder["engineer_id"] = req.EngineerID
+	workOrder["engineer_name"] = engineerName
+	workOrder["handler_id"] = username
+	workOrder["handler_name"] = username
+	createdWorkOrders.Store(id, workOrder)
+	persistDemoState()
+	c.JSON(http.StatusOK, workOrder)
 }
 
 // GetOrganizations returns all organizations from demo data

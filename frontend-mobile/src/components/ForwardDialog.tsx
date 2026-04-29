@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Dialog, Selector } from 'antd-mobile'
-import { localWorkorderApi } from '../api/local/workorder'
+import { demoApi } from '../api/demo'
 import { storage } from '../api/local/storage'
 import { STORAGE_KEYS, User, Organization } from '../api/local/mockData'
 
@@ -95,15 +95,14 @@ export default function ForwardDialog({ visible, onClose, workOrderId, onSuccess
     try {
       setLoading(true)
       if (dispatchType === 'assign') {
-        await localWorkorderApi.forward(workOrderId, targetOrg[0])
+        await demoApi.dispatchWorkOrder(workOrderId, targetOrg[0])
       } else {
-        // 分配工程师
-        await localWorkorderApi.assignEngineer(workOrderId, targetOrg[0])
+        await demoApi.assignWorkOrder(workOrderId, targetOrg[0])
       }
       onSuccess()
       onClose()
     } catch (error) {
-      console.error('Failed to forward work order:', error)
+      console.error('Failed to dispatch work order:', error)
     } finally {
       setLoading(false)
     }

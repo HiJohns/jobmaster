@@ -93,13 +93,6 @@ export default function WorkOrderDetailPage() {
         if (stepIndex !== -1) {
           setCurrentStepIndex(stepIndex)
         }
-
-        // 同步到 localStorage（供 localWorkorderApi 使用）
-        const allWorkOrders = storage.get<any[]>(STORAGE_KEYS.WORKORDERS) || []
-        const existingIdx = allWorkOrders.findIndex((wo: any) => wo.id === workOrderData.id)
-        if (existingIdx === -1) {
-          storage.set(STORAGE_KEYS.WORKORDERS, [...allWorkOrders, workOrderData])
-        }
       } catch (error) {
         Toast.show({
           content: '获取工单详情失败',
