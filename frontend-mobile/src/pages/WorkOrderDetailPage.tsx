@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Button, Card, Toast, NavBar, Steps, Loading, Radio, Selector } from 'antd-mobile'
+import { Button, Card, Toast, NavBar, Steps, Loading, Radio, Selector, DatePicker } from 'antd-mobile'
 import { LeftOutline } from 'antd-mobile-icons'
 import { demoApi } from '../api/demo'
 import { localReservationApi } from '../api/local/reservation'
@@ -70,6 +70,7 @@ export default function WorkOrderDetailPage() {
   const [targetOrg, setTargetOrg] = useState<string[]>([])
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [engineers, setEngineers] = useState<EngineerOption[]>([])
+  const [reservePickerVisible, setReservePickerVisible] = useState(false)
 
   if (!orderId) {
     Toast.show('无效的工单ID')
@@ -155,6 +156,11 @@ export default function WorkOrderDetailPage() {
 
     const currentStep = STATUS_STEPS[currentStepIndex]
 
+    if (currentStep.action === 'reserve') {
+      setReservePickerVisible(true)
+      return
+    }
+
     try {
       Toast.show({
         content: '正在处理...',
@@ -163,11 +169,7 @@ export default function WorkOrderDetailPage() {
       })
 
       if (currentStep.action === 'accept') {
-        const scheduledAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-        await demoApi.acceptWorkOrder(workOrder.id, scheduledAt)
-      } else if (currentStep.action === 'reserve') {
-        const appointedAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
-        await demoApi.reserveWorkOrder(workOrder.id, appointedAt)
+        await demoApi.acceptWorkOrder(workOrder.id, new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString())
       } else if (currentStep.action === 'work') {
         await demoApi.arriveWorkOrder(workOrder.id, 0, 0)
       } else if (currentStep.action === 'finish') {
@@ -196,6 +198,28 @@ export default function WorkOrderDetailPage() {
         icon: 'fail',
         duration: 2000
       })
+    }
+  }
+
+  const handleReserveConfirm = async (date: Date) => {
+    setReservePickerVisible(false)
+    if (!workOrder) return
+
+    try {
+      Toast.show({ content: '正在预约...', icon: 'loading', duration: 0 })
+      const appointedAt = date.toISOString()
+      await demoApi.reserveWorkOrder(workOrder.id, appointedAt)
+      Toast.clear()
+      Toast.show({ content: '预约成功', icon: 'success', duration: 1500 })
+
+      const nextStepIndex = currentStepIndex + 1
+      if (nextStepIndex < STATUS_STEPS.length) {
+        setWorkOrder(prev => prev ? { ...prev, status: STATUS_STEPS[nextStepIndex].status } : prev)
+        setCurrentStepIndex(nextStepIndex)
+      }
+    } catch (error) {
+      Toast.clear()
+      Toast.show({ content: '预约失败', icon: 'fail', duration: 2000 })
     }
   }
 
@@ -318,6 +342,15 @@ export default function WorkOrderDetailPage() {
             </Button>
           </div>
         )})()}
+
+        <DatePicker
+          title="选择预约时间"
+          visible={reservePickerVisible}
+          onClose={() => setReservePickerVisible(false)}
+          onConfirm={(val) => handleReserveConfirm(val as unknown as Date)}
+          min={new Date()}
+          precision="minute"
+        />
 
         {/* 指派/分配区域 - 内联选择框 */}
         {(() => {

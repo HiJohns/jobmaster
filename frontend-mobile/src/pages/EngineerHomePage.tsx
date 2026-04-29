@@ -42,7 +42,7 @@ export default function EngineerHomePage() {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
 
-  const canCreateOrder = userInfo?.role === 'STORE' || userInfo?.role === 'EMPLOYEE'
+  const canCreateOrder = userInfo?.role === 'BRANCH_ADMIN' || userInfo?.role === 'EMPLOYEE'
 
   /**
    * 获取工单统计

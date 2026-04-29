@@ -146,11 +146,15 @@ export const localReservationApi = {
     const session = storage.get<{ user: { id: string; display_name: string; role: string } }>(STORAGE_KEYS.SESSION)
     const user = session?.user
 
+    const workorders = storage.get<any[]>(STORAGE_KEYS.WORKORDERS) || []
+    const wo = workorders.find(w => w.id === workOrderId)
+    const woTitle = wo?.title || wo?.description || ''
+
     const now = new Date().toISOString()
     const newReservation: Reservation = {
       id: `jm-res-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       work_order_id: workOrderId,
-      work_order_title: '',
+      work_order_title: woTitle,
       proposer_id: user?.id || '',
       proposer_name: user?.display_name || '',
       proposer_role: user?.role || '',
