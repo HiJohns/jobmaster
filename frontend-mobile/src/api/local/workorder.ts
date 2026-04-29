@@ -701,6 +701,58 @@ export const localWorkorderApi = {
 
     return workorders[idx]
   },
+
+  assignEngineer: async (id: string, engineer_id: string) => {
+    const user = getCurrentUser()
+    if (!user) {
+      throw new Error('未登录')
+    }
+
+    const workorders = storage.get<WorkOrder[]>(STORAGE_KEYS.WORKORDERS) || []
+    const idx = workorders.findIndex((wo) => wo.id === id)
+
+    if (idx === -1) {
+      throw new Error('工单不存在')
+    }
+
+    if (workorders[idx].status !== 'DISPATCHED' && workorders[idx].status !== 'ACCEPTED') {
+      throw new Error('当前状态无法分配工程师')
+    }
+
+    const users = storage.get<User[]>(STORAGE_KEYS.USERS) || []
+    const engineer = users.find((u) => u.id === engineer_id && u.role === 'ENGINEER' && u.org_id === user.org_id)
+
+    if (!engineer) {
+      throw new Error('工程师不存在')
+    }
+
+    const now = new Date().toISOString()
+    const oldEngineerName = workorders[idx].engineer_name || '未分配'
+
+    workorders[idx] = {
+      ...workorders[idx],
+      engineer_id,
+      engineer_name: engineer.display_name,
+      updated_at: now,
+    }
+
+    storage.set(STORAGE_KEYS.WORKORDERS, workorders)
+
+    const records = storage.get<WorkRecord[]>(STORAGE_KEYS.WORK_RECORDS) || []
+    records.push({
+      id: generateId('wr'),
+      user_id: user.id,
+      user_name: user.display_name,
+      action: 'ASSIGN_ENGINEER',
+      details: `分配工程师 ${engineer.display_name} (从 ${oldEngineerName})`,
+      old_status: workorders[idx].status,
+      new_status: workorders[idx].status,
+      created_at: now,
+    })
+    storage.set(STORAGE_KEYS.WORK_RECORDS, records)
+
+    return workorders[idx]
+  },
 }
 
 export default localWorkorderApi

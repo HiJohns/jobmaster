@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Button, Card, Toast, NavBar, Steps, Loading, Radio } from 'antd-mobile'
+import { Button, Card, Toast, NavBar, Steps, Loading, Radio, Selector } from 'antd-mobile'
 import { LeftOutline } from 'antd-mobile-icons'
 import { demoApi } from '../api/demo'
 import { localReservationApi } from '../api/local/reservation'
+import { localWorkorderApi } from '../api/local/workorder'
 import { useAuthStore } from '../store/useAuthStore'
-import ForwardDialog from '../components/ForwardDialog'
+import { storage } from '../api/local/storage'
+import { STORAGE_KEYS, Organization } from '../api/local/mockData'
 import WorkOrderRecords from '../components/WorkOrderRecords'
 import QRCodeDisplay from '../components/QRCodeDisplay'
 
@@ -28,6 +30,12 @@ interface StatusStep {
   title: string
   description: string
   action: string
+}
+
+interface EngineerOption {
+  id: string
+  name: string
+  username: string
 }
 
 const STATUS_STEPS: StatusStep[] = [
@@ -59,8 +67,10 @@ export default function WorkOrderDetailPage() {
   const [workOrder, setWorkOrder] = useState<WorkOrder | null>(null)
   const [loading, setLoading] = useState(true)
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
-  const [forwardDialogVisible, setForwardDialogVisible] = useState(false)
   const [dispatchType, setDispatchType] = useState<'assign' | 'distribute'>('assign')
+  const [targetOrg, setTargetOrg] = useState<string[]>([])
+  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [engineers, setEngineers] = useState<EngineerOption[]>([])
 
   if (!orderId) {
     Toast.show('无效的工单ID')
@@ -96,6 +106,47 @@ export default function WorkOrderDetailPage() {
 
     fetchWorkOrder()
   }, [orderId])
+
+  /**
+   * 加载指派/分配目标数据
+   */
+  useEffect(() => {
+    if (!userInfo || !workOrder) return
+
+    const role = userInfo.role || ''
+    const isBranch = role === 'BRANCH_ADMIN' || role === 'EMPLOYEE'
+    const isContractor = role === 'CONTRACTOR_ADMIN' || role === 'CONTRACTOR_EMPLOYEE'
+    const isVendor = role === 'VENDOR_ADMIN' || role === 'VENDOR_EMPLOYEE'
+
+    const canAssign = (isBranch || isContractor) && (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED')
+    const canDistribute = (isContractor || isVendor) && (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED')
+
+    if (!canAssign && !canDistribute) return
+
+    if (dispatchType === 'assign') {
+      const orgs = storage.get<Organization[]>(STORAGE_KEYS.ORGANIZATIONS) || []
+      let filtered: Organization[] = []
+      if (isBranch) {
+        filtered = orgs.filter((o) => o.type === 'MAIN_CONTRACTOR')
+      } else if (isContractor) {
+        filtered = orgs.filter((o) => o.type === 'VENDOR' && o.parent_id === userInfo.orgId)
+      }
+      setOrganizations(filtered)
+      setEngineers([])
+    } else {
+      const users = storage.get<any[]>(STORAGE_KEYS.USERS) || []
+      const engList = users
+        .filter((u: any) => u.role === 'ENGINEER' && u.org_id === userInfo.orgId)
+        .map((u: any) => ({
+          id: u.id,
+          name: u.display_name || u.username,
+          username: u.username,
+        }))
+      setEngineers(engList)
+      setOrganizations([])
+    }
+    setTargetOrg([])
+  }, [dispatchType, userInfo, workOrder])
 
   /**
    * 处理 Step Flow 按钮点击
@@ -191,7 +242,7 @@ export default function WorkOrderDetailPage() {
 
         {/* 二维码显示 - 仅工程师可见 */}
         {(() => {
-          const canScan = ['ENGINEER', 'VENDOR_ENGINEER'].includes(userInfo?.role || '')
+          const canScan = ['ENGINEER'].includes(userInfo?.role || '')
           return canScan && (workOrder.status === 'DISPATCHED' || 
             workOrder.status === 'ACCEPTED' || 
             workOrder.status === 'RESERVED' || 
@@ -224,9 +275,10 @@ export default function WorkOrderDetailPage() {
           </Steps>
         </Card>
         
-        {/* 检查是否有接单权限 (VENDOR 或 VENDOR_ENGINEER) */}
+        {/* 检查是否有接单权限 (VENDOR 或 ENGINEER) */}
         {(() => {
-          const canAcceptOrder = ['VENDOR', 'VENDOR_ENGINEER'].includes(userInfo?.role || '')
+          const role = userInfo?.role || ''
+          const canAcceptOrder = ['VENDOR_ADMIN', 'VENDOR_EMPLOYEE', 'ENGINEER'].includes(role)
           return canAcceptOrder && currentStepIndex < STATUS_STEPS.length && (
           <div style={{
             position: 'fixed',
@@ -258,49 +310,84 @@ export default function WorkOrderDetailPage() {
           </div>
         )})()}
 
-        {/* 指派/分配按钮 - 细粒度权限控制 */}
+        {/* 指派/分配区域 - 内联选择框 */}
         {(() => {
           const role = userInfo?.role || ''
           const isBranch = role === 'BRANCH_ADMIN' || role === 'EMPLOYEE'
-          const isContractor = role === 'MAIN_CONTRACTOR' || role === 'CONTRACTOR_EMPLOYEE'
-          const isVendor = role === 'VENDOR' || role === 'VENDOR_EMPLOYEE'
-          
-          // 指派(给公司): branch 或 contractor，跳数<2（简化为始终显示）
+          const isContractor = role === 'CONTRACTOR_ADMIN' || role === 'CONTRACTOR_EMPLOYEE'
+          const isVendor = role === 'VENDOR_ADMIN' || role === 'VENDOR_EMPLOYEE'
+
           const canAssign = (isBranch || isContractor) && (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED')
-          // 分配(给工程师): contractor 或 vendor
           const canDistribute = (isContractor || isVendor) && (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED')
-          
-          // 如果 contractor 同时可见两个按钮，显示单选框
-          if (isContractor && canAssign && canDistribute) {
-            return (
-              <div style={{ marginBottom: '16px' }}>
-                <Radio.Group 
-                  value={dispatchType} 
-                  onChange={val => setDispatchType(val as 'assign' | 'distribute')}
-                >
-                  <Radio value="assign" style={{ marginRight: '24px' }}>指派</Radio>
-                  <Radio value="distribute">分配</Radio>
-                </Radio.Group>
-                <Button
-                  block
-                  style={{
-                    '--background-color': '#FF8F1F',
-                    '--border-radius': '8px',
-                    height: '48px',
-                    fontSize: '16px',
-                    marginTop: '12px',
-                  }}
-                  onClick={() => setForwardDialogVisible(true)}
-                >
-                  {dispatchType === 'assign' ? '确认指派' : '确认分配'}
-                </Button>
-              </div>
-            )
+
+          if (!canAssign && !canDistribute) return null
+
+          const handleDispatch = async () => {
+            if (!targetOrg[0]) {
+              Toast.show('请选择目标')
+              return
+            }
+            try {
+              Toast.show({ content: '处理中...', icon: 'loading', duration: 0 })
+              if (dispatchType === 'assign') {
+                await localWorkorderApi.forward(workOrder.id, targetOrg[0])
+              } else {
+                await localWorkorderApi.assignEngineer(workOrder.id, targetOrg[0])
+              }
+              Toast.clear()
+              Toast.show(dispatchType === 'assign' ? '指派成功' : '分配成功')
+              setTimeout(() => {
+                window.location.reload()
+              }, 1000)
+            } catch (error: any) {
+              Toast.clear()
+              Toast.show({ content: error.message || '操作失败', icon: 'fail', duration: 2000 })
+            }
           }
-          
-          // 仅指派可见
-          if (canAssign) {
-            return (
+
+          return (
+            <Card title="工单处理" style={{ marginBottom: '16px' }}>
+              {isContractor && canAssign && canDistribute && (
+                <div style={{ marginBottom: '12px' }}>
+                  <Radio.Group
+                    value={dispatchType}
+                    onChange={(val) => {
+                      setDispatchType(val as 'assign' | 'distribute')
+                      setTargetOrg([])
+                    }}
+                  >
+                    <Radio value="assign" style={{ marginRight: '24px' }}>指派</Radio>
+                    <Radio value="distribute">分配</Radio>
+                  </Radio.Group>
+                </div>
+              )}
+
+              {dispatchType === 'assign' && organizations.length > 0 && (
+                <Selector
+                  options={organizations.map((org) => ({
+                    label: org.name,
+                    value: org.id,
+                    description: org.type === 'MAIN_CONTRACTOR' ? '工程公司' : '供应商',
+                  }))}
+                  value={targetOrg}
+                  onChange={setTargetOrg}
+                  columns={1}
+                />
+              )}
+
+              {dispatchType === 'distribute' && engineers.length > 0 && (
+                <Selector
+                  options={engineers.map((eng) => ({
+                    label: eng.name,
+                    value: eng.id,
+                    description: eng.username,
+                  }))}
+                  value={targetOrg}
+                  onChange={setTargetOrg}
+                  columns={1}
+                />
+              )}
+
               <Button
                 block
                 style={{
@@ -308,35 +395,14 @@ export default function WorkOrderDetailPage() {
                   '--border-radius': '8px',
                   height: '48px',
                   fontSize: '16px',
-                  marginBottom: '16px'
+                  marginTop: '12px',
                 }}
-                onClick={() => setForwardDialogVisible(true)}
+                onClick={handleDispatch}
               >
-                指派
+                {dispatchType === 'assign' ? '确认指派' : '确认分配'}
               </Button>
-            )
-          }
-          
-          // 仅分配可见
-          if (canDistribute) {
-            return (
-              <Button
-                block
-                style={{
-                  '--background-color': '#FF8F1F',
-                  '--border-radius': '8px',
-                  height: '48px',
-                  fontSize: '16px',
-                  marginBottom: '16px'
-                }}
-                onClick={() => setForwardDialogVisible(true)}
-              >
-                分配
-              </Button>
-            )
-          }
-          
-          return null
+            </Card>
+          )
         })()}
 
         {/* 拒单查看 */}
@@ -378,19 +444,6 @@ export default function WorkOrderDetailPage() {
         </Card>
       </div>
 
-      {/* 转发工单对话框 */}
-      <ForwardDialog
-        visible={forwardDialogVisible}
-        onClose={() => setForwardDialogVisible(false)}
-        workOrderId={orderId!}
-        onSuccess={() => {
-          Toast.show('转发成功')
-          // 刷新工单数据
-          setTimeout(() => {
-            window.location.reload()
-          }, 1000)
-        }}
-      />
     </div>
   )
 }
