@@ -141,4 +141,30 @@ export const localReservationApi = {
       storage.set(STORAGE_KEYS.RESERVATIONS, mockReservations)
     }
   },
+
+  create: async (workOrderId: string, proposedTime: string, comment?: string) => {
+    const session = storage.get<{ user: { id: string; display_name: string; role: string } }>(STORAGE_KEYS.SESSION)
+    const user = session?.user
+
+    const now = new Date().toISOString()
+    const newReservation: Reservation = {
+      id: `jm-res-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      work_order_id: workOrderId,
+      work_order_title: '',
+      proposer_id: user?.id || '',
+      proposer_name: user?.display_name || '',
+      proposer_role: user?.role || '',
+      proposed_time: proposedTime,
+      status: 'pending',
+      comment,
+      created_at: now,
+      updated_at: now,
+    }
+
+    const reservations = storage.get<Reservation[]>(STORAGE_KEYS.RESERVATIONS) || []
+    reservations.push(newReservation)
+    storage.set(STORAGE_KEYS.RESERVATIONS, reservations)
+
+    return newReservation
+  },
 }

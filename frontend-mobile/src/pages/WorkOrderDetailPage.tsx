@@ -154,6 +154,8 @@ export default function WorkOrderDetailPage() {
   const handleStepAction = async () => {
     if (!workOrder || currentStepIndex >= STATUS_STEPS.length) return
 
+    const currentStep = STATUS_STEPS[currentStepIndex]
+
     try {
       Toast.show({
         content: '正在处理...',
@@ -161,8 +163,17 @@ export default function WorkOrderDetailPage() {
         duration: 0
       })
 
-      // 模拟 API 调用
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      if (currentStep.action === 'accept') {
+        const scheduledAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        await demoApi.acceptWorkOrder(workOrder.id, scheduledAt)
+      } else if (currentStep.action === 'reserve') {
+        const appointedAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
+        await demoApi.reserveWorkOrder(workOrder.id, appointedAt)
+      } else if (currentStep.action === 'work') {
+        await demoApi.arriveWorkOrder(workOrder.id, 0, 0)
+      } else if (currentStep.action === 'finish') {
+        await demoApi.verifyWorkOrder(workOrder.id)
+      }
 
       Toast.clear()
       
@@ -172,7 +183,6 @@ export default function WorkOrderDetailPage() {
         duration: 1500
       })
 
-      // 更新工单状态（模拟）
       const nextStepIndex = currentStepIndex + 1
       if (nextStepIndex < STATUS_STEPS.length) {
         const nextStatus = STATUS_STEPS[nextStepIndex].status
