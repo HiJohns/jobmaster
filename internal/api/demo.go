@@ -515,16 +515,21 @@ func (h *DemoHandlers) Login(c *gin.Context) {
 
 	// Demo mode - accept any credentials
 	// Parse role from username (always use this logic)
+	// Order matters: check domain-specific keywords before generic "admin"
 	role := "EMPLOYEE" // default
 	username := req.Username
-	if contains(username, "admin") {
-		role = "BRANCH_ADMIN"
-	} else if contains(username, "engineer") {
+	if contains(username, "engineer") {
 		role = "ENGINEER"
+	} else if contains(username, "contractor") && contains(username, "admin") {
+		role = "CONTRACTOR_ADMIN"
 	} else if contains(username, "contractor") {
 		role = "CONTRACTOR_EMPLOYEE"
+	} else if contains(username, "vendor") && contains(username, "admin") {
+		role = "VENDOR_ADMIN"
 	} else if contains(username, "vendor") {
 		role = "VENDOR_EMPLOYEE"
+	} else if contains(username, "admin") || contains(username, "@branch") {
+		role = "BRANCH_ADMIN"
 	}
 
 	// Get org from username
@@ -574,14 +579,18 @@ func (h *DemoHandlers) parseRoleFromUsername(username string) string {
 	}
 
 	role := "EMPLOYEE" // default
-	if contains(username, "admin") {
-		role = "BRANCH_ADMIN"
-	} else if contains(username, "engineer") {
+	if contains(username, "engineer") {
 		role = "ENGINEER"
+	} else if contains(username, "contractor") && contains(username, "admin") {
+		role = "CONTRACTOR_ADMIN"
 	} else if contains(username, "contractor") {
 		role = "CONTRACTOR_EMPLOYEE"
+	} else if contains(username, "vendor") && contains(username, "admin") {
+		role = "VENDOR_ADMIN"
 	} else if contains(username, "vendor") {
 		role = "VENDOR_EMPLOYEE"
+	} else if contains(username, "admin") || contains(username, "@branch") {
+		role = "BRANCH_ADMIN"
 	}
 
 	return role
@@ -813,7 +822,7 @@ func (h *DemoHandlers) GetDispatchableTargets(c *gin.Context) {
 	}
 
 	userRole := h.parseRoleFromUsername(username)
-	_, orgName := getOrgFromUsername(username)
+	orgId, _ := getOrgFromUsername(username)
 
 	demoData, err := data.LoadDemoData()
 	if err != nil {
@@ -840,7 +849,7 @@ func (h *DemoHandlers) GetDispatchableTargets(c *gin.Context) {
 	// CONTRACTOR_EMPLOYEE or CONTRACTOR_ADMIN can dispatch to VENDOR
 	if strings.Contains(userRole, "CONTRACTOR") {
 		for _, org := range organizations {
-			if org["type"] == "VENDOR" && org["parent_id"] == orgName {
+			if org["type"] == "VENDOR" && org["parent_id"] == orgId {
 				targets = append(targets, org)
 			}
 		}
