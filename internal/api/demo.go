@@ -96,6 +96,7 @@ func RegisterDemoRoutes(r *gin.Engine) {
 	demo.POST("/workorders", handlers.CreateWorkOrder)
 	demo.POST("/workorders/:id/dispatch", handlers.DispatchWorkOrder)
 	demo.POST("/workorders/:id/assign", handlers.AssignWorkOrder)
+	demo.POST("/workorders/:id/reserve", handlers.ReserveWorkOrder)
 	demo.GET("/workorders/:id/records", handlers.GetWorkOrderRecords)
 	demo.POST("/workorders/:id/records", handlers.CreateWorkOrderRecord)
 	demo.POST("/workorders/:id/finish", handlers.FinishWorkOrder)
@@ -160,6 +161,17 @@ func (h *DemoHandlers) GetWorkOrders(c *gin.Context) {
 
 	filtered := workOrders
 
+	// Organization-based filtering for Branch roles
+	if strings.Contains(userRole, "BRANCH") || userRole == "EMPLOYEE" {
+		var orgFiltered []map[string]interface{}
+		for _, wo := range workOrders {
+			if storeID, exists := wo["store_id"]; exists && storeID == orgId {
+				orgFiltered = append(orgFiltered, wo)
+			}
+		}
+		filtered = orgFiltered
+	}
+
 	// Organization-based filtering for Contractor and Vendor roles
 	if strings.Contains(userRole, "CONTRACTOR") || strings.Contains(userRole, "VENDOR") {
 		var orgFiltered []map[string]interface{}
@@ -221,6 +233,12 @@ func (h *DemoHandlers) GetWorkOrder(c *gin.Context) {
 	}
 
 	var workOrders []map[string]interface{}
+
+	if value, ok := createdWorkOrders.Load(id); ok {
+		c.JSON(http.StatusOK, value.(map[string]interface{}))
+		return
+	}
+
 	if err := json.Unmarshal(demoData.WorkOrders, &workOrders); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse work orders"})
 		return
@@ -231,11 +249,6 @@ func (h *DemoHandlers) GetWorkOrder(c *gin.Context) {
 			c.JSON(http.StatusOK, wo)
 			return
 		}
-	}
-
-	if value, ok := createdWorkOrders.Load(id); ok {
-		c.JSON(http.StatusOK, value.(map[string]interface{}))
-		return
 	}
 
 	c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
@@ -928,9 +941,36 @@ func (h *DemoHandlers) FinishWorkOrder(c *gin.Context) {
 	// Demo mode - just return success with status change to OBSERVING
 	c.JSON(http.StatusOK, gin.H{
 		"id":          workOrderID,
-		"status":      "observing", // Changed from WORKING to OBSERVING
+		"status":      "observing",
 		"description": req.Description,
 		"photo_urls":  req.PhotoURLs,
 		"finished_at": time.Now().Format(time.RFC3339),
 	})
+}
+
+// ReserveWorkOrder sets the appointment time for a work order
+func (h *DemoHandlers) ReserveWorkOrder(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		AppointedAt string `json:"appointed_at" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	workOrder, found := findWorkOrder(id)
+	if !found {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
+		return
+	}
+
+	workOrder["appointed_at"] = req.AppointedAt
+	workOrder["status"] = "RESERVED"
+	createdWorkOrders.Store(id, workOrder)
+	persistDemoState()
+
+	c.JSON(http.StatusOK, workOrder)
 }
