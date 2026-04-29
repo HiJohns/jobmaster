@@ -18,7 +18,7 @@ interface WorkOrder {
   status: string
   store_name: string
   address_detail: string
-  category_path: string
+  category_path: string[]
   brand_name: string
   description: string
   engineer_name?: string
@@ -87,11 +87,18 @@ export default function WorkOrderDetailPage() {
         const response = await demoApi.getWorkOrder(orderId)
         const workOrderData = response.data || response
         setWorkOrder(workOrderData)
-        
+
         // 根据状态设置当前步骤
         const stepIndex = STATUS_STEPS.findIndex(step => step.status === workOrderData.status)
         if (stepIndex !== -1) {
           setCurrentStepIndex(stepIndex)
+        }
+
+        // 同步到 localStorage（供 localWorkorderApi 使用）
+        const allWorkOrders = storage.get<any[]>(STORAGE_KEYS.WORKORDERS) || []
+        const existingIdx = allWorkOrders.findIndex((wo: any) => wo.id === workOrderData.id)
+        if (existingIdx === -1) {
+          storage.set(STORAGE_KEYS.WORKORDERS, [...allWorkOrders, workOrderData])
         }
       } catch (error) {
         Toast.show({
@@ -234,7 +241,7 @@ export default function WorkOrderDetailPage() {
             </div>
             <div><strong>网点：</strong>{workOrder.store_name}</div>
             <div><strong>地址：</strong>{workOrder.address_detail}</div>
-            <div><strong>分类：</strong>{workOrder.category_path}</div>
+            <div><strong>分类：</strong>{Array.isArray(workOrder.category_path) ? workOrder.category_path.join(' > ') : workOrder.category_path}</div>
             <div><strong>描述：</strong>{workOrder.description}</div>
             <div><strong>工程师：</strong>{workOrder.engineer_name || '未分配'}</div>
           </div>
