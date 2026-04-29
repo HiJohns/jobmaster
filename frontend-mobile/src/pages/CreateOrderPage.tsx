@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Button, Input, Toast, NavBar, ImageUploader, Picker, TextArea } from 'antd-mobile'
 import { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
-import { api } from '../api'
 import { demoApi } from '../api/demo'
 import { useAuthStore } from '../store/useAuthStore'
 
@@ -162,7 +161,7 @@ export default function CreateOrderPage() {
         division_id: null,
       }
 
-      const response = await api.workorder.create(requestData) as any
+      const response = await demoApi.createWorkOrder(requestData) as any
       
       if (response.code === 200 || response.id) {
         const workOrderId = response.id || response.data?.id
@@ -377,7 +376,7 @@ export default function CreateOrderPage() {
                     height: '40px',
                   }}
                 >
-                  {selectedContractor || '请选择劳务公司'}
+                  {selectedContractor ? contractors.find(c => c.id === selectedContractor)?.name || '请选择劳务公司' : '请选择劳务公司'}
                 </Button>
                 <Picker
                   columns={[contractors.map((c, i) => ({ label: c.name, value: c.id, key: `contractor-${i}` }))]}

@@ -192,12 +192,11 @@ func (h *DemoHandlers) GetWorkOrders(c *gin.Context) {
 	}
 
 	if strings.Contains(userRole, "ENGINEER") {
+		userID := getUserIDFromUsername(username)
 		var engineerFiltered []map[string]interface{}
 		for _, wo := range workOrders {
-			engineerId, hasEngineerId := wo["engineerId"].(string)
-			if hasEngineerId && strings.Contains(engineerId, username) {
-				engineerFiltered = append(engineerFiltered, wo)
-			} else if !hasEngineerId {
+			engineerId, _ := wo["engineer_id"].(string)
+			if engineerId == userID {
 				engineerFiltered = append(engineerFiltered, wo)
 			}
 		}
@@ -559,6 +558,26 @@ func (h *DemoHandlers) Login(c *gin.Context) {
 			"tenantId":    "jm-tenant1",
 		},
 	})
+}
+
+// getUserIDFromUsername looks up user ID by username from demo data
+func getUserIDFromUsername(username string) string {
+	demoData, err := data.LoadDemoData()
+	if err != nil {
+		return ""
+	}
+	var users []map[string]interface{}
+	if err := json.Unmarshal(demoData.Users, &users); err != nil {
+		return ""
+	}
+	for _, u := range users {
+		if u["username"] == username {
+			if id, ok := u["id"].(string); ok {
+				return id
+			}
+		}
+	}
+	return ""
 }
 
 // getUsernameFromSession extracts username from session header
