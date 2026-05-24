@@ -57,3 +57,4 @@ frontend-mobile/node_modules/
 frontend-mobile/dist/
 frontend-mobile/.env.local
 frontend-mobile/package-lock.json
+tmp/
