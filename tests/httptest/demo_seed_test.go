@@ -236,10 +236,10 @@ func TestStoryB_SkipVendor(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code, "engineer2 should see seed-06")
 
 	// contractor2 (vendor) should NOT see it via detail endpoint
-	vendorToken := loginAsDemoUser(t, "employee1@contractor2", "demo123")
+	vendorToken := loginAsDemoUser(t, "employee1@相川", "demo123")
 	if vendorToken != "" {
 		w = ExecuteRequestWithAuth(t, "GET", fmt.Sprintf("/api/v1/workorders/%s/detail", seed06ID), nil, vendorToken)
-		assert.Equal(t, http.StatusNotFound, w.Code, "contractor2 should NOT see seed-06")
+		assert.Equal(t, http.StatusNotFound, w.Code, "vendor should NOT see seed-06 detail")
 	}
 	_ = conToken
 }
@@ -303,10 +303,10 @@ func TestStoryD_RejectOrder(t *testing.T) {
 		t.Skip("forward failed")
 	}
 
-	// Reject: FORWARDED → PENDING (use vendor who has ActionOrderExecute)
-	vendorToken := loginAsDemoUser(t, "employee1@contractor2", "demo123")
+	// Reject: DISPATCHED → PENDING (use vendor who has ActionOrderExecute)
+	vendorToken := loginAsDemoUser(t, "employee1@相川", "demo123")
 	if vendorToken == "" {
-		t.Fatal("failed to login as employee1@contractor2")
+		t.Fatal("failed to login as employee1@相川")
 	}
 	w = ExecuteRequestWithAuth(t, "POST", fmt.Sprintf("/api/v1/workorders/%s/reject", seed08ID),
 		map[string]interface{}{"reason": "无法处理"}, vendorToken)
