@@ -39,7 +39,27 @@ All design revolves around:
 
 Invalid buttons are not allowed (no grayed-out button piles)
 
-#### Principle 4: Operation Priority
+#### Principle 4: Service Mode & Reservation Flow
+
+When creating a work order, user can select the service mode:
+- **Time window** (default): Engineer arrives during the specified window, no reservation needed
+- **Appointment required**: Branch must confirm appointment time before engineer arrives
+
+**Button Conditions**:
+- When appointment_type=1 (time window):
+  - PC: Hide "Reserve" button
+  - Mobile: Skip "Reserve" step, go from "Accept" to "Work"
+  - Engineer: Show "Start Work" instead of "Set Appointment"
+- When appointment_type=2 (appointment required):
+  - Keep existing reservation flow
+
+**Explicit Prompt Rule**:
+- Work order detail page must display a visible prompt about the service mode:
+  - type=1: Green card "Time window mode: no appointment needed, proceed to site directly"
+  - type=2: Blue card "Appointment required: please set appointment time first"
+- Prompt remains visible while the work order is active
+
+#### Principle 5: Operation Priority
 
 Each page can only have **1 Primary Action**
 
@@ -72,8 +92,11 @@ Each page can only have **1 Primary Action**
 |------|-----------|-------|
 | Engineer | Order List | View orders assigned to self |
 | Engineer | Order Detail | Accept, schedule, arrive, depart |
-| Engineer | Scan to Arrive | Scan order QR to confirm arrival |
 | Engineer | Work Record | Submit messages, upload photos |
+| Vendor Admin | Order List | View orders assigned to vendor |
+| Vendor Admin | Order Detail | Accept, reserve schedule, assign engineers |
+| Vendor Employee | Order List | View orders assigned to vendor |
+| Vendor Employee | Order Detail | Assign engineers only (no reserve, no forward) |
 
 ---
 

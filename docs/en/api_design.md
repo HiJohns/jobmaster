@@ -325,7 +325,8 @@ This document describes all API interface designs for the JobMaster system.
   "coordinates": {
     "lat": "float",
     "lng": "float"
-  }
+  },
+  "appointment_type": "int"
 }
 ```
 
@@ -515,6 +516,32 @@ Or
 **Notes**: Reservation check-in no longer changes work order status, directly starts work
 
 ### 3.9 Start Work
+
+**Endpoint**: `POST /api/v1/workorders/:id/arrive`
+
+**Request Body**:
+```json
+{
+  "photo_urls": ["string"],
+  "comment": "string"
+}
+```
+
+**Field Description**:
+- `photo_urls`: Pre-work photos (optional)
+- `comment`: Pre-work notes (optional)
+
+**Endpoint**: `POST /api/v1/workorders/:id/work-record`
+
+**Request Body**:
+```json
+{
+  "photo_urls": ["string"],
+  "comment": "string"
+}
+```
+
+**Description**: Adds work record (photos+comment) during work without changing order status.
 
 **Endpoint**: `POST /api/v1/orders/arrive`
 

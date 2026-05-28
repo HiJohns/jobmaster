@@ -84,11 +84,16 @@ export default function EngineerHomePage() {
         brand_name: o.brand_name,
         description: o.description,
         engineer_name: o.engineer_name,
+        engineer_id: o.engineer_id,
+        owner_org_name: o.owner_org_name,
         created_at: o.created_at,
         is_urgent: o.is_urgent,
       }))
 
       if (isRefresh || currentPage === 1) {
+        mockOrders.sort((a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )
         setOrders(mockOrders)
         setPage(1)
       } else {
@@ -188,7 +193,7 @@ export default function EngineerHomePage() {
           
           {Object.entries(stats.by_status).slice(0, 3).map(([status, count]) => {
             const statusConfig = {
-              DISPATCHED: { text: '待接单', color: '#0033FF' },
+              DISPATCHED: { text: '流转中', color: '#0033FF' },
               ACCEPTED: { text: '已接单', color: '#00B578' },
               RESERVED: { text: '已预约', color: '#FF8F1F' },
               WORKING: { text: '施工中', color: '#6366F1' },
@@ -203,6 +208,12 @@ export default function EngineerHomePage() {
               </div>
             )
           })}
+        </div>
+        <div
+          onClick={() => navigate('/wechat/pending-orders')}
+          style={{ textAlign: 'center', padding: '8px 0 0', fontSize: '12px', color: '#1677FF', cursor: 'pointer' }}
+        >
+          待提交
         </div>
       </Card>
 

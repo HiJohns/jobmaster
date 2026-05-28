@@ -44,14 +44,16 @@ func getCurrentUserName(c *gin.Context, userID uuid.UUID) string {
 
 // CreateWorkOrderRequest represents the request to create a work order
 type CreateWorkOrderRequest struct {
-	Description   string             `json:"description" binding:"required"`
-	EquipmentInfo string             `json:"equipment_info"`
-	ContactName   string             `json:"contact_name"`
-	ContactPhone  string             `json:"contact_phone"`
-	IsUrgent      bool               `json:"is_urgent"`
-	PhotoURLs     []string           `json:"photo_urls"`
-	Location      *model.GPSLocation `json:"location"`
-	DivisionID    *uuid.UUID         `json:"division_id,omitempty"`
+	Description    string             `json:"description" binding:"required"`
+	EquipmentInfo  string             `json:"equipment_info"`
+	ContactName    string             `json:"contact_name"`
+	ContactPhone   string             `json:"contact_phone"`
+	IsUrgent       bool               `json:"is_urgent"`
+	PhotoURLs      []string           `json:"photo_urls"`
+	Location       *model.GPSLocation `json:"location"`
+	DivisionID     *uuid.UUID         `json:"division_id,omitempty"`
+	AppointmentType *int              `json:"appointment_type,omitempty"`
+	TimeSlots      []model.TimeSlot   `json:"time_slots,omitempty"`
 }
 
 // WorkOrderResponse represents the work order response
@@ -99,8 +101,14 @@ type ReserveWorkOrderRequest struct {
 
 // ArriveWorkOrderRequest represents the request to check in at work site
 type ArriveWorkOrderRequest struct {
-	Latitude  float64 `json:"latitude" binding:"required"`
-	Longitude float64 `json:"longitude" binding:"required"`
+	PhotoURLs []string `json:"photo_urls"`
+	Comment   string   `json:"comment"`
+}
+
+// WorkRecordRequest represents adding a work record (photo + comment, no state change)
+type WorkRecordRequest struct {
+	PhotoURLs []string `json:"photo_urls"`
+	Comment   string   `json:"comment"`
 }
 
 // FinishWorkOrderRequest represents the request to finish work
@@ -311,6 +319,7 @@ func CreateWorkOrder(c *gin.Context) {
 		IsUrgent:      req.IsUrgent,
 		PhotoURLs:     req.PhotoURLs,
 		Location:      req.Location,
+		TimeSlots:     req.TimeSlots,
 	}
 
 	workOrder := model.WorkOrder{
@@ -322,6 +331,10 @@ func CreateWorkOrder(c *gin.Context) {
 		Status:     model.WorkOrderStatusPending,
 		Info:       info,
 		Logs:       make(model.WorkOrderLogs, 0),
+	}
+
+	if req.AppointmentType != nil {
+		workOrder.AppointmentType = *req.AppointmentType
 	}
 
 	// Get user name for audit log
@@ -383,9 +396,9 @@ func ListWorkOrders(c *gin.Context) {
 	query := db.Model(&model.WorkOrder{})
 
 	switch model.UserRole(userRole) {
-	case model.UserRoleStore:
-		// Store can only see their own store's work orders
-		query = query.Scopes(model.TenantScope(tenantID), model.StoreScope(orgID))
+	case model.UserRoleStore, model.UserRoleStaff:
+		query = query.Scopes(model.TenantScope(tenantID)).
+			Where("store_id = ? OR dispatch_path @> ?", orgID, fmt.Sprintf(`"%s"`, orgID.String()))
 
 	case model.UserRoleBrandHQ, model.UserRoleMainContractor:
 		// HQ and MainContractor can see all work orders in tenant
@@ -697,7 +710,7 @@ func ListMyTasks(c *gin.Context) {
 	if role == model.UserRoleEngineer {
 		query = query.Scopes(model.EngineerScope(userID))
 	} else if role == model.UserRoleVendor {
-		query = query.Scopes(model.OwnerOrgScope(orgID))
+		query = query.Scopes(model.DispatchChainScope(orgID))
 	}
 
 	// Apply calendar date range filter on appointed_at
@@ -807,7 +820,7 @@ func GetTaskStatistics(c *gin.Context) {
 	if role == model.UserRoleEngineer {
 		query = query.Where("engineer_id = ?", userID)
 	} else if role == model.UserRoleVendor {
-		query = query.Where("owner_org_id = ?", orgID)
+		query = query.Where("owner_org_id = ? OR dispatch_path @> ?", orgID, fmt.Sprintf(`"%s"`, orgID.String()))
 	}
 
 	// Group by status
@@ -918,7 +931,7 @@ func ArriveWorkOrder(c *gin.Context) {
 	}
 	userName := getCurrentUserName(c, userID)
 
-	order, err := OrderService.Arrive(c, orderID, userID, orgID, userName, req.Latitude, req.Longitude)
+	order, err := OrderService.Arrive(c, orderID, userID, orgID, userName, req.PhotoURLs, req.Comment)
 	if err != nil {
 		if err == model.ErrInvalidStateTransition {
 			response.BadRequest(c, err.Error())
@@ -929,6 +942,46 @@ func ArriveWorkOrder(c *gin.Context) {
 	}
 
 	response.Success(c, toWorkOrderResponse(order))
+}
+
+// AddWorkRecord adds a work record (photos + comment) without changing work order status
+func AddWorkRecord(c *gin.Context) {
+	userRole, ok := middleware.GetRole(c)
+	if !ok {
+		response.Unauthorized(c, "invalid token: role not found")
+		return
+	}
+	if model.UserRole(userRole) != model.UserRoleEngineer {
+		response.Forbidden(c, "only engineer can add work records")
+		return
+	}
+
+	orderID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "invalid order id")
+		return
+	}
+
+	var req WorkRecordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid request: "+err.Error())
+		return
+	}
+
+	userID, ok := middleware.GetUserID(c)
+	if !ok {
+		response.Unauthorized(c, "invalid token: user id not found")
+		return
+	}
+	userName := getCurrentUserName(c, userID)
+
+	log, err := OrderService.AddWorkRecord(c, orderID, userID, userName, req.PhotoURLs, req.Comment)
+	if err != nil {
+		response.InternalServerError(c, fmt.Errorf("failed to add work record: %w", err).Error())
+		return
+	}
+
+	response.Success(c, log)
 }
 
 // FinishWorkOrder completes the work and uploads completion info (ENGINEER only)
@@ -1083,12 +1136,10 @@ func GetWorkOrderDetail(c *gin.Context) {
 
 	// Apply role-based access control
 	switch role {
-	case model.UserRoleStore:
-		// Store can only see their own orders
+	case model.UserRoleStore, model.UserRoleStaff:
 		query = query.Where("store_id = ?", orgID)
 	case model.UserRoleVendor:
-		// Vendor can only see orders assigned to them
-		query = query.Where("owner_org_id = ?", orgID)
+		query = query.Where("owner_org_id = ? OR dispatch_path @> ?", orgID, fmt.Sprintf(`"%s"`, orgID.String()))
 	case model.UserRoleEngineer:
 		// Engineer can only see orders assigned to them
 		query = query.Where("engineer_id = ?", userID)

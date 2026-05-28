@@ -121,6 +121,12 @@ func SetupRouterWithFrontend(frontendDist string) *gin.Engine {
 			protected.POST("/workorders/:id/verify", VerifyWorkOrder)
 			protected.POST("/workorders/:id/evaluate", EvaluateWorkOrder)
 			protected.POST("/workorders/:id/validate-location", ValidateWorkOrderLocation)
+			protected.POST("/workorders/:id/work-record", AddWorkRecord)
+			protected.GET("/workorders/:id/detail", GetWorkOrderDetail)
+
+			// Engineer/Vendor task routes
+			protected.GET("/my-tasks", ListMyTasks)
+			protected.GET("/my-tasks/statistics", GetTaskStatistics)
 
 			// Device routes (require authentication)
 			protected.GET("/devices", ListDevices)

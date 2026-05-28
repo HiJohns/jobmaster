@@ -16,15 +16,16 @@ import (
 type WorkOrderStatus int
 
 const (
-	WorkOrderStatusPending           WorkOrderStatus = 1 // 报修
-	WorkOrderStatusDispatched        WorkOrderStatus = 2 // 已指派
-	WorkOrderStatusReserved          WorkOrderStatus = 3 // 已预约
-	WorkOrderStatusArrived           WorkOrderStatus = 4 // 已到场
-	WorkOrderStatusWorking           WorkOrderStatus = 5 // 施工中
-	WorkOrderStatusFinished          WorkOrderStatus = 6 // 离场确认
-	WorkOrderStatusPendingEvaluation WorkOrderStatus = 9 // 待评估
-	WorkOrderStatusObserving         WorkOrderStatus = 7 // 观察期
-	WorkOrderStatusClosed            WorkOrderStatus = 8 // 已关闭
+	WorkOrderStatusPending           WorkOrderStatus = 1  // 报修/等待
+	WorkOrderStatusDispatched        WorkOrderStatus = 2  // 流转中
+	WorkOrderStatusAccepted          WorkOrderStatus = 10 // 已接单/分配
+	WorkOrderStatusReserved          WorkOrderStatus = 3  // 已预约
+	WorkOrderStatusArrived           WorkOrderStatus = 4  // 已到场
+	WorkOrderStatusWorking           WorkOrderStatus = 5  // 施工中
+	WorkOrderStatusFinished          WorkOrderStatus = 6  // 离场确认
+	WorkOrderStatusPendingEvaluation WorkOrderStatus = 9  // 待评估
+	WorkOrderStatusObserving         WorkOrderStatus = 7  // 观察期
+	WorkOrderStatusClosed            WorkOrderStatus = 8  // 已关闭
 )
 
 // String returns the string representation of the status
@@ -34,6 +35,8 @@ func (s WorkOrderStatus) String() string {
 		return "PENDING"
 	case WorkOrderStatusDispatched:
 		return "DISPATCHED"
+	case WorkOrderStatusAccepted:
+		return "ACCEPTED"
 	case WorkOrderStatusReserved:
 		return "RESERVED"
 	case WorkOrderStatusArrived:
@@ -69,6 +72,8 @@ func (s *WorkOrderStatus) UnmarshalJSON(data []byte) error {
 		*s = WorkOrderStatusPending
 	case "DISPATCHED":
 		*s = WorkOrderStatusDispatched
+	case "ACCEPTED":
+		*s = WorkOrderStatusAccepted
 	case "RESERVED":
 		*s = WorkOrderStatusReserved
 	case "ARRIVED":
@@ -92,8 +97,16 @@ func (s *WorkOrderStatus) UnmarshalJSON(data []byte) error {
 // ErrInvalidStateTransition is returned when an invalid state transition is attempted
 var ErrInvalidStateTransition = errors.New("invalid state transition")
 
+// TimeSlot represents an appointment time slot
+type TimeSlot struct {
+	Days      string `json:"days"`       // "weekday" | "weekend" | "everyday"
+	StartTime string `json:"start_time"` // "09:00"
+	EndTime   string `json:"end_time"`   // "17:00"
+}
+
 // WorkOrderInfo stores flexible JSONB data for work order
 type WorkOrderInfo struct {
+	Title         string       `json:"title,omitempty"`
 	Description   string       `json:"description,omitempty"`
 	EquipmentInfo string       `json:"equipment_info,omitempty"`
 	PhotoURLs     []string     `json:"photo_urls,omitempty"`
@@ -108,8 +121,10 @@ type WorkOrderInfo struct {
 	EvaluationScore int       `json:"evaluation_score,omitempty"`
 	EvaluationNotes string    `json:"evaluation_notes,omitempty"`
 	EstimatedCost   float64   `json:"estimated_cost,omitempty"`
-	EvaluatedBy     *string   `json:"evaluated_by,omitempty"` // User ID
+	EvaluatedBy     *string   `json:"evaluated_by,omitempty"`
 	EvaluatedAt     time.Time `json:"evaluated_at,omitempty"`
+	// Appointment time slots
+	TimeSlots []TimeSlot `json:"time_slots,omitempty"`
 }
 
 // Value implements the driver.Valuer interface
@@ -130,6 +145,8 @@ func (i *WorkOrderInfo) Scan(value interface{}) error {
 }
 
 // WorkOrderLog represents a single log entry
+// WorkOrderLog represents a single audit log entry
+// Stored as JSONB, append-only for immutable audit trail
 type WorkOrderLog struct {
 	Timestamp time.Time       `json:"timestamp"`
 	UserID    uuid.UUID       `json:"user_id"`
@@ -138,6 +155,7 @@ type WorkOrderLog struct {
 	Details   string          `json:"details,omitempty"`
 	OldStatus WorkOrderStatus `json:"old_status,omitempty"`
 	NewStatus WorkOrderStatus `json:"new_status,omitempty"`
+	PhotoURLs []string        `json:"photo_urls,omitempty"`
 }
 
 // Log action constants
@@ -154,6 +172,7 @@ const (
 	LogActionStatusChangeToFinished          = "status_changed_WORKING_to_FINISHED"
 	LogActionStatusChangeToClosed            = "status_changed_OBSERVING_to_CLOSED"
 	LogActionStatusChangeToDispatched        = "status_changed_OBSERVING_to_DISPATCHED"
+	LogActionWorkRecord                      = "work_record"
 )
 
 // WorkOrderLogs is a slice of log entries
@@ -186,6 +205,18 @@ func (l *WorkOrderLogs) AddLog(userID uuid.UUID, userName, action, details strin
 		Details:   details,
 		OldStatus: oldStatus,
 		NewStatus: newStatus,
+	})
+}
+
+// AddWorkLog appends a new work record with photos (施工中临时记录，不改变状态)
+func (l *WorkOrderLogs) AddWorkLog(userID uuid.UUID, userName, details string, photoURLs []string) {
+	*l = append(*l, WorkOrderLog{
+		Timestamp: time.Now(),
+		UserID:    userID,
+		UserName:  userName,
+		Action:    LogActionWorkRecord,
+		Details:   details,
+		PhotoURLs: photoURLs,
 	})
 }
 
@@ -261,6 +292,9 @@ type WorkOrder struct {
 	Info WorkOrderInfo `gorm:"type:jsonb" json:"info"`
 	Logs WorkOrderLogs `gorm:"type:jsonb" json:"logs"`
 
+	// Service mode: 1=指定上门时段（无需预约） 2=要求提前预约
+	AppointmentType int `gorm:"default:1" json:"appointment_type"`
+
 	// Timestamps
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
@@ -307,7 +341,8 @@ func (w *WorkOrder) IsValidTransition(newStatus WorkOrderStatus) bool {
 	// State transition whitelist
 	validTransitions := map[WorkOrderStatus][]WorkOrderStatus{
 		WorkOrderStatusPending:           {WorkOrderStatusDispatched},
-		WorkOrderStatusDispatched:        {WorkOrderStatusReserved, WorkOrderStatusPending}, // Support rejection flow
+		WorkOrderStatusDispatched:        {WorkOrderStatusDispatched, WorkOrderStatusAccepted, WorkOrderStatusPending, WorkOrderStatusArrived},
+		WorkOrderStatusAccepted:          {WorkOrderStatusReserved, WorkOrderStatusArrived, WorkOrderStatusPending},
 		WorkOrderStatusReserved:          {WorkOrderStatusArrived},
 		WorkOrderStatusArrived:           {WorkOrderStatusWorking},
 		WorkOrderStatusWorking:           {WorkOrderStatusFinished},
@@ -413,8 +448,14 @@ func HandlerScope(handlerID uuid.UUID) func(db *gorm.DB) *gorm.DB {
 // VendorPathScope filters work orders where dispatch_path contains the vendor ID
 func VendorPathScope(vendorID uuid.UUID) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		// Use JSONB containment operator to check if dispatch_path array contains vendorID
 		return db.Where("dispatch_path @> ?", fmt.Sprintf(`"%s"`, vendorID.String()))
+	}
+}
+
+// DispatchChainScope filters work orders where the org is the current owner OR appears in the dispatch chain
+func DispatchChainScope(orgID uuid.UUID) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("owner_org_id = ? OR dispatch_path @> ?", orgID, fmt.Sprintf(`"%s"`, orgID.String()))
 	}
 }
 

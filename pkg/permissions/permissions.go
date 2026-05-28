@@ -53,7 +53,7 @@ var PermissionMatrix = map[model.UserRole][]Action{
 		ActionReportView, ActionReportExport,
 	},
 	model.UserRoleVendor: {
-		ActionOrderView, ActionOrderExecute,
+		ActionOrderView, ActionOrderExecute, ActionOrderDispatch,
 		ActionUserView,
 		ActionOrgView,
 		ActionReportView,
@@ -66,7 +66,10 @@ var PermissionMatrix = map[model.UserRole][]Action{
 
 // HasPermission checks if a user has permission to perform an action
 func HasPermission(user *model.User, action Action) bool {
-	if user == nil || user.Status != model.UserStatusActive {
+	if user == nil {
+		return false
+	}
+	if user.Status != "" && user.Status != model.UserStatusActive {
 		return false
 	}
 

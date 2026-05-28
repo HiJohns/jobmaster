@@ -1,22 +1,65 @@
 import { useState, useEffect } from 'react'
-import { Form, Input, Button, Card, Space, Toast } from 'antd-mobile'
+import { Form, Input, Button, Card, Toast } from 'antd-mobile'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/useAuthStore'
 import { demoApi } from '../api/demo'
 import { storage } from '../api/local/storage'
 import { STORAGE_KEYS } from '../api/local/mockData'
 
-const DEMO_ACCOUNTS = [
-  { username: 'admin@branch1', displayName: 'Branch Admin', role: 'BRANCH_ADMIN', password: 'demo123' },
-  { username: 'employee1@branch1', displayName: 'Branch Employee', role: 'EMPLOYEE', password: 'demo123' },
-  { username: 'admin@contractor1', displayName: 'Contractor Admin', role: 'CONTRACTOR_ADMIN', password: 'demo123' },
-  { username: 'employee1@contractor1', displayName: 'Contractor Employee', role: 'CONTRACTOR_EMPLOYEE', password: 'demo123' },
-  { username: 'engineer1@contractor1', displayName: 'Engineer 1', role: 'ENGINEER', password: 'demo123' },
-  { username: 'engineer2@contractor1', displayName: 'Engineer 2', role: 'ENGINEER', password: 'demo123' },
-  { username: 'admin@vendor1', displayName: 'Vendor Admin', role: 'VENDOR_ADMIN', password: 'demo123' },
-  { username: 'employee1@vendor1', displayName: 'Vendor Employee', role: 'VENDOR_EMPLOYEE', password: 'demo123' },
-  { username: 'engineer1@vendor1', displayName: 'Vendor Engineer', role: 'ENGINEER', password: 'demo123' },
-  { username: 'admin@contractor2', displayName: 'Contractor 2 Admin', role: 'CONTRACTOR_ADMIN', password: 'demo123' },
+interface DemoOrg {
+  name: string
+  label: string
+  accounts: { username: string; displayName: string }[]
+}
+
+const DEMO_ORGS: DemoOrg[] = [
+  {
+    name: '寿司郎太阳宫店',
+    label: '寿司郎太阳宫店',
+    accounts: [
+      { username: 'admin@branch1', displayName: '管理员' },
+      { username: 'employee1@branch1', displayName: '职员' },
+    ],
+  },
+  {
+    name: '建王',
+    label: '建王（工程公司）',
+    accounts: [
+      { username: 'admin@contractor1', displayName: '管理员' },
+      { username: 'employee1@contractor1', displayName: '职员' },
+      { username: 'engineer1@contractor1', displayName: '工程师1' },
+      { username: 'engineer2@contractor1', displayName: '工程师2' },
+    ],
+  },
+  {
+    name: '希望',
+    label: '希望（工程公司）',
+    accounts: [
+      { username: 'admin@contractor2', displayName: '管理员' },
+      { username: 'employee1@contractor2', displayName: '职员' },
+      { username: 'engineer1@contractor2', displayName: '工程师1' },
+      { username: 'engineer2@contractor2', displayName: '工程师2' },
+    ],
+  },
+  {
+    name: '森泉',
+    label: '森泉（供应商）',
+    accounts: [
+      { username: 'admin@vendor1', displayName: '管理员' },
+      { username: 'employee1@vendor1', displayName: '职员' },
+      { username: 'engineer1@vendor1', displayName: '工程师' },
+    ],
+  },
+  {
+    name: '相川',
+    label: '相川（供应商）',
+    accounts: [
+      { username: 'admin@相川', displayName: '管理员' },
+      { username: 'employee1@相川', displayName: '职员' },
+      { username: 'engineer1@相川', displayName: '工程师1' },
+      { username: 'engineer2@相川', displayName: '工程师2' },
+    ],
+  },
 ]
 
 const REMEMBER_USERNAME_KEY = 'remember_username'
@@ -32,7 +75,8 @@ export default function LoginPage() {
   const { login } = useAuthStore()
   const [loading, setLoading] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
-  const [selectedDemo, setSelectedDemo] = useState<string | null>(null)
+  const [selectedOrg, setSelectedOrg] = useState<string | null>(null)
+  const [selectedAccount, setSelectedAccount] = useState<string | null>(null)
 
   useEffect(() => {
     const savedUsername = localStorage.getItem(REMEMBER_USERNAME_KEY)
@@ -42,8 +86,13 @@ export default function LoginPage() {
     }
   }, [form])
 
-  const handleSelectDemo = (username: string) => {
-    setSelectedDemo(username)
+  const handleSelectOrg = (orgName: string) => {
+    setSelectedOrg(orgName)
+    setSelectedAccount(null)
+  }
+
+  const handleSelectAccount = (username: string) => {
+    setSelectedAccount(username)
     form.setFieldsValue({ username, password: 'demo123' })
   }
 
@@ -59,7 +108,8 @@ export default function LoginPage() {
       }
       
       const user = response.user || {}
-      const demoAccount = DEMO_ACCOUNTS.find(acc => acc.username === values.username)
+      const allAccounts = DEMO_ORGS.flatMap(o => o.accounts.map(a => ({ ...a, role: '' })))
+      const demoAccount = allAccounts.find(acc => acc.username === values.username)
       
       const finalUserId = user.id || response.userId || response.user_id || ''
       const finalUsername = user.username || response.username || values.username
@@ -67,6 +117,7 @@ export default function LoginPage() {
       const finalRole = user.role || response.role || demoAccount?.role || 'EMPLOYEE'
       const finalOrgId = user.orgId || user.org_id || response.orgId || response.org_id || ''
       const finalOrgName = user.orgName || user.org_name || user.displayName || demoAccount?.displayName || '未分配'
+      const finalOrgAddress = user.orgAddress || user.org_address || ''
       const finalTenantId = user.tenantId || user.tenant_id || response.tenantId || response.tenant_id || ''
 
       login(response.token, {
@@ -76,6 +127,7 @@ export default function LoginPage() {
         role: finalRole,
         orgId: finalOrgId,
         orgName: finalOrgName,
+        orgAddress: finalOrgAddress,
         tenantId: finalTenantId,
       })
 
@@ -89,6 +141,7 @@ export default function LoginPage() {
           role: finalRole,
           org_id: finalOrgId,
           org_name: finalOrgName,
+          org_address: finalOrgAddress,
           tenant_id: finalTenantId,
           is_shadow: false,
           status: 1,
@@ -131,33 +184,10 @@ export default function LoginPage() {
       {/* 标题 */}
       <div style={{ padding: '40px 20px 20px', textAlign: 'center' }}>
         <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0033FF', marginBottom: '8px' }}>
-          JobMaster Mobile
+          工单匠移动端
         </h1>
         <p style={{ fontSize: '14px', color: '#666' }}>登录您的账号</p>
       </div>
-
-      {/* Demo 账号选择 */}
-      <Card style={{ margin: '0 16px 16px', borderRadius: '12px' }}>
-        <div style={{ padding: '16px' }}>
-          <div style={{ fontSize: '14px', color: '#666', marginBottom: '12px' }}>快捷登录（演示账号）</div>
-          <Space wrap style={{ width: '100%' }}>
-            {DEMO_ACCOUNTS.map(account => (
-              <Button
-                key={account.username}
-                size="small"
-                style={{
-                  '--background-color': selectedDemo === account.username ? '#0033FF' : '#fff',
-                  '--text-color': selectedDemo === account.username ? '#fff' : '#0033FF',
-                  border: '1px solid #e8e8e8',
-                }}
-                onClick={() => handleSelectDemo(account.username)}
-              >
-                {account.displayName}
-              </Button>
-            ))}
-          </Space>
-        </div>
-      </Card>
 
       {/* 登录表单 */}
       <Card style={{ margin: '0 16px', borderRadius: '12px' }}>
@@ -221,6 +251,60 @@ export default function LoginPage() {
               </div>
             </Form.Item>
           </Form>
+        </div>
+      </Card>
+
+      {/* Demo 账号选择 */}
+      <Card style={{ margin: '16px 16px 0', borderRadius: '12px' }}>
+        <div style={{ padding: '16px' }}>
+          <div style={{ fontSize: '14px', color: '#666', marginBottom: '12px' }}>快捷登录（演示账号）</div>
+          
+          {/* Company selection */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+            {DEMO_ORGS.map(org => (
+              <Button
+                key={org.name}
+                size="small"
+                style={{
+                  '--background-color': selectedOrg === org.name ? '#0033FF' : '#fff',
+                  '--text-color': selectedOrg === org.name ? '#fff' : '#333',
+                  border: '1px solid #e8e8e8',
+                  fontSize: '12px',
+                  padding: '2px 10px',
+                }}
+                onClick={() => handleSelectOrg(org.name)}
+              >
+                {org.label}
+              </Button>
+            ))}
+          </div>
+
+          {/* Account selection */}
+          {selectedOrg && (
+            <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: '8px' }}>
+              <div style={{ fontSize: '12px', color: '#999', marginBottom: '8px' }}>
+                选择 {selectedOrg} 账号：
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {DEMO_ORGS.find(o => o.name === selectedOrg)!.accounts.map(acc => (
+                  <Button
+                    key={acc.username}
+                    size="small"
+                    style={{
+                      '--background-color': selectedAccount === acc.username ? '#0033FF' : '#f5f5f5',
+                      '--text-color': selectedAccount === acc.username ? '#fff' : '#333',
+                      border: '1px solid #e8e8e8',
+                      fontSize: '12px',
+                      padding: '2px 10px',
+                    }}
+                    onClick={() => handleSelectAccount(acc.username)}
+                  >
+                    {acc.displayName}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </Card>
     </div>

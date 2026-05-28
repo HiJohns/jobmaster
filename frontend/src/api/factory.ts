@@ -110,11 +110,11 @@ export const demoApi = {
     })
     return response.data || response
   },
-  arriveWorkOrder: async (id: string, latitude: number, longitude: number) => {
+  arriveWorkOrder: async (id: string, photo_urls: string[], comment: string) => {
     const response = await apiClient.request({
       url: `/workorders/${id}/arrive`,
       method: 'POST',
-      data: { latitude, longitude },
+      data: { photo_urls, comment },
     })
     return response.data || response
   },
@@ -260,8 +260,8 @@ export const createApi = () => {
             code: 200,
             data: res,
           })),
-        arrive: (id: string, latitude: number, longitude: number) =>
-          localWorkorderApi.arrive(id, latitude, longitude).then((res) => ({
+        arrive: (id: string, photo_urls: string[], comment: string) =>
+          localWorkorderApi.arrive(id, photo_urls, comment).then((res) => ({
             code: 200,
             data: res,
           })),

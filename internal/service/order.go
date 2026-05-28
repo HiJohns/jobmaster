@@ -100,7 +100,8 @@ func (s *OrderService) handleStateEntry(tx *gorm.DB, order *model.WorkOrder, sta
 	return nil
 }
 
-// Dispatch assigns a work order to an organization or engineer
+// Dispatch assigns a work order to an organization or engineer.
+// Supports multi-hop: DISPATCHED → DISPATCHED (CurrentHop++).
 func (s *OrderService) Dispatch(ctx context.Context, orderID uuid.UUID, userID uuid.UUID, userName string, targetOrgID *uuid.UUID, engineerID *uuid.UUID) (*model.WorkOrder, error) {
 	if targetOrgID == nil && engineerID == nil {
 		return nil, fmt.Errorf("must specify either target_org_id or engineer_id")
@@ -117,19 +118,17 @@ func (s *OrderService) Dispatch(ctx context.Context, orderID uuid.UUID, userID u
 			return fmt.Errorf("work order not found: %w", err)
 		}
 
-		// Validate transition to DISPATCHED
 		oldStatus := order.Status
+
 		if err := order.CanTransitionTo(model.WorkOrderStatusDispatched); err != nil {
 			return err
 		}
 
-		// Check hop limit from tenant config
 		var tenant model.Tenant
 		if err := tx.First(&tenant, "uuid = ?", order.TenantID).Error; err != nil {
 			return fmt.Errorf("failed to fetch tenant config: %w", err)
 		}
 
-		// Get hop_limit from tenant config, default to 5 if not set
 		hopLimit := 5
 		if tenant.Config != nil {
 			if val, ok := tenant.Config["hop_limit"].(float64); ok {
@@ -137,12 +136,10 @@ func (s *OrderService) Dispatch(ctx context.Context, orderID uuid.UUID, userID u
 			}
 		}
 
-		// Validate current hop count
 		if order.CurrentHop >= hopLimit {
 			return fmt.Errorf("transfer limit exceeded: current_hop=%d, hop_limit=%d", order.CurrentHop, hopLimit)
 		}
 
-		// Update assignment
 		order.OwnerOrgID = targetOrgID
 		order.HandlerID = &userID
 		order.EngineerID = engineerID
@@ -169,16 +166,15 @@ func (s *OrderService) Dispatch(ctx context.Context, orderID uuid.UUID, userID u
 		}
 
 		// Build log details
-		details := "Assigned to"
+		logDetails := "Assigned to"
 		if targetOrgID != nil {
-			details += fmt.Sprintf(" org %s", targetOrgID.String())
+			logDetails += fmt.Sprintf(" org %s", targetOrgID.String())
 		}
 		if engineerID != nil {
-			details += fmt.Sprintf(" engineer %s", engineerID.String())
+			logDetails += fmt.Sprintf(" engineer %s", engineerID.String())
 		}
 
-		// Add audit log
-		order.Logs.AddLog(userID, userName, model.LogActionDispatch, details, oldStatus, model.WorkOrderStatusDispatched)
+		order.Logs.AddLog(userID, userName, model.LogActionDispatch, logDetails, oldStatus, model.WorkOrderStatusDispatched)
 
 		if err := tx.Save(&order).Error; err != nil {
 			return fmt.Errorf("failed to save work order: %w", err)
@@ -210,15 +206,15 @@ func (s *OrderService) Accept(ctx context.Context, orderID uuid.UUID, userID uui
 
 		// Validate transition
 		oldStatus := order.Status
-		if err := order.CanTransitionTo(model.WorkOrderStatusReserved); err != nil {
+		if err := order.CanTransitionTo(model.WorkOrderStatusAccepted); err != nil {
 			return err
 		}
 
-		order.Status = model.WorkOrderStatusReserved
+		order.Status = model.WorkOrderStatusAccepted
 		order.ScheduledAt = &scheduledAt
 
-		details := fmt.Sprintf("Scheduled for %s", scheduledAt.Format(time.RFC3339))
-		order.Logs.AddLog(userID, userName, model.LogActionAccept, details, oldStatus, model.WorkOrderStatusReserved)
+		details := fmt.Sprintf("Accepted, scheduled for %s", scheduledAt.Format(time.RFC3339))
+		order.Logs.AddLog(userID, userName, model.LogActionAccept, details, oldStatus, model.WorkOrderStatusAccepted)
 
 		if err := tx.Save(&order).Error; err != nil {
 			return fmt.Errorf("failed to save work order: %w", err)
@@ -329,6 +325,7 @@ func (s *OrderService) Reject(ctx context.Context, orderID uuid.UUID, userID uui
 		order.OwnerOrgID = nil
 		order.HandlerID = nil
 		order.EngineerID = nil
+		order.DispatchPath = []byte("[]")
 		order.Status = model.WorkOrderStatusPending
 
 		details := fmt.Sprintf("Reason: %s", reason)
@@ -370,6 +367,11 @@ func (s *OrderService) Reserve(ctx context.Context, orderID uuid.UUID, userID uu
 			return fmt.Errorf("not assigned to this order: engineer mismatch")
 		}
 
+		// Reject reservation for appointment_type=1 (指定上门时段，无需预约)
+		if order.AppointmentType == 1 {
+			return fmt.Errorf("该工单无需预约，可直接到场签到")
+		}
+
 		// Validate transition to RESERVED
 		oldStatus := order.Status
 		if err := order.CanTransitionTo(model.WorkOrderStatusReserved); err != nil {
@@ -396,9 +398,9 @@ func (s *OrderService) Reserve(ctx context.Context, orderID uuid.UUID, userID uu
 	return &order, nil
 }
 
-// Arrive checks in at the work site with GPS coordinates
-// Transitions from RESERVED to ARRIVED
-func (s *OrderService) Arrive(ctx context.Context, orderID uuid.UUID, userID uuid.UUID, orgID uuid.UUID, userName string, latitude, longitude float64) (*model.WorkOrder, error) {
+// Arrive checks in at the work site with photo and comment
+// Transitions from DISPATCHED/RESERVED to ARRIVED
+func (s *OrderService) Arrive(ctx context.Context, orderID uuid.UUID, userID uuid.UUID, orgID uuid.UUID, userName string, photoURLs []string, comment string) (*model.WorkOrder, error) {
 	db, err := database.GetDB()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database connection: %w", err)
@@ -419,17 +421,29 @@ func (s *OrderService) Arrive(ctx context.Context, orderID uuid.UUID, userID uui
 		}
 
 		// Validate transition to ARRIVED
-		oldStatus := order.Status
 		if err := order.CanTransitionTo(model.WorkOrderStatusArrived); err != nil {
 			return err
+		}
+
+		// If arriving directly from DISPATCHED (no reservation), ensure appointment_type=1
+		if order.Status == model.WorkOrderStatusDispatched && order.AppointmentType != 1 {
+			return fmt.Errorf("该工单需要提前预约，请先设置预约时间")
 		}
 
 		now := time.Now()
 		order.Status = model.WorkOrderStatusArrived
 		order.ArrivedAt = &now
 
-		details := fmt.Sprintf("Arrived at location [%.6f, %.6f]", latitude, longitude)
-		order.Logs.AddLog(userID, userName, model.LogActionArrive, details, oldStatus, model.WorkOrderStatusArrived)
+		details := "Arrived at work site"
+		if comment != "" {
+			details = comment
+		}
+		order.Logs.AddWorkLog(userID, userName, details, photoURLs)
+
+		// Auto-transition to WORKING
+		order.Status = model.WorkOrderStatusWorking
+		order.StartedAt = &now
+		order.Logs.AddLog(userID, userName, model.LogActionStatusChangeToWorking, "Started working", model.WorkOrderStatusArrived, model.WorkOrderStatusWorking)
 
 		if err := tx.Save(&order).Error; err != nil {
 			return fmt.Errorf("failed to save work order: %w", err)
@@ -443,6 +457,40 @@ func (s *OrderService) Arrive(ctx context.Context, orderID uuid.UUID, userID uui
 	}
 
 	return &order, nil
+}
+
+// AddWorkRecord appends a work record (photos + comment) without changing status
+func (s *OrderService) AddWorkRecord(ctx context.Context, orderID uuid.UUID, userID uuid.UUID, userName string, photoURLs []string, comment string) (*model.WorkOrderLog, error) {
+	db, err := database.GetDB()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database connection: %w", err)
+	}
+
+	var order model.WorkOrder
+	err = db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.First(&order, "id = ?", orderID).Error; err != nil {
+			return fmt.Errorf("work order not found: %w", err)
+		}
+		// Only allow records during active work (WORKING) or before/after
+		if order.Status != model.WorkOrderStatusWorking && order.Status != model.WorkOrderStatusArrived {
+			return fmt.Errorf("work records can only be added for active work orders")
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	log := model.WorkOrderLog{
+		Timestamp: time.Now(),
+		UserID:    userID,
+		UserName:  userName,
+		Action:    model.LogActionWorkRecord,
+		Details:   comment,
+		PhotoURLs: photoURLs,
+	}
+
+	return &log, nil
 }
 
 // Finish completes the work and records completion details

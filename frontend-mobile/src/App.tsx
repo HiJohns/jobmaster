@@ -9,6 +9,7 @@ import ReservationDetailPage from './pages/ReservationDetailPage'
 import CreateOrderPage from './pages/CreateOrderPage'
 import VerifyOrderPage from './pages/VerifyOrderPage'
 import QRScanHandlerPage from './pages/QRScanHandlerPage'
+import PendingOrdersPage from './pages/PendingOrdersPage'
 import ProfilePage from './pages/ProfilePage'
 import { useAuthStore } from './store/useAuthStore'
 import { initializeMockData } from './api/local'
@@ -103,8 +104,17 @@ export default function App() {
             </PrivateRoute>
           }
         />
+        <Route
+          path="/wechat/pending-orders"
+          element={
+            <PrivateRoute>
+              <PendingOrdersPage />
+            </PrivateRoute>
+          }
+        />
         <Route 
           path="/wechat/profile" 
+
           element={
             <PrivateRoute>
               <ProfilePage />

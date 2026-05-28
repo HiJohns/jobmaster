@@ -17,9 +17,9 @@ export const demoApi = {
     if (currentUserRole === 'BRANCH_ADMIN' || currentUserRole === 'EMPLOYEE') {
       statusFilter = ''
     } else if (currentUserRole === 'ENGINEER') {
-      statusFilter = 'ACCEPTED,RESERVED,WORKING'
-    } else if (currentUserRole === 'CONTRACTOR_EMPLOYEE' || currentUserRole === 'CONTRACTOR_ADMIN') {
       statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING'
+    } else if (currentUserRole === 'CONTRACTOR_EMPLOYEE' || currentUserRole === 'CONTRACTOR_ADMIN') {
+      statusFilter = 'PENDING,DISPATCHED,ACCEPTED,RESERVED,WORKING'
     } else if (currentUserRole === 'VENDOR_EMPLOYEE' || currentUserRole === 'VENDOR_ADMIN') {
       statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING'
     }
@@ -29,7 +29,13 @@ export const demoApi = {
       method: 'GET',
       params: { status: statusFilter },
     })
-    return response.data || response
+    const data = response.data || response
+    if (data && data.list && Array.isArray(data.list)) {
+      data.list.sort((a: any, b: any) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+    }
+    return data
   },
   getWorkOrder: async (id: string) => {
     const response = await demoApiClient.request({
@@ -70,11 +76,11 @@ export const demoApi = {
     })
     return response.data || response
   },
-  arriveWorkOrder: async (id: string, latitude: number, longitude: number) => {
+  arriveWorkOrder: async (id: string, photo_urls: string[], comment: string) => {
     const response = await demoApiClient.request({
       url: `/workorders/${id}/arrive`,
       method: 'POST',
-      data: { latitude, longitude },
+      data: { photo_urls, comment },
     })
     return response.data || response
   },
@@ -145,6 +151,7 @@ export const demoApi = {
     is_urgent: boolean
     address_detail: string
     division_id?: string | null
+    appointment_type?: number
   }) => {
     const response = await demoApiClient.request({
       url: '/workorders',
@@ -180,6 +187,14 @@ export const demoApi = {
       url: `/workorders/${workOrderId}/assign`,
       method: 'POST',
       data: { engineer_id: engineerId },
+    })
+    return response.data || response
+  },
+  workRecord: async (workOrderId: string, photo_urls: string[], comment: string) => {
+    const response = await demoApiClient.request({
+      url: `/workorders/${workOrderId}/work-record`,
+      method: 'POST',
+      data: { photo_urls, comment },
     })
     return response.data || response
   },

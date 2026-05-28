@@ -49,7 +49,7 @@ export default function Scanner({ onScan, loading = false }: ScannerProps) {
         initScanner()
       }
     } catch (err) {
-      setError('Failed to start camera')
+      setError('启动相机失败')
       setIsScanning(false)
     }
   }
@@ -72,7 +72,7 @@ export default function Scanner({ onScan, loading = false }: ScannerProps) {
         () => {}
       )
     } catch (err) {
-      setError('Camera access denied or not available')
+      setError('相机权限被拒绝或不可用')
       setIsScanning(false)
     }
   }

@@ -71,6 +71,11 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
+	// Run seeder (idempotent, safe to call every startup)
+	if err := runSeeder(); err != nil {
+		log.Printf("Warning: seeder failed: %v", err)
+	}
+
 	// Migration mode: run migration and seed, then exit
 	if *migrate {
 		log.Println("Running in migration mode...")
@@ -78,11 +83,6 @@ func main() {
 		// Run auto-migration
 		if err := autoMigrate(); err != nil {
 			log.Fatalf("Failed to auto-migrate: %v", err)
-		}
-
-		// Run database seeder
-		if err := runSeeder(); err != nil {
-			log.Fatalf("Failed to seed database: %v", err)
 		}
 
 		log.Println("Migration completed successfully")
@@ -251,7 +251,6 @@ func runSeeder() error {
 
 	seeder := dbseeder.NewSeeder(db)
 
-	// Check if already seeded
 	isSeeded, err := seeder.IsSeeded()
 	if err != nil {
 		return fmt.Errorf("failed to check seed status: %w", err)
@@ -259,8 +258,17 @@ func runSeeder() error {
 
 	if isSeeded {
 		log.Println("Database already seeded, skipping")
-		return nil
+	} else {
+		if err := seeder.SeedAll(); err != nil {
+			return err
+		}
 	}
 
-	return seeder.SeedAll()
+	if os.Getenv("DEMO_MODE") == "true" {
+		if err := seeder.SeedDemoData(); err != nil {
+			return fmt.Errorf("failed to seed demo data: %w", err)
+		}
+	}
+
+	return nil
 }

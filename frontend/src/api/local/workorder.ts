@@ -50,10 +50,11 @@ export interface CreateWorkOrderRequest {
   brand_name?: string
   description: string
   photo_urls?: string[]
-  is_urgent?: boolean // 向后兼容
-  priority?: 0 | 1 | 2 // 0=普通, 1=加急, 2=紧急
+  is_urgent?: boolean
+  priority?: 0 | 1 | 2
   address_detail?: string
   coordinates?: { lat: number; lng: number }
+  appointment_type?: number
 }
 
 export const localWorkorderApi = {
@@ -350,8 +351,8 @@ export const localWorkorderApi = {
 
   arrive: async (
     id: string,
-    latitude: number,
-    longitude: number
+    _photo_urls: string[],
+    _comment: string
   ) => {
     const user = getCurrentUser()
     if (!user) {
@@ -365,7 +366,7 @@ export const localWorkorderApi = {
       throw new Error('工单不存在')
     }
 
-    if (workorders[idx].status !== 'RESERVED') {
+    if (workorders[idx].status !== 'RESERVED' && workorders[idx].status !== 'DISPATCHED' && workorders[idx].status !== 'ACCEPTED') {
       throw new Error('当前状态无法进场')
     }
 
@@ -373,7 +374,6 @@ export const localWorkorderApi = {
     workorders[idx] = {
       ...workorders[idx],
       status: 'WORKING',
-      coordinates: { lat: latitude, lng: longitude },
       updated_at: now,
     }
 
@@ -385,8 +385,8 @@ export const localWorkorderApi = {
       user_id: user.id,
       user_name: user.display_name,
       action: 'ARRIVE',
-      details: `进场签到 (${latitude}, ${longitude})`,
-      old_status: 'RESERVED',
+      details: _comment || '进场签到',
+      old_status: workorders[idx].status,
       new_status: 'WORKING',
       created_at: now,
     })

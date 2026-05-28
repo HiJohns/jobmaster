@@ -852,3 +852,93 @@ func TestValidateWorkOrderLocation(t *testing.T) {
 		})
 	}
 }
+
+// TestAppointmentType1_ArriveFromDispatched verifies that an order with appointment_type=1
+// can transition directly from DISPATCHED to ARRIVED without going through RESERVE.
+func TestAppointmentType1_ArriveFromDispatched(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
+	setupTestHelpers()
+	if adminToken == "" || engineerToken == "" {
+		t.Skip("Required tokens not available, skipping test")
+	}
+
+	order := createTestWorkOrder(t, adminToken, model.WorkOrderStatusPending)
+	if order == nil {
+		t.Skip("Cannot create test work order, skipping test")
+	}
+
+	w := ExecuteRequestWithAuth(t, "POST", fmt.Sprintf("/api/v1/workorders/%s/dispatch", order.ID),
+		map[string]interface{}{"vendor_id": getTestOrgID()}, adminToken)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	w = ExecuteRequestWithAuth(t, "POST", fmt.Sprintf("/api/v1/workorders/%s/arrive", order.ID),
+		map[string]interface{}{"photo_urls": []string{}, "comment": "Direct arrival test"}, engineerToken)
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+// TestVendorEmployeeForbiddenReserve verifies that a VENDOR_EMPLOYEE role cannot call the reserve endpoint.
+func TestVendorEmployeeForbiddenReserve(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
+	setupTestHelpers()
+	if adminToken == "" || vendorToken == "" {
+		t.Skip("Required tokens not available, skipping test")
+	}
+
+	order := createTestWorkOrder(t, adminToken, model.WorkOrderStatusPending)
+	if order == nil {
+		t.Skip("Cannot create test work order, skipping test")
+	}
+
+	w := ExecuteRequestWithAuth(t, "POST", fmt.Sprintf("/api/v1/workorders/%s/dispatch", order.ID),
+		map[string]interface{}{"vendor_id": getTestOrgID()}, adminToken)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	t.Run("VENDOR_EMPLOYEE cannot reserve", func(t *testing.T) {
+		w := ExecuteRequestWithAuth(t, "POST", fmt.Sprintf("/api/v1/workorders/%s/reserve", order.ID),
+			map[string]interface{}{"appointed_at": time.Now().Add(24 * time.Hour).Format(time.RFC3339)}, vendorToken)
+		assert.Equal(t, http.StatusForbidden, w.Code)
+	})
+}
+
+// TestEngineerVisibility verifies that after an engineer accepts a work order,
+// they can see it in their task list.
+func TestEngineerVisibility(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("Database not available, skipping test")
+	}
+	setupTestHelpers()
+	if adminToken == "" || engineerToken == "" {
+		t.Skip("Required tokens not available, skipping test")
+	}
+
+	order := createTestWorkOrder(t, adminToken, model.WorkOrderStatusPending)
+	if order == nil {
+		t.Skip("Cannot create test work order, skipping test")
+	}
+
+	w := ExecuteRequestWithAuth(t, "POST", fmt.Sprintf("/api/v1/workorders/%s/dispatch", order.ID),
+		map[string]interface{}{"vendor_id": getTestOrgID()}, adminToken)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	w = ExecuteRequestWithAuth(t, "POST", fmt.Sprintf("/api/v1/workorders/%s/accept", order.ID),
+		map[string]interface{}{"scheduled_at": time.Now().Add(24 * time.Hour).Format(time.RFC3339)}, engineerToken)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	w = ExecuteRequestWithAuth(t, "GET", "/api/v1/my-tasks", nil, engineerToken)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	ParseResponse(w, &resp)
+	data, ok := resp["data"].(map[string]interface{})
+	if !ok {
+		return
+	}
+	list, ok := data["list"].([]interface{})
+	if ok {
+		assert.True(t, len(list) > 0, "Engineer should see at least one task")
+	}
+}

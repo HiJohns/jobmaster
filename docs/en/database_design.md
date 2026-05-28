@@ -109,6 +109,7 @@ This document describes the database structure design for the JobMaster system. 
 | labor_fee | DECIMAL(10,2) | Labor fee |
 | material_fee | DECIMAL(10,2) | Material fee |
 | other_fee | DECIMAL(10,2) | Other fees |
+| appointment_type | SMALLINT | Service mode: 1-Time window (default) 2-Appointment required |
 | appointed_at | TIMESTAMP | Appointed time |
 | arrived_at | TIMESTAMP | Arrival time |
 | started_at | TIMESTAMP | Start time |

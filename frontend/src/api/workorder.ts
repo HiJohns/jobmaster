@@ -21,7 +21,7 @@ export interface WorkOrder {
   description: string
   photo_urls: string[]
   is_urgent: boolean
-  priority?: 0 | 1 | 2 // 0=普通, 1=加急, 2=紧急
+  priority?: 0 | 1 | 2
   sla_deadline?: string
   priority_fee?: number
   labor_fee?: number
@@ -39,6 +39,7 @@ export interface WorkOrder {
   current_hop?: number
   hop_limit?: number
   owner_org_name?: string
+  appointment_type?: number
 }
 
 export interface WorkRecord {
@@ -65,11 +66,12 @@ export interface CreateWorkOrderRequest {
   brand_name?: string
   description: string
   photo_urls?: string[]
-  is_urgent?: boolean // 向后兼容
-  priority?: 0 | 1 | 2 // 0=普通, 1=加急, 2=紧急
+  is_urgent?: boolean
+  priority?: 0 | 1 | 2
   address_detail?: string
   coordinates?: { lat: number; lng: number }
   division_id?: string
+  appointment_type?: number
 }
 
 export interface ListWorkOrdersParams {
@@ -160,10 +162,16 @@ export const workorderApi = {
     http.post<WorkOrder>(`/workorders/${id}/reserve`, { appointed_at }),
 
   /**
-   * Arrive at location with GPS coordinates
+   * Arrive at work site with photos and comment
    */
-  arrive: (id: string, latitude: number, longitude: number) =>
-    http.post<WorkOrder>(`/workorders/${id}/arrive`, { latitude, longitude }),
+  arrive: (id: string, photo_urls: string[], comment: string) =>
+    http.post<WorkOrder>(`/workorders/${id}/arrive`, { photo_urls, comment }),
+
+  /**
+   * Add work record (photo + comment, no state change)
+   */
+  workRecord: (id: string, photo_urls: string[], comment: string) =>
+    http.post<WorkOrder>(`/workorders/${id}/work-record`, { photo_urls, comment }),
 
   /**
    * Finish work order

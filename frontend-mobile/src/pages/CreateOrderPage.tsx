@@ -4,6 +4,7 @@ import { Card, Button, Input, Toast, NavBar, ImageUploader, Picker, TextArea } f
 import { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import { demoApi } from '../api/demo'
 import { useAuthStore } from '../store/useAuthStore'
+import { addPendingOrder } from '../utils/pendingOrders'
 
 interface Contractor {
   id: string
@@ -21,10 +22,17 @@ export default function CreateOrderPage() {
   const { userInfo } = useAuthStore()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [addressDetail, setAddressDetail] = useState('')
+  const defaultAddress = userInfo?.orgAddress || ''
+  const [addressDetail, setAddressDetail] = useState(defaultAddress)
   const [isUrgent, setIsUrgent] = useState(false)
   const [photoUrls, setPhotoUrls] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
+  const [appointmentType, setAppointmentType] = useState(1)
+  
+  // Time slots for appointment_type=1
+  const [timeSlots, setTimeSlots] = useState<{ days: string; startTime: string; endTime: string }[]>([
+    { days: 'weekday', startTime: '09:00', endTime: '18:00' },
+  ])
   
   // Region and Category states
   const [regions, setRegions] = useState<string[]>([])
@@ -77,8 +85,8 @@ export default function CreateOrderPage() {
     try {
       const response = await demoApi.getDispatchableTargets()
       const data = response.data || response
-      if (data.list && Array.isArray(data.list)) {
-        const contractorList: Contractor[] = data.list.map((org: any) => ({
+      if (data.organizations && Array.isArray(data.organizations)) {
+        const contractorList: Contractor[] = data.organizations.map((org: any) => ({
           id: org.id,
           name: org.name,
         }))
@@ -159,6 +167,8 @@ export default function CreateOrderPage() {
         is_urgent: isUrgent,
         address_detail: addressDetail,
         division_id: null,
+        appointment_type: appointmentType,
+        time_slots: appointmentType === 1 ? timeSlots : undefined,
       }
 
       const response = await demoApi.createWorkOrder(requestData) as any
@@ -219,6 +229,28 @@ export default function CreateOrderPage() {
     }
   }
 
+  const handleSavePending = () => {
+    if (!title || title.length < 3) {
+      Toast.show('请输入工单标题')
+      return
+    }
+    addPendingOrder({
+      id: 'pending_' + Date.now(),
+      title,
+      description,
+      category_id: selectedCategory,
+      photo_urls: photoUrls,
+      priority: isUrgent ? 1 : 0,
+      is_urgent: isUrgent,
+      address_detail: addressDetail,
+      appointment_type: appointmentType,
+      time_slots: appointmentType === 1 ? timeSlots : undefined,
+      created_at: new Date().toISOString(),
+    })
+    Toast.show('已存入待提交')
+    navigate(-1)
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5' }}>
       <NavBar
@@ -262,6 +294,7 @@ export default function CreateOrderPage() {
               placeholder="请输入详细地址"
               value={addressDetail}
               onChange={setAddressDetail}
+              readOnly={userInfo?.role === 'EMPLOYEE'}
               style={{
                 width: '100%',
                 background: '#F9FAFB',
@@ -270,6 +303,76 @@ export default function CreateOrderPage() {
                 padding: '8px',
               }}
             />
+
+            <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px', marginTop: '16px' }}>上门方式</div>
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '8px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                <input type="radio" checked={appointmentType === 1} onChange={() => setAppointmentType(1)} />
+                <span style={{ fontSize: '13px', color: '#333' }}>指定上门时段</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                <input type="radio" checked={appointmentType === 2} onChange={() => setAppointmentType(2)} />
+                <span style={{ fontSize: '13px', color: '#333' }}>要求提前预约</span>
+              </label>
+            </div>
+
+            {appointmentType === 1 && (
+              <div style={{ marginTop: '12px' }}>
+                <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>上门时段</div>
+                {timeSlots.map((slot, index) => (
+                  <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                    <select
+                      value={slot.days}
+                      onChange={(e) => {
+                        const updated = [...timeSlots]
+                        updated[index] = { ...updated[index], days: e.target.value }
+                        setTimeSlots(updated)
+                      }}
+                      style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #E5E7EB', background: '#F9FAFB', fontSize: '13px' }}
+                    >
+                      <option value="weekday">工作日</option>
+                      <option value="weekend">周末</option>
+                      <option value="everyday">每天</option>
+                    </select>
+                    <input
+                      type="time"
+                      value={slot.startTime}
+                      onChange={(e) => {
+                        const updated = [...timeSlots]
+                        updated[index] = { ...updated[index], startTime: e.target.value }
+                        setTimeSlots(updated)
+                      }}
+                      style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #E5E7EB', background: '#F9FAFB', fontSize: '13px' }}
+                    />
+                    <span style={{ color: '#999' }}>-</span>
+                    <input
+                      type="time"
+                      value={slot.endTime}
+                      onChange={(e) => {
+                        const updated = [...timeSlots]
+                        updated[index] = { ...updated[index], endTime: e.target.value }
+                        setTimeSlots(updated)
+                      }}
+                      style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #E5E7EB', background: '#F9FAFB', fontSize: '13px' }}
+                    />
+                    <span
+                      onClick={() => setTimeSlots(timeSlots.filter((_, i) => i !== index))}
+                      style={{ color: '#FF4D4F', cursor: 'pointer', fontSize: '18px', padding: '4px' }}
+                    >
+                      ×
+                    </span>
+                  </div>
+                ))}
+                <Button
+                  size="small"
+                  onClick={() => setTimeSlots([...timeSlots, { days: 'weekday', startTime: '09:00', endTime: '18:00' }])}
+                  style={{ fontSize: '12px', padding: '4px 12px', color: '#1677FF', borderColor: '#1677FF' }}
+                  fill="none"
+                >
+                  + 添加上门时段
+                </Button>
+              </div>
+            )}
 
             <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px', marginTop: '16px' }}>区域 *</div>
             <Button
@@ -438,6 +541,23 @@ export default function CreateOrderPage() {
           block
         >
           创建工单
+        </Button>
+
+        <Button
+          onClick={handleSavePending}
+          style={{
+            background: '#fff',
+            borderRadius: '8px',
+            height: '44px',
+            fontSize: '15px',
+            fontWeight: '400',
+            border: '1px solid #1677FF',
+            color: '#1677FF',
+            marginTop: 8,
+          }}
+          block
+        >
+          存入待提交
         </Button>
       </div>
     </div>

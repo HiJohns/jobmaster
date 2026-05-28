@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Button, Card, Toast, NavBar, Steps, Loading, Radio, Selector, DatePicker } from 'antd-mobile'
+import { Button, Card, Toast, NavBar, Steps, Loading, Radio, Selector, DatePicker, Dialog } from 'antd-mobile'
 import { LeftOutline } from 'antd-mobile-icons'
 import { demoApi } from '../api/demo'
 import { localReservationApi } from '../api/local/reservation'
 import { useAuthStore } from '../store/useAuthStore'
-import { storage } from '../api/local/storage'
-import { STORAGE_KEYS, Organization } from '../api/local/mockData'
 import WorkOrderRecords from '../components/WorkOrderRecords'
-import QRCodeDisplay from '../components/QRCodeDisplay'
 
 interface WorkOrder {
   id: string
@@ -22,6 +19,9 @@ interface WorkOrder {
   description: string
   engineer_name?: string
   created_at: string
+  appointment_type?: number
+  current_hop?: number
+  hop_limit?: number
 }
 
 interface StatusStep {
@@ -51,6 +51,7 @@ const STATUS_CONFIG: Record<string, { text: string; color: string }> = {
   RESERVED: { text: '已预约', color: '#FF8F1F' },
   WORKING: { text: '施工中', color: '#6366F1' },
   FINISHED: { text: '已完成', color: '#10B981' },
+  PENDING_EVALUATION: { text: '待评估', color: '#F59E0B' },
   CLOSED: { text: '已关闭', color: '#1F2937' },
 }
 
@@ -66,9 +67,11 @@ export default function WorkOrderDetailPage() {
   const [workOrder, setWorkOrder] = useState<WorkOrder | null>(null)
   const [loading, setLoading] = useState(true)
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
-  const [dispatchType, setDispatchType] = useState<'assign' | 'distribute'>('assign')
+  const [dispatchType, setDispatchType] = useState<'assign' | 'distribute'>(
+    userInfo?.role?.startsWith('VENDOR') ? 'distribute' : 'assign'
+  )
   const [targetOrg, setTargetOrg] = useState<string[]>([])
-  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [organizations, setOrganizations] = useState<any[]>([])
   const [engineers, setEngineers] = useState<EngineerOption[]>([])
   const [reservePickerVisible, setReservePickerVisible] = useState(false)
 
@@ -89,7 +92,11 @@ export default function WorkOrderDetailPage() {
         setWorkOrder(workOrderData)
 
         // 根据状态设置当前步骤
-        const stepIndex = STATUS_STEPS.findIndex(step => step.status === workOrderData.status)
+        let stepIndex = STATUS_STEPS.findIndex(step => step.status === workOrderData.status)
+        // 如果工单类型为"指定时段"且当前步为 ACCEPTED（预约），跳过预约步
+        if (workOrderData.appointment_type === 1 && STATUS_STEPS[stepIndex]?.status === 'ACCEPTED') {
+          stepIndex = stepIndex + 1
+        }
         if (stepIndex !== -1) {
           setCurrentStepIndex(stepIndex)
         }
@@ -108,7 +115,7 @@ export default function WorkOrderDetailPage() {
   }, [orderId])
 
   /**
-   * 加载指派/分配目标数据
+   * 加载指派/分配目标数据（通过统一 API）
    */
   useEffect(() => {
     if (!userInfo || !workOrder) return
@@ -118,35 +125,69 @@ export default function WorkOrderDetailPage() {
     const isContractor = role === 'CONTRACTOR_ADMIN' || role === 'CONTRACTOR_EMPLOYEE'
     const isVendor = role === 'VENDOR_ADMIN' || role === 'VENDOR_EMPLOYEE'
 
-    const canAssign = (isBranch && workOrder.status === 'PENDING') || ((isBranch || isContractor) && (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED'))
-    const canDistribute = (isContractor || isVendor) && (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED')
+    const canAssign = (isBranch && workOrder.status === 'PENDING') || 
+      ((isBranch || isContractor) && (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED') &&
+      !(workOrder as any).engineer_id &&
+       (!(workOrder as any).owner_org_id || (workOrder as any).owner_org_id === userInfo?.orgId))
+    const canDistribute = (isContractor || isVendor) && 
+      (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED') &&
+      !(workOrder as any).engineer_id &&
+       (!(workOrder as any).owner_org_id || (workOrder as any).owner_org_id === userInfo?.orgId)
 
     if (!canAssign && !canDistribute) return
 
-    if (dispatchType === 'assign') {
-      const orgs = storage.get<Organization[]>(STORAGE_KEYS.ORGANIZATIONS) || []
-      let filtered: Organization[] = []
-      if (isBranch) {
-        filtered = orgs.filter((o) => o.type === 'MAIN_CONTRACTOR')
-      } else if (isContractor) {
-        filtered = orgs.filter((o) => o.type === 'VENDOR' && o.parent_id === userInfo.orgId)
+    const loadTargets = async () => {
+      try {
+        const response = await demoApi.getDispatchableTargets()
+        const data = response.data || response
+        const respOrgs: any[] = data.organizations || []
+        const respEngs: any[] = data.engineers || []
+
+        setOrganizations(respOrgs)
+        setEngineers(respEngs.map((e: any) => ({
+          id: e.id,
+          name: e.display_name || e.username,
+          username: e.username,
+        })))
+
+        // Auto-select dispatch type based on available targets
+        if (respOrgs.length === 0 && respEngs.length > 0) {
+          setDispatchType('distribute')
+        } else if (respOrgs.length > 0 && respEngs.length === 0) {
+          setDispatchType('assign')
+        }
+      } catch {
+        console.error('Failed to load dispatch targets')
       }
-      setOrganizations(filtered)
-      setEngineers([])
-    } else {
-      const users = storage.get<any[]>(STORAGE_KEYS.USERS) || []
-      const engList = users
-        .filter((u: any) => u.role === 'ENGINEER' && u.org_id === userInfo.orgId)
-        .map((u: any) => ({
-          id: u.id,
-          name: u.display_name || u.username,
-          username: u.username,
-        }))
-      setEngineers(engList)
-      setOrganizations([])
     }
+    loadTargets()
     setTargetOrg([])
-  }, [dispatchType, userInfo, workOrder])
+  }, [userInfo, workOrder])
+
+  // Separate effect: clear selection on dispatchType change
+  useEffect(() => {
+    setTargetOrg([])
+  }, [dispatchType])
+
+  /**
+   * 处理拒绝工单
+   */
+  const handleReject = () => {
+    if (!workOrder) return
+    Dialog.confirm({
+      title: '拒绝工单',
+      content: '确定要拒绝此工单吗？工单将退回上一级。',
+      onConfirm: async () => {
+        try {
+          await demoApi.rejectWorkOrder(workOrder.id, '')
+          Toast.show({ content: '已拒绝', icon: 'success' })
+          navigate(-1)
+        } catch {
+          Toast.show({ content: '拒绝失败', icon: 'fail' })
+        }
+      },
+    })
+  }
 
   /**
    * 处理 Step Flow 按钮点击
@@ -171,7 +212,7 @@ export default function WorkOrderDetailPage() {
       if (currentStep.action === 'accept') {
         await demoApi.acceptWorkOrder(workOrder.id, new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString())
       } else if (currentStep.action === 'work') {
-        await demoApi.arriveWorkOrder(workOrder.id, 0, 0)
+        await demoApi.arriveWorkOrder(workOrder.id, [], '')
       } else if (currentStep.action === 'finish') {
         await demoApi.verifyWorkOrder(workOrder.id)
       }
@@ -262,36 +303,37 @@ export default function WorkOrderDetailPage() {
             <div><strong>工单标题：</strong>{workOrder.title || workOrder.description}</div>
             <div><strong>状态：</strong>
               <span style={{ color: STATUS_CONFIG[workOrder.status].color, fontWeight: 500 }}>
-                {STATUS_CONFIG[workOrder.status].text}
+                {workOrder.status === 'DISPATCHED' && (workOrder as any).engineer_id ? '已分配' : STATUS_CONFIG[workOrder.status].text}
               </span>
             </div>
             <div><strong>网点：</strong>{workOrder.store_name}</div>
+            <div><strong>当前归属：</strong>{(workOrder as any).owner_org_name || '未指派'}</div>
             <div><strong>地址：</strong>{workOrder.address_detail}</div>
             <div><strong>分类：</strong>{Array.isArray(workOrder.category_path) ? workOrder.category_path.join(' > ') : workOrder.category_path}</div>
             <div><strong>描述：</strong>{workOrder.description}</div>
             <div><strong>工程师：</strong>{workOrder.engineer_name || '未分配'}</div>
           </div>
+          {workOrder.appointment_type === 1 && (
+            <div style={{ margin: '8px 16px 0', padding: '10px 14px', background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0', fontSize: 13, color: '#166534' }}>
+              本工单已指定上门时段，无需预约，可直接到场签到
+            </div>
+          )}
+          {(workOrder as any).time_slots && (workOrder as any).time_slots.length > 0 && (
+            <div style={{ margin: '8px 16px 0' }}>
+              <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>指定时段：</div>
+              {(workOrder as any).time_slots.map((slot: any, i: number) => (
+                <div key={i} style={{ fontSize: 12, color: '#666', marginBottom: 2, paddingLeft: 8 }}>
+                  {slot.days === 'weekday' ? '工作日' : slot.days === 'weekend' ? '周末' : '每天'} {slot.startTime} - {slot.endTime}
+                </div>
+              ))}
+            </div>
+          )}
+          {workOrder.appointment_type === 2 && (
+            <div style={{ margin: '8px 16px 0', padding: '10px 14px', background: '#eff6ff', borderRadius: 8, border: '1px solid #bfdbfe', fontSize: 13, color: '#1e40af' }}>
+              本工单要求提前预约，请先设置预约时间
+            </div>
+          )}
         </Card>
-
-        {/* 二维码显示 - 仅工程师可见 */}
-        {(() => {
-          const canScan = ['ENGINEER'].includes(userInfo?.role || '')
-          return canScan && (workOrder.status === 'DISPATCHED' || 
-            workOrder.status === 'ACCEPTED' || 
-            workOrder.status === 'RESERVED' || 
-            workOrder.status === 'WORKING') && (
-            <Card title="扫码确认" style={{ marginBottom: '16px' }}>
-              <Button 
-                block 
-                style={{ marginBottom: '12px', height: '48px' }}
-                onClick={() => navigate('/wechat/scan-arrive')}
-              >
-                扫码进场
-              </Button>
-              <QRCodeDisplay workOrderId={workOrder.id} />
-            </Card>
-          )
-        })()}
 
         {/* Step Flow - 当前步骤大按钮 */}
                 {/* 操作步骤 */}
@@ -311,7 +353,7 @@ export default function WorkOrderDetailPage() {
         {/* 检查是否有接单权限 (VENDOR 或 ENGINEER) */}
         {(() => {
           const role = userInfo?.role || ''
-          const canAcceptOrder = ['VENDOR_ADMIN', 'VENDOR_EMPLOYEE', 'ENGINEER'].includes(role)
+          const canAcceptOrder = ['VENDOR_ADMIN', 'ENGINEER'].includes(role)
           return canAcceptOrder && currentStepIndex < STATUS_STEPS.length && (
           <div style={{
             position: 'fixed',
@@ -359,10 +401,31 @@ export default function WorkOrderDetailPage() {
           const isContractor = role === 'CONTRACTOR_ADMIN' || role === 'CONTRACTOR_EMPLOYEE'
           const isVendor = role === 'VENDOR_ADMIN' || role === 'VENDOR_EMPLOYEE'
 
-          const canAssign = (isBranch && workOrder.status === 'PENDING') || ((isBranch || isContractor) && (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED'))
-          const canDistribute = (isContractor || isVendor) && (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED')
+          const canAssign = (isBranch && workOrder.status === 'PENDING') || 
+            ((isBranch || isContractor) && (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED') &&
+            !(workOrder as any).engineer_id &&
+             (!(workOrder as any).owner_org_id || (workOrder as any).owner_org_id === userInfo?.orgId))
+    const canDistribute = (isContractor || isVendor) && 
+      (workOrder.status === 'DISPATCHED' || workOrder.status === 'ACCEPTED') &&
+      !(workOrder as any).engineer_id &&
+       (!(workOrder as any).owner_org_id || (workOrder as any).owner_org_id === userInfo?.orgId)
 
-          if (!canAssign && !canDistribute) return null
+    if (!canAssign && !canDistribute) {
+      const ownerName = (workOrder as any).owner_org_name
+      const engName = workOrder.engineer_name
+      const isMyOrg = (workOrder as any).owner_org_id === userInfo?.orgId
+      if (ownerName || engName) {
+        return (
+          <Card title="工单归属" style={{ marginBottom: '16px' }}>
+            <div style={{ padding: '12px 16px', fontSize: 14, color: '#333', lineHeight: 1.8 }}>
+              {!isMyOrg && ownerName && <div>当前指派给：<strong>{ownerName}</strong></div>}
+              {isMyOrg && engName && <div>负责工程师：<strong>{engName}</strong></div>}
+            </div>
+          </Card>
+        )
+      }
+      return null
+    }
 
           const handleDispatch = async () => {
             if (!targetOrg[0]) {
@@ -378,9 +441,13 @@ export default function WorkOrderDetailPage() {
               }
               Toast.clear()
               Toast.show(dispatchType === 'assign' ? '指派成功' : '分配成功')
-              setTimeout(() => {
-                window.location.reload()
-              }, 1000)
+              // Refetch work order instead of hard reload
+              try {
+                const resp = await demoApi.getWorkOrder(workOrder.id)
+                const updated = resp.data || resp
+                setWorkOrder(updated)
+                setTargetOrg([])
+              } catch {}
             } catch (error: any) {
               Toast.clear()
               Toast.show({ content: error.message || '操作失败', icon: 'fail', duration: 2000 })
@@ -389,7 +456,7 @@ export default function WorkOrderDetailPage() {
 
           return (
             <Card title="工单处理" style={{ marginBottom: '16px' }}>
-              {isContractor && canAssign && canDistribute && (
+              {organizations.length > 0 && engineers.length > 0 && (
                 <div style={{ marginBottom: '12px' }}>
                   <Radio.Group
                     value={dispatchType}
@@ -442,6 +509,22 @@ export default function WorkOrderDetailPage() {
                 onClick={handleDispatch}
               >
                 {dispatchType === 'assign' ? '确认指派' : '确认分配'}
+              </Button>
+
+              <Button
+                block
+                fill="none"
+                style={{
+                  border: '1px solid #FF4D4F',
+                  borderRadius: '8px',
+                  height: '40px',
+                  fontSize: '14px',
+                  color: '#FF4D4F',
+                  marginTop: 8,
+                }}
+                onClick={handleReject}
+              >
+                拒绝工单
               </Button>
             </Card>
           )

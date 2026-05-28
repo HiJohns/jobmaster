@@ -8,16 +8,16 @@ import Logo from '../components/Logo'
 import { demoApi, setUserRole } from '../api/factory'
 
 const DEMO_ACCOUNTS = [
-  { username: 'admin@branch1', displayName: 'Branch Admin', role: 'BRANCH_ADMIN', password: 'demo123' },
-  { username: 'employee1@branch1', displayName: 'Branch Employee', role: 'EMPLOYEE', password: 'demo123' },
-  { username: 'admin@contractor1', displayName: 'Contractor Admin', role: 'CONTRACTOR_ADMIN', password: 'demo123' },
-  { username: 'employee1@contractor1', displayName: 'Contractor Employee', role: 'CONTRACTOR_EMPLOYEE', password: 'demo123' },
-  { username: 'engineer1@contractor1', displayName: 'Engineer 1', role: 'ENGINEER', password: 'demo123' },
-  { username: 'engineer2@contractor1', displayName: 'Engineer 2', role: 'ENGINEER', password: 'demo123' },
-  { username: 'admin@vendor1', displayName: 'Vendor Admin', role: 'VENDOR_ADMIN', password: 'demo123' },
-  { username: 'employee1@vendor1', displayName: 'Vendor Employee', role: 'VENDOR_EMPLOYEE', password: 'demo123' },
-  { username: 'engineer1@vendor1', displayName: 'Vendor Engineer', role: 'ENGINEER', password: 'demo123' },
-  { username: 'admin@contractor2', displayName: 'Contractor 2 Admin', role: 'CONTRACTOR_ADMIN', password: 'demo123' },
+  { username: 'admin@branch1', displayName: '寿司郎太阳宫店 管理员', role: 'BRANCH_ADMIN', password: 'demo123' },
+  { username: 'employee1@branch1', displayName: '寿司郎太阳宫店 职员', role: 'EMPLOYEE', password: 'demo123' },
+  { username: 'admin@contractor1', displayName: '建王 管理员', role: 'CONTRACTOR_ADMIN', password: 'demo123' },
+  { username: 'employee1@contractor1', displayName: '建王 职员', role: 'CONTRACTOR_EMPLOYEE', password: 'demo123' },
+  { username: 'engineer1@contractor1', displayName: '建王 项目组', role: 'ENGINEER', password: 'demo123' },
+  { username: 'engineer2@contractor1', displayName: '建王 项目组2', role: 'ENGINEER', password: 'demo123' },
+  { username: 'admin@vendor1', displayName: '森泉 管理员', role: 'VENDOR_ADMIN', password: 'demo123' },
+  { username: 'employee1@vendor1', displayName: '森泉 职员', role: 'VENDOR_EMPLOYEE', password: 'demo123' },
+  { username: 'engineer1@vendor1', displayName: '森泉 项目组', role: 'ENGINEER', password: 'demo123' },
+  { username: 'admin@contractor2', displayName: '希望 管理员', role: 'CONTRACTOR_ADMIN', password: 'demo123' },
 ]
 
 const REMEMBER_USERNAME_KEY = 'remember_username'
@@ -117,22 +117,6 @@ function Login() {
         >
           <div style={{ marginBottom: '24px' }} />
           
-          <div className="mb-4">
-            <div className="text-sm text-gray-500 mb-2">快速选择演示账户:</div>
-            <Space wrap size={4}>
-              {DEMO_ACCOUNTS.map((account) => (
-                <Tag
-                  key={account.username}
-                  color={selectedDemo === account.username ? 'blue' : 'default'}
-                  style={{ cursor: 'pointer', marginBottom: '4px' }}
-                  onClick={() => handleSelectDemo(account.username)}
-                >
-                  {account.displayName}
-                </Tag>
-              ))}
-            </Space>
-          </div>
-
           <Form
             form={form}
             name="login"
@@ -181,6 +165,22 @@ function Login() {
               </Checkbox>
             </Form.Item>
           </Form>
+
+          <div className="mb-4">
+            <div className="text-sm text-gray-500 mb-2">快速选择演示账户:</div>
+            <Space wrap size={4}>
+              {DEMO_ACCOUNTS.map((account) => (
+                <Tag
+                  key={account.username}
+                  color={selectedDemo === account.username ? 'blue' : 'default'}
+                  style={{ cursor: 'pointer', marginBottom: '4px' }}
+                  onClick={() => handleSelectDemo(account.username)}
+                >
+                  {account.displayName}
+                </Tag>
+              ))}
+            </Space>
+          </div>
         </Card>
       </div>
     </div>

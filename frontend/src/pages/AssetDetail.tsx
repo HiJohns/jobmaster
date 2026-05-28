@@ -52,11 +52,11 @@ export default function AssetDetail() {
       if (response.data.code === 200) {
         setDevice(response.data.data)
       } else {
-        message.error('Device not found')
+        message.error('设备未找到')
         navigate('/assets')
       }
     } catch (error) {
-      message.error('Failed to fetch device')
+      message.error('获取设备详情失败')
       navigate('/assets')
     } finally {
       setLoading(false)
@@ -69,12 +69,12 @@ export default function AssetDetail() {
       const response = await request.get(`/devices/${id}/qrcode`)
       if (response.data.code === 200) {
         setQRData(response.data.data)
-        message.success('QR Code generated')
+        message.success('二维码已生成')
       } else {
-        message.error('Failed to generate QR code')
+        message.error('生成二维码失败')
       }
     } catch (error) {
-      message.error('Failed to generate QR code')
+      message.error('生成二维码失败')
     } finally {
       setQRLoading(false)
     }
@@ -87,7 +87,7 @@ export default function AssetDetail() {
       printWindow.document.write(`
         <html>
           <head>
-            <title>Device QR Code - ${device?.sn}</title>
+            <title>设备二维码 - ${device?.sn}</title>
             <style>
               body { font-family: Arial, sans-serif; text-align: center; padding: 40px; }
               .qr-container { border: 1px solid #ddd; padding: 20px; display: inline-block; }
@@ -97,7 +97,7 @@ export default function AssetDetail() {
           </head>
           <body>
             <div class="qr-container">
-              <img src="${qrData.qr_url}" alt="QR Code" />
+              <img src="${qrData.qr_url}" alt="二维码" />
               <div class="sn">${device?.sn}</div>
               <div class="name">${device?.name}</div>
             </div>
@@ -131,26 +131,26 @@ export default function AssetDetail() {
         Back to List
       </Button>
 
-      <Card title="Device Details">
+      <Card title="设备详情">
         <Descriptions column={2} bordered>
-          <Descriptions.Item label="SN">{device.sn}</Descriptions.Item>
-          <Descriptions.Item label="Status">
+          <Descriptions.Item label="序列号">{device.sn}</Descriptions.Item>
+          <Descriptions.Item label="状态">
             <Tag color={statusColors[device.status] || 'default'}>
               {device.status || 'UNKNOWN'}
             </Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="Name">{device.name}</Descriptions.Item>
-          <Descriptions.Item label="Brand">{device.brand}</Descriptions.Item>
-          <Descriptions.Item label="Model">{device.model || '-'}</Descriptions.Item>
-          <Descriptions.Item label="Site">{device.site_name || '-'}</Descriptions.Item>
-          <Descriptions.Item label="Created">
+          <Descriptions.Item label="名称">{device.name}</Descriptions.Item>
+          <Descriptions.Item label="品牌">{device.brand}</Descriptions.Item>
+          <Descriptions.Item label="型号">{device.model || '-'}</Descriptions.Item>
+          <Descriptions.Item label="站点">{device.site_name || '-'}</Descriptions.Item>
+          <Descriptions.Item label="创建时间">
             {new Date(device.created_at).toLocaleString()}
           </Descriptions.Item>
         </Descriptions>
       </Card>
 
       <Card
-        title="Maintenance History"
+        title="维保记录"
         style={{ marginTop: 16 }}
         extra={
           <Space>
@@ -179,7 +179,7 @@ export default function AssetDetail() {
               <strong>{device.sn}</strong>
             </div>
             <div style={{ color: '#666', fontSize: 12 }}>
-              Expires: {new Date(qrData.expires_at).toLocaleDateString()}
+              有效期至： {new Date(qrData.expires_at).toLocaleDateString()}
             </div>
           </div>
         )}
@@ -188,7 +188,7 @@ export default function AssetDetail() {
           items={[
             {
               color: 'green',
-              children: 'Device registered',
+              children: '设备登记',
             },
           ]}
         />

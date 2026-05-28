@@ -324,13 +324,15 @@
   "coordinates": {
     "lat": "float",
     "lng": "float"
-  }
+  },
+  "appointment_type": "int"
 }
 ```
 
 **字段说明**:
 - `title`: 工单标题（必填）
 - `fault_description`: 故障描述（必填）
+- `appointment_type`: 上门方式（可选，1=指定上门时段 2=要求提前预约，默认1）
 
 **响应**:
 ```json
@@ -817,6 +819,18 @@
 **适用角色**: ENGINEER（状态 = RESERVED）
 
 ### 3.9 提交施工记录
+
+**端点**: `POST /api/v1/workorders/:id/work-record`
+
+**请求体**:
+```json
+{
+  "photo_urls": ["string"],
+  "comment": "string"
+}
+```
+
+**说明**：施工过程中提交照片+评论记录，不改变工单状态。
 
 **端点**: `POST /api/v1/orders/record`
 

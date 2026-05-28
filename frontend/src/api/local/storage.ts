@@ -1,5 +1,8 @@
 import { STORAGE_KEYS, mockTenants, mockOrganizations, mockUsers, mockWorkOrders, mockWorkRecords, mockReservations } from './mockData'
 
+const MOCK_VERSION_KEY = '_mock_version'
+const MOCK_VERSION = 2
+
 export const storage = {
   get: <T>(key: string): T | null => {
     try {
@@ -28,10 +31,18 @@ export const storage = {
     })
     localStorage.removeItem(STORAGE_KEYS.SESSION)
     localStorage.removeItem(STORAGE_KEYS.QR_TOKENS)
+    localStorage.removeItem(MOCK_VERSION_KEY)
   },
 }
 
 export const initializeMockData = (): void => {
+  const currentVersion = storage.get<number>(MOCK_VERSION_KEY)
+  if (currentVersion !== MOCK_VERSION) {
+    const keys = Object.values(STORAGE_KEYS)
+    keys.forEach(key => localStorage.removeItem(key))
+    localStorage.removeItem(STORAGE_KEYS.SESSION)
+    localStorage.removeItem(STORAGE_KEYS.QR_TOKENS)
+  }
   if (!storage.get(STORAGE_KEYS.TENANTS)) {
     storage.set(STORAGE_KEYS.TENANTS, mockTenants)
   }
@@ -50,6 +61,7 @@ export const initializeMockData = (): void => {
   if (!storage.get(STORAGE_KEYS.RESERVATIONS)) {
     storage.set(STORAGE_KEYS.RESERVATIONS, mockReservations)
   }
+  storage.set(MOCK_VERSION_KEY, MOCK_VERSION)
 }
 
 export const resetMockData = (): void => {

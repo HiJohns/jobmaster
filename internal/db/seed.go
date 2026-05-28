@@ -1,13 +1,51 @@
 package db
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"os"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	"jobmaster/internal/model"
+)
+
+// demo seed UUIDs
+var (
+	demoTenantUUID   = uuid.MustParse("d0000000-0000-0000-0000-000000000001")
+	demoBranch1UUID  = uuid.MustParse("d0000000-0000-0000-0000-000000000010")
+	demoContractor1  = uuid.MustParse("d0000000-0000-0000-0000-000000000020")
+	demoContractor2  = uuid.MustParse("d0000000-0000-0000-0000-000000000021")
+	demoVendor1      = uuid.MustParse("d0000000-0000-0000-0000-000000000030")
+	demoEmpBranch1   = uuid.MustParse("d0000000-0000-0000-0000-000000000101")
+	demoAdminCon1    = uuid.MustParse("d0000000-0000-0000-0000-000000000201")
+	demoEmpCon1      = uuid.MustParse("d0000000-0000-0000-0000-000000000203")
+	demoEngCon1      = uuid.MustParse("d0000000-0000-0000-0000-000000000202")
+	demoEngCon2      = uuid.MustParse("d0000000-0000-0000-0000-000000000204")
+	demoAdminCon2    = uuid.MustParse("d0000000-0000-0000-0000-000000000205")
+	demoEmpCon2      = uuid.MustParse("d0000000-0000-0000-0000-000000000206")
+	demoEngCon2Usr   = uuid.MustParse("d0000000-0000-0000-0000-000000000207")
+	demoEngCon2Usr2  = uuid.MustParse("d0000000-0000-0000-0000-000000000208")
+	demoEmpVendor1   = uuid.MustParse("d0000000-0000-0000-0000-000000000301")
+	demoEngVendor1   = uuid.MustParse("d0000000-0000-0000-0000-000000000302")
+	demoVendor2      = uuid.MustParse("d0000000-0000-0000-0000-000000000040")
+	demoAdminVendor2 = uuid.MustParse("d0000000-0000-0000-0000-000000000401")
+	demoEmpVendor2   = uuid.MustParse("d0000000-0000-0000-0000-000000000402")
+	demoEngVendor21  = uuid.MustParse("d0000000-0000-0000-0000-000000000403")
+	demoEngVendor22  = uuid.MustParse("d0000000-0000-0000-0000-000000000404")
+	demoWorkOrderIDs = []uuid.UUID{
+		uuid.MustParse("d0000000-0000-0000-0000-000000000001"),
+		uuid.MustParse("d0000000-0000-0000-0000-000000000002"),
+		uuid.MustParse("d0000000-0000-0000-0000-000000000003"),
+		uuid.MustParse("d0000000-0000-0000-0000-000000000004"),
+		uuid.MustParse("d0000000-0000-0000-0000-000000000005"),
+		uuid.MustParse("d0000000-0000-0000-0000-000000000006"),
+		uuid.MustParse("d0000000-0000-0000-0000-000000000007"),
+		uuid.MustParse("d0000000-0000-0000-0000-000000000008"),
+	}
 )
 
 // Seeder handles database seeding operations
@@ -33,7 +71,296 @@ func (s *Seeder) SeedAll() error {
 		return fmt.Errorf("failed to seed super admin: %w", err)
 	}
 
+	// Seed demo data if in demo mode
+	if os.Getenv("DEMO_MODE") == "true" {
+		if err := s.SeedDemoData(); err != nil {
+			return fmt.Errorf("failed to seed demo data: %w", err)
+		}
+	}
+
 	log.Println("Database seeding completed successfully")
+	return nil
+}
+
+// SeedDemoData seeds demo organizations, users, and work orders for demo mode.
+// All entities use fixed UUIDs for idempotency (safe to call multiple times).
+func (s *Seeder) SeedDemoData() error {
+	log.Println("Seeding demo data...")
+
+	if err := s.seedDemoTenant(); err != nil {
+		return fmt.Errorf("failed to seed demo tenant: %w", err)
+	}
+	if err := s.seedDemoOrganizations(); err != nil {
+		return fmt.Errorf("failed to seed demo organizations: %w", err)
+	}
+	if err := s.seedDemoUsers(); err != nil {
+		return fmt.Errorf("failed to seed demo users: %w", err)
+	}
+	if err := s.seedDemoWorkOrders(); err != nil {
+		return fmt.Errorf("failed to seed demo work orders: %w", err)
+	}
+
+	log.Println("Demo data seeding completed")
+	return nil
+}
+
+func (s *Seeder) seedDemoTenant() error {
+	var existing model.Tenant
+	err := s.db.Where("uuid = ?", demoTenantUUID).First(&existing).Error
+	if err == nil {
+		log.Println("Demo tenant already exists, skipping")
+		return nil
+	}
+	if err != gorm.ErrRecordNotFound {
+		return fmt.Errorf("failed to check demo tenant: %w", err)
+	}
+
+	tenant := &model.Tenant{
+		UUID:          demoTenantUUID,
+		Name:          "Demo Tenant",
+		Code:          "demo",
+		Slug:          "demo",
+		ContactPerson: "Demo Admin",
+		Status:        1,
+	}
+	if err := s.db.Create(tenant).Error; err != nil {
+		return fmt.Errorf("failed to create demo tenant: %w", err)
+	}
+	log.Printf("Created demo tenant (UUID: %s)", demoTenantUUID)
+	return nil
+}
+
+func (s *Seeder) seedDemoOrganizations() error {
+	orgs := []model.Organization{
+		{
+			ID:           demoBranch1UUID,
+			TenantID:     demoTenantUUID,
+			Name:         "寿司郎太阳宫店",
+			Type:         model.OrgTypeStore,
+			Code:         "DEMO-BRANCH1",
+			Level:        1,
+			Address:      "北京市朝阳区太阳宫中路凯德MALL",
+			ContactName:  "店长",
+			ContactPhone: "13800000001",
+		},
+		{
+			ID:           demoContractor1,
+			TenantID:     demoTenantUUID,
+			Name:         "建王",
+			Type:         model.OrgTypeMainContractor,
+			Code:         "DEMO-CONTRACTOR1",
+			Level:        1,
+			Address:      "上海市浦东新区",
+			ContactName:  "建王管理员",
+			ContactPhone: "13800000002",
+		},
+		{
+			ID:           demoVendor1,
+			TenantID:     demoTenantUUID,
+			Name:         "森泉",
+			Type:         model.OrgTypeVendor,
+			Code:         "DEMO-VENDOR1",
+			Level:        2,
+			ParentID:     &demoContractor1,
+			Address:      "上海市闵行区",
+			ContactName:  "森泉管理员",
+			ContactPhone: "13800000003",
+		},
+		{
+			ID:           demoContractor2,
+			TenantID:     demoTenantUUID,
+			Name:         "希望",
+			Type:         model.OrgTypeMainContractor,
+			Code:         "DEMO-CONTRACTOR2",
+			Level:        2,
+			ParentID:     &demoContractor1,
+			Address:      "上海市徐汇区",
+			ContactName:  "希望管理员",
+			ContactPhone: "13800000004",
+		},
+		{
+			ID:           demoVendor2,
+			TenantID:     demoTenantUUID,
+			Name:         "相川",
+			Type:         model.OrgTypeVendor,
+			Code:         "DEMO-VENDOR2",
+			Level:        3,
+			ParentID:     &demoContractor2,
+			Address:      "上海市普陀区",
+			ContactName:  "相川管理员",
+			ContactPhone: "13800000005",
+		},
+	}
+
+	for _, org := range orgs {
+		var existing model.Organization
+		err := s.db.Where("id = ?", org.ID).First(&existing).Error
+		if err == nil {
+			log.Printf("Demo org %s already exists, skipping", org.Name)
+			continue
+		}
+		if err != gorm.ErrRecordNotFound {
+			return fmt.Errorf("failed to check org %s: %w", org.Name, err)
+		}
+		if err := s.db.Create(&org).Error; err != nil {
+			return fmt.Errorf("failed to create org %s: %w", org.Name, err)
+		}
+		log.Printf("Created demo org: %s (ID: %s)", org.Name, org.ID)
+	}
+	return nil
+}
+
+func (s *Seeder) seedDemoUsers() error {
+	now := time.Now()
+	users := []struct {
+		ID             uuid.UUID
+		OrgID          uuid.UUID
+		Username       string
+		DisplayName    string
+		Role           model.UserRole
+		IsOrgOwner     bool
+		Password       string
+	}{
+		{demoEmpBranch1, demoBranch1UUID, "employee1@branch1", "分公司员工", model.UserRoleStaff, false, "demo123"},
+		{demoAdminCon1, demoContractor1, "admin@contractor1", "工程公司管理员", model.UserRoleMainContractor, true, "demo123"},
+		{demoEmpCon1, demoContractor1, "employee1@contractor1", "建王职员", model.UserRoleMainContractor, false, "demo123"},
+		{demoEngCon1, demoContractor1, "engineer1@contractor1", "工程公司工程师", model.UserRoleEngineer, false, "demo123"},
+		{demoEngCon2, demoContractor1, "engineer2@contractor1", "工程公司工程师2", model.UserRoleEngineer, false, "demo123"},
+		{demoAdminCon2, demoContractor2, "admin@contractor2", "工程公司管理员", model.UserRoleMainContractor, true, "demo123"},
+		{demoEmpCon2, demoContractor2, "employee1@contractor2", "工程公司员工", model.UserRoleMainContractor, false, "demo123"},
+		{demoEngCon2Usr, demoContractor2, "engineer1@contractor2", "工程公司工程师", model.UserRoleEngineer, false, "demo123"},
+		{demoEngCon2Usr2, demoContractor2, "engineer2@contractor2", "工程公司工程师2", model.UserRoleEngineer, false, "demo123"},
+		{demoEmpVendor1, demoVendor1, "employee1@vendor1", "供应商员工", model.UserRoleVendor, false, "demo123"},
+		{demoEngVendor1, demoVendor1, "engineer1@vendor1", "供应商工程师", model.UserRoleEngineer, false, "demo123"},
+		{demoAdminVendor2, demoVendor2, "admin@相川", "相川管理员", model.UserRoleVendor, true, "demo123"},
+		{demoEmpVendor2, demoVendor2, "employee1@相川", "相川员工", model.UserRoleVendor, false, "demo123"},
+		{demoEngVendor21, demoVendor2, "engineer1@相川", "相川工程师", model.UserRoleEngineer, false, "demo123"},
+		{demoEngVendor22, demoVendor2, "engineer2@相川", "相川工程师2", model.UserRoleEngineer, false, "demo123"},
+	}
+
+	for _, u := range users {
+		var existing model.User
+		err := s.db.Where("id = ?", u.ID).First(&existing).Error
+		if err == nil {
+			log.Printf("Demo user %s already exists, skipping", u.Username)
+			continue
+		}
+		if err != gorm.ErrRecordNotFound {
+			return fmt.Errorf("failed to check user %s: %w", u.Username, err)
+		}
+
+		user := &model.User{
+			ID:             u.ID,
+			TenantID:       demoTenantUUID,
+			OrganizationID: u.OrgID,
+			Username:       u.Username,
+			Email:          u.Username + "@demo.local",
+			Phone:          "13800000000",
+			Role:           u.Role,
+			IsOrgOwner:     u.IsOrgOwner,
+			Status:         model.UserStatusActive,
+			DisplayName:    u.DisplayName,
+			IAMSub:         "demo_" + u.ID.String(),
+			CreatedAt:      now,
+			UpdatedAt:      now,
+		}
+		if err := user.HashPassword(u.Password); err != nil {
+			return fmt.Errorf("failed to hash password for %s: %w", u.Username, err)
+		}
+		if err := s.db.Create(user).Error; err != nil {
+			return fmt.Errorf("failed to create user %s: %w", u.Username, err)
+		}
+		log.Printf("Created demo user: %s (%s)", u.Username, u.DisplayName)
+	}
+	return nil
+}
+
+func (s *Seeder) seedDemoWorkOrders() error {
+	storeID := demoBranch1UUID
+	creatorID := demoEmpBranch1
+	now := time.Now()
+
+	type seedWO struct {
+		id        uuid.UUID
+		orderNo   string
+		title     string
+		status    model.WorkOrderStatus
+		ownerOrg  *uuid.UUID
+		engineer  *uuid.UUID
+		path      []uuid.UUID
+	}
+
+	seeds := []seedWO{
+		{demoWorkOrderIDs[0], "DEMO-00001", "消防门维修", model.WorkOrderStatusPending, nil, nil, nil},
+		{demoWorkOrderIDs[1], "DEMO-00002", "空调不制冷", model.WorkOrderStatusDispatched, &demoContractor1, &demoEngCon1, []uuid.UUID{demoContractor1}},
+		{demoWorkOrderIDs[2], "DEMO-00003", "墙面脱落", model.WorkOrderStatusDispatched, &demoContractor2, nil, []uuid.UUID{demoContractor1, demoContractor2}},
+		{demoWorkOrderIDs[3], "DEMO-00004", "灯具更换", model.WorkOrderStatusWorking, &demoContractor2, &demoEngCon2Usr, []uuid.UUID{demoContractor1, demoContractor2}},
+		{demoWorkOrderIDs[4], "DEMO-00005", "POS机故障", model.WorkOrderStatusFinished, &demoContractor2, &demoEngCon2Usr, []uuid.UUID{demoContractor1, demoContractor2}},
+		{demoWorkOrderIDs[5], "DEMO-00006", "排烟系统异常", model.WorkOrderStatusDispatched, &demoContractor1, &demoEngCon2, []uuid.UUID{demoContractor1}},
+		{demoWorkOrderIDs[6], "DEMO-00007", "验收退回", model.WorkOrderStatusFinished, &demoContractor2, &demoEngCon2Usr, []uuid.UUID{demoContractor1, demoContractor2}},
+		{demoWorkOrderIDs[7], "DEMO-00008", "地板损坏", model.WorkOrderStatusDispatched, &demoContractor1, nil, []uuid.UUID{demoContractor1}},
+	}
+
+	for _, seed := range seeds {
+		var existing model.WorkOrder
+		err := s.db.Where("id = ?", seed.id).First(&existing).Error
+		if err == nil {
+			log.Printf("Demo work order %s already exists, skipping", seed.orderNo)
+			continue
+		}
+		if err != gorm.ErrRecordNotFound {
+			return fmt.Errorf("failed to check work order %s: %w", seed.orderNo, err)
+		}
+
+		var pathJSON []byte
+		if seed.path != nil {
+			pathJSON, _ = json.Marshal(seed.path)
+		} else {
+			pathJSON = []byte("[]")
+		}
+
+		info := model.WorkOrderInfo{
+			Description: seed.title,
+			ContactName: "联系人",
+			ContactPhone: "13800000000",
+		}
+
+		wo := &model.WorkOrder{
+			ID:             seed.id,
+			OrderNo:        seed.orderNo,
+			TenantID:       demoTenantUUID,
+			StoreID:        storeID,
+			CreatedBy:      creatorID,
+			Status:         seed.status,
+			OwnerOrgID:     seed.ownerOrg,
+			EngineerID:     seed.engineer,
+			DispatchPath:   pathJSON,
+			AppointmentType: 1,
+			Info:           info,
+			Logs:           make(model.WorkOrderLogs, 0),
+			CreatedAt:      now,
+			UpdatedAt:      now,
+		}
+
+		// Set scheduling timestamps for certain statuses
+		switch seed.status {
+		case model.WorkOrderStatusWorking:
+			wo.ArrivedAt = &now
+			wo.StartedAt = &now
+		case model.WorkOrderStatusFinished:
+			arrived := now.Add(-2 * time.Hour)
+			started := now.Add(-90 * time.Minute)
+			finished := now.Add(-30 * time.Minute)
+			wo.ArrivedAt = &arrived
+			wo.StartedAt = &started
+			wo.FinishedAt = &finished
+		}
+
+		if err := s.db.Create(wo).Error; err != nil {
+			return fmt.Errorf("failed to create work order %s: %w", seed.orderNo, err)
+		}
+		log.Printf("Created demo work order: %s - %s", seed.orderNo, seed.title)
+	}
 	return nil
 }
 

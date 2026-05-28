@@ -10,8 +10,28 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"jobmaster/internal/data"
+	"jobmaster/internal/model"
+	"jobmaster/pkg/database"
 )
+
+// demo UUIDs (must match seed.go)
+var (
+	demoTenantUUID   = uuid.MustParse("d0000000-0000-0000-0000-000000000001")
+	demoBranch1UUID  = uuid.MustParse("d0000000-0000-0000-0000-000000000010")
+	demoContractor1  = uuid.MustParse("d0000000-0000-0000-0000-000000000020")
+	demoContractor2  = uuid.MustParse("d0000000-0000-0000-0000-000000000021")
+	demoVendor1      = uuid.MustParse("d0000000-0000-0000-0000-000000000030")
+)
+
+// demoOrgIDMap maps legacy string IDs to UUIDs for dispatch target resolution
+var demoOrgIDMap = map[string]uuid.UUID{
+	"jm-branch1":     demoBranch1UUID,
+	"jm-contractor1": demoContractor1,
+	"jm-contractor2": demoContractor2,
+	"jm-vendor1":     demoVendor1,
+}
 
 var (
 	// sessions stores demo mode user sessions
@@ -19,9 +39,6 @@ var (
 	sessions sync.Map
 	// sessionMutex for thread-safe session operations
 	sessionMutex sync.Mutex
-	// createdWorkOrders stores newly created work orders in memory
-	// key: work order ID, value: work order map
-	createdWorkOrders sync.Map
 )
 
 func contains(s string, substr string) bool {
@@ -33,29 +50,39 @@ func generateSessionID(username string) string {
 	return "demo_session_" + username + "_" + os.Getenv("DEMO_MODE")
 }
 
-// persistDemoState saves current memory state to file
-func persistDemoState() {
-	state := &data.DemoState{
-		Sessions:          make(map[string]string),
-		CreatedWorkOrders: make([]map[string]interface{}, 0),
+// resolveTargetOrgID converts a legacy demo org ID (e.g. "jm-contractor1")
+// to the corresponding UUID stored in the database. Falls back to UUID parse.
+func resolveTargetOrgID(id string) (uuid.UUID, error) {
+	if uid, ok := demoOrgIDMap[id]; ok {
+		return uid, nil
 	}
-
-	// Export sessions
-	sessions.Range(func(key, value interface{}) bool {
-		state.Sessions[key.(string)] = value.(string)
-		return true
-	})
-
-	// Export created work orders
-	createdWorkOrders.Range(func(key, value interface{}) bool {
-		state.CreatedWorkOrders = append(state.CreatedWorkOrders, value.(map[string]interface{}))
-		return true
-	})
-
-	// Save to file
-	if err := data.SaveDemoState(state); err != nil {
-		fmt.Printf("[WARN] Failed to save demo state: %v\n", err)
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("invalid org ID: %s", id)
 	}
+	return uid, nil
+}
+
+// getDemoUserFromDB looks up the demo user by username in the database
+func getDemoUserFromDB(username string) (*model.User, error) {
+	db, err := database.GetDB()
+	if err != nil {
+		return nil, fmt.Errorf("database connection failed: %w", err)
+	}
+	var user model.User
+	if err := db.Where("username = ?", username).First(&user).Error; err != nil {
+		return nil, fmt.Errorf("user %s not found: %w", username, err)
+	}
+	return &user, nil
+}
+
+// getDemoUserID looks up the user UUID from DB by username, returns string
+func getDemoUserID(username string) string {
+	user, err := getDemoUserFromDB(username)
+	if err != nil {
+		return username
+	}
+	return user.ID.String()
 }
 
 // DemoHandlers handles demo mode API endpoints
@@ -66,6 +93,60 @@ func NewDemoHandlers() *DemoHandlers {
 	return &DemoHandlers{}
 }
 
+// toDemoWorkOrderMap converts a model.WorkOrder to the flat map format expected by the demo frontend
+func toDemoWorkOrderMap(wo *model.WorkOrder) map[string]interface{} {
+	result := map[string]interface{}{
+		"id":               wo.ID.String(),
+		"order_no":         wo.OrderNo,
+		"title":            wo.Info.Title,
+		"description":      wo.Info.Description,
+		"status":           wo.Status.String(),
+		"photo_urls":       wo.Info.PhotoURLs,
+		"is_urgent":        wo.Info.IsUrgent,
+		"address_detail":   wo.AddressDetail,
+		"appointment_type": wo.AppointmentType,
+		"created_at":       wo.CreatedAt.Format(time.RFC3339),
+		"store_id":         wo.StoreID.String(),
+		"category_path":    wo.Info.CategoryPath,
+	}
+
+	if wo.Info.Title == "" {
+		result["title"] = wo.Info.Description
+	}
+	if wo.Info.EquipmentInfo != "" {
+		result["equipment_info"] = wo.Info.EquipmentInfo
+	}
+	if len(wo.Info.CategoryPath) > 0 {
+		result["category_id"] = wo.Info.CategoryPath[0]
+		result["category_path"] = wo.Info.CategoryPath
+	}
+	if wo.EngineerID != nil {
+		result["engineer_id"] = wo.EngineerID.String()
+		if db, dbErr := database.GetDB(); dbErr == nil {
+			var eng model.User
+			if db.Where("id = ?", *wo.EngineerID).First(&eng).Error == nil {
+				result["engineer_name"] = eng.DisplayName
+			}
+		}
+	}
+	if wo.OwnerOrgID != nil {
+		result["owner_org_id"] = wo.OwnerOrgID.String()
+		// Look up owner org name from DB
+		if db, dbErr := database.GetDB(); dbErr == nil {
+			var ownerOrg model.Organization
+			if db.Where("id = ?", *wo.OwnerOrgID).First(&ownerOrg).Error == nil {
+				result["owner_org_name"] = ownerOrg.Name
+			}
+		}
+	}
+
+	if len(wo.Info.TimeSlots) > 0 {
+		result["time_slots"] = wo.Info.TimeSlots
+	}
+
+	return result
+}
+
 // RegisterDemoRoutes registers demo API routes
 func RegisterDemoRoutes(r *gin.Engine) {
 	if !data.IsDemoMode() {
@@ -73,20 +154,6 @@ func RegisterDemoRoutes(r *gin.Engine) {
 	}
 
 	handlers := NewDemoHandlers()
-
-	// Load persistent demo state from file
-	if state, err := data.LoadDemoState(); err == nil {
-		// Restore sessions
-		for sessionID, username := range state.Sessions {
-			sessions.Store(sessionID, username)
-		}
-		// Restore created work orders
-		for _, wo := range state.CreatedWorkOrders {
-			if id, ok := wo["id"].(string); ok {
-				createdWorkOrders.Store(id, wo)
-			}
-		}
-	}
 
 	demo := r.Group("/api/demo")
 
@@ -134,285 +201,291 @@ func RegisterDemoRoutes(r *gin.Engine) {
 	demo.GET("/organizations/:id/engineers", handlers.GetOrganizationEngineers)
 }
 
-// GetWorkOrders returns work orders from demo data with user-based filtering
+// GetWorkOrders returns work orders from database with user-based filtering
 func (h *DemoHandlers) GetWorkOrders(c *gin.Context) {
-	demoData, err := data.LoadDemoData()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	var workOrders []map[string]interface{}
-	if err := json.Unmarshal(demoData.WorkOrders, &workOrders); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse work orders: " + err.Error()})
-		return
-	}
-
 	username := h.getUsernameFromSession(c)
 	if username == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or missing session"})
 		return
 	}
 
+	db, err := database.GetDB()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database connection failed"})
+		return
+	}
+
+	// Look up user from database, fallback to username parsing
+	user, err := getDemoUserFromDB(username)
+	var userOrgID uuid.UUID
+	var userUUID uuid.UUID
+	if err != nil {
+		// Fallback: use old demo username parsing for org ID
+		orgStr, _ := getOrgFromUsername(username)
+		userOrgID, _ = resolveTargetOrgID(orgStr)
+		userUUID = uuid.Nil
+	} else {
+		userOrgID = user.OrganizationID
+		userUUID = user.ID
+	}
+
 	userRole := h.parseRoleFromUsername(username)
+	query := db.Model(&model.WorkOrder{}).Where("tenant_id = ?", demoTenantUUID)
 
-	createdWorkOrders.Range(func(key, value interface{}) bool {
-		workOrders = append(workOrders, value.(map[string]interface{}))
-		return true
-	})
+	// Apply role-based filtering
+	switch {
+	case strings.Contains(userRole, "BRANCH") || userRole == "EMPLOYEE":
+		query = query.Where("store_id = ? OR dispatch_path @> ?",
+			userOrgID, fmt.Sprintf(`"%s"`, userOrgID.String()))
 
-	orgId, _ := getOrgFromUsername(username)
+	case strings.Contains(userRole, "CONTRACTOR") || strings.Contains(userRole, "VENDOR"):
+		query = query.Where("owner_org_id = ? OR dispatch_path @> ?",
+			userOrgID, fmt.Sprintf(`"%s"`, userOrgID.String()))
 
-	filtered := workOrders
-
-	// Organization-based filtering for Branch roles
-	if strings.Contains(userRole, "BRANCH") || userRole == "EMPLOYEE" {
-		var orgFiltered []map[string]interface{}
-		for _, wo := range workOrders {
-			if storeID, exists := wo["store_id"]; exists && storeID == orgId {
-				orgFiltered = append(orgFiltered, wo)
-			}
+	case strings.Contains(userRole, "ENGINEER"):
+		if userUUID != uuid.Nil {
+			query = query.Where("engineer_id = ?", userUUID)
 		}
-		filtered = orgFiltered
 	}
 
-	// Organization-based filtering for Contractor and Vendor roles
-	if strings.Contains(userRole, "CONTRACTOR") || strings.Contains(userRole, "VENDOR") {
-		var orgFiltered []map[string]interface{}
-		for _, wo := range workOrders {
-			if ownerOrgID, exists := wo["owner_org_id"]; exists {
-				if ownerOrgID == orgId {
-					orgFiltered = append(orgFiltered, wo)
-				}
-			} else {
-				orgFiltered = append(orgFiltered, wo)
-			}
-		}
-		filtered = orgFiltered
-	}
-
-	if strings.Contains(userRole, "ENGINEER") {
-		userID := getUserIDFromUsername(username)
-		var engineerFiltered []map[string]interface{}
-		for _, wo := range workOrders {
-			engineerId, _ := wo["engineer_id"].(string)
-			if engineerId == userID {
-				engineerFiltered = append(engineerFiltered, wo)
-			}
-		}
-		filtered = engineerFiltered
-	}
-
+	// Apply status filter
 	statusParam := c.Query("status")
 	if statusParam != "" {
 		allowedStatuses := strings.Split(statusParam, ",")
-		var statusFiltered []map[string]interface{}
-		for _, wo := range filtered {
-			status, _ := wo["status"].(string)
-			for _, s := range allowedStatuses {
-				if strings.TrimSpace(s) == status {
-					statusFiltered = append(statusFiltered, wo)
-					break
-				}
+		var statusInts []int
+		for _, s := range allowedStatuses {
+			s = strings.TrimSpace(s)
+			var st model.WorkOrderStatus
+			if err := st.UnmarshalJSON([]byte(`"` + s + `"`)); err == nil {
+				statusInts = append(statusInts, int(st))
 			}
 		}
-		filtered = statusFiltered
+		if len(statusInts) > 0 {
+			query = query.Where("status IN ?", statusInts)
+		}
+	}
+
+	// Execute query
+	var workOrders []model.WorkOrder
+	if err := query.Order("created_at DESC").Find(&workOrders).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch work orders"})
+		return
+	}
+
+	// Convert to demo format
+	var list []map[string]interface{}
+	for i := range workOrders {
+		list = append(list, toDemoWorkOrderMap(&workOrders[i]))
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"list":  filtered,
-		"total": len(filtered),
+		"list":  list,
+		"total": len(list),
 	})
 }
 
-// GetWorkOrder returns a single work order by ID
+// GetWorkOrder returns a single work order by ID from database
 func (h *DemoHandlers) GetWorkOrder(c *gin.Context) {
 	id := c.Param("id")
 
-	demoData, err := data.LoadDemoData()
+	woID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid work order ID"})
+		return
+	}
+
+	db, err := database.GetDB()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database connection failed"})
+		return
+	}
+
+	var wo model.WorkOrder
+	if err := db.Where("id = ? AND tenant_id = ?", woID, demoTenantUUID).First(&wo).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, toDemoWorkOrderMap(&wo))
+}
+
+// CreateWorkOrder creates a new work order in demo mode (persisted to DB)
+func (h *DemoHandlers) CreateWorkOrder(c *gin.Context) {
+	var req struct {
+		Title           string   `json:"title" binding:"required"`
+		Description     string   `json:"description" binding:"required"`
+		PhotoURLs       []string `json:"photo_urls"`
+		Priority        int      `json:"priority"`
+		IsUrgent        bool     `json:"is_urgent"`
+		AddressDetail   string   `json:"address_detail"`
+		CategoryID      string   `json:"category_id"`
+		Coordinates     *struct {
+			Lat float64 `json:"lat"`
+			Lng float64 `json:"lng"`
+		} `json:"coordinates"`
+		DivisionID      string             `json:"division_id"`
+		AppointmentType int                `json:"appointment_type"`
+		TimeSlots      []model.TimeSlot   `json:"time_slots,omitempty"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Get session info and look up user from DB
+	username := h.getUsernameFromSession(c)
+	user, err := getDemoUserFromDB(username)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		return
+	}
+
+	db, err := database.GetDB()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database connection failed"})
+		return
+	}
+
+	appointmentType := req.AppointmentType
+	if appointmentType == 0 {
+		appointmentType = 1
+	}
+
+	// Build order info
+	var location *model.GPSLocation
+	if req.Coordinates != nil {
+		location = &model.GPSLocation{
+			Latitude:  req.Coordinates.Lat,
+			Longitude: req.Coordinates.Lng,
+		}
+	}
+
+	var categoryPath []string
+	if req.CategoryID != "" {
+		categoryPath = []string{req.CategoryID}
+	}
+
+	info := model.WorkOrderInfo{
+		Title:         req.Title,
+		Description:   req.Description,
+		PhotoURLs:     req.PhotoURLs,
+		IsUrgent:      req.IsUrgent,
+		Location:      location,
+		CategoryPath:  categoryPath,
+		TimeSlots:     req.TimeSlots,
+	}
+
+	orderNo, err := OrderNoGenerator.Generate(demoTenantUUID, user.OrganizationID)
+	if err != nil {
+		orderNo = "DEMO-" + fmt.Sprintf("%010d", time.Now().UnixMilli()%10000000000)
+	}
+
+	wo := &model.WorkOrder{
+		ID:              uuid.New(),
+		OrderNo:         orderNo,
+		TenantID:        demoTenantUUID,
+		StoreID:         user.OrganizationID,
+		CreatedBy:       user.ID,
+		Status:          model.WorkOrderStatusPending,
+		AddressDetail:   req.AddressDetail,
+		AppointmentType: appointmentType,
+		Info:            info,
+		Logs:            make(model.WorkOrderLogs, 0),
+	}
+
+	wo.Logs.AddLog(user.ID, user.DisplayName, model.LogActionCreate, "Work order created", 0, model.WorkOrderStatusPending)
+
+	if err := db.Create(wo).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to create work order: %v", err)})
+		return
+	}
+
+	c.JSON(http.StatusOK, toDemoWorkOrderMap(wo))
+}
+
+// findWorkOrder looks up a work order by UUID from the database.
+func findWorkOrder(id string) (*model.WorkOrder, bool) {
+	woID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, false
+	}
+
+	db, err := database.GetDB()
+	if err != nil {
+		return nil, false
+	}
+
+	var wo model.WorkOrder
+	if err := db.Where("id = ? AND tenant_id = ?", woID, demoTenantUUID).First(&wo).Error; err != nil {
+		return nil, false
+	}
+
+	return &wo, true
+}
+
+// DispatchWorkOrder dispatches a work order to a vendor/contractor (uses OrderService)
+func (h *DemoHandlers) DispatchWorkOrder(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		TargetOrgID string `json:"target_org_id"`
+		EngineerID  string `json:"engineer_id"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if req.TargetOrgID == "" && req.EngineerID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "must specify target_org_id or engineer_id"})
+		return
+	}
+
+	username := h.getUsernameFromSession(c)
+	user, err := getDemoUserFromDB(username)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		return
+	}
+
+	woID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid work order ID"})
+		return
+	}
+
+	var targetOrg *uuid.UUID
+	var engineerID *uuid.UUID
+
+	if req.TargetOrgID != "" {
+		resolved, err := resolveTargetOrgID(req.TargetOrgID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid target org: " + req.TargetOrgID})
+			return
+		}
+		targetOrg = &resolved
+	}
+	if req.EngineerID != "" {
+		eid, err := uuid.Parse(req.EngineerID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid engineer ID"})
+			return
+		}
+		engineerID = &eid
+	}
+
+	order, err := OrderService.Dispatch(c.Request.Context(), woID, user.ID, user.DisplayName, targetOrg, engineerID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	var workOrders []map[string]interface{}
-
-	if value, ok := createdWorkOrders.Load(id); ok {
-		c.JSON(http.StatusOK, value.(map[string]interface{}))
-		return
-	}
-
-	if err := json.Unmarshal(demoData.WorkOrders, &workOrders); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse work orders"})
-		return
-	}
-
-	for _, wo := range workOrders {
-		if wo["id"] == id {
-			c.JSON(http.StatusOK, wo)
-			return
-		}
-	}
-
-	c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
+	c.JSON(http.StatusOK, toDemoWorkOrderMap(order))
 }
 
-// CreateWorkOrder creates a new work order in demo mode
-func (h *DemoHandlers) CreateWorkOrder(c *gin.Context) {
-	var req struct {
-		Title         string   `json:"title" binding:"required"`
-		Description   string   `json:"description" binding:"required"`
-		PhotoURLs     []string `json:"photo_urls"`
-		Priority      int      `json:"priority"`
-		IsUrgent      bool     `json:"is_urgent"`
-		AddressDetail string   `json:"address_detail"`
-		CategoryID    string   `json:"category_id"`
-		Coordinates   *struct {
-			Lat float64 `json:"lat"`
-			Lng float64 `json:"lng"`
-		} `json:"coordinates"`
-		DivisionID string `json:"division_id"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Create new work order object
-	newOrder := map[string]interface{}{
-		"id":             "demo-wo-" + fmt.Sprint(time.Now().Unix()),
-		"order_no":       "WO-" + fmt.Sprint(time.Now().Unix()),
-		"title":          req.Title,
-		"description":    req.Description,
-		"status":         "PENDING",
-		"photo_urls":     req.PhotoURLs,
-		"priority":       req.Priority,
-		"is_urgent":      req.IsUrgent,
-		"address_detail": req.AddressDetail,
-		"category_id":    req.CategoryID,
-		"created_at":     time.Now().Format(time.RFC3339),
-		"store_id":       "jm-branch1",
-		"store_name":     "Branch 001",
-		"brand_name":     "Unknown",
-		"category_path":  req.CategoryID,
-	}
-
-	// Save to memory
-	createdWorkOrders.Store(newOrder["id"].(string), newOrder)
-
-	// Persist state to file
-	persistDemoState()
-
-	c.JSON(http.StatusOK, newOrder)
-}
-
-// findWorkOrder looks up a work order by ID.
-// It checks createdWorkOrders first, then falls back to demo data.
-// If found in demo data, it copies the work order into createdWorkOrders for mutation.
-func findWorkOrder(id string) (map[string]interface{}, bool) {
-	if value, ok := createdWorkOrders.Load(id); ok {
-		return value.(map[string]interface{}), true
-	}
-
-	demoData, err := data.LoadDemoData()
-	if err != nil {
-		return nil, false
-	}
-
-	var workOrders []map[string]interface{}
-	if err := json.Unmarshal(demoData.WorkOrders, &workOrders); err != nil {
-		return nil, false
-	}
-
-	for _, wo := range workOrders {
-		if woID, ok := wo["id"].(string); ok && woID == id {
-			clone := make(map[string]interface{})
-			for k, v := range wo {
-				clone[k] = v
-			}
-			createdWorkOrders.Store(id, clone)
-			return clone, true
-		}
-	}
-
-	return nil, false
-}
-
-// findOrgName looks up an organization name by ID from demo data.
-func findOrgName(orgID string) string {
-	demoData, err := data.LoadDemoData()
-	if err != nil {
-		return orgID
-	}
-	var orgs []map[string]interface{}
-	if err := json.Unmarshal(demoData.Organizations, &orgs); err != nil {
-		return orgID
-	}
-	for _, org := range orgs {
-		if id, ok := org["id"].(string); ok && id == orgID {
-			if name, ok := org["name"].(string); ok {
-				return name
-			}
-		}
-	}
-	return orgID
-}
-
-// findEngineerName looks up an engineer's display name by ID from demo data.
-func findEngineerName(engineerID string) string {
-	demoData, err := data.LoadDemoData()
-	if err != nil {
-		return engineerID
-	}
-	var users []map[string]interface{}
-	if err := json.Unmarshal(demoData.Users, &users); err != nil {
-		return engineerID
-	}
-	for _, u := range users {
-		if id, ok := u["id"].(string); ok && id == engineerID {
-			if name, ok := u["display_name"].(string); ok {
-				return name
-			}
-		}
-	}
-	return engineerID
-}
-
-// DispatchWorkOrder dispatches a work order to a vendor/contractor
-func (h *DemoHandlers) DispatchWorkOrder(c *gin.Context) {
-	id := c.Param("id")
-
-	var req struct {
-		TargetOrgID string `json:"target_org_id" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	username := h.getUsernameFromSession(c)
-
-	workOrder, found := findWorkOrder(id)
-	if !found {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
-		return
-	}
-
-	orgName := findOrgName(req.TargetOrgID)
-
-	workOrder["status"] = "DISPATCHED"
-	workOrder["owner_org_id"] = req.TargetOrgID
-	workOrder["owner_org_name"] = orgName
-	workOrder["handler_id"] = username
-	workOrder["handler_name"] = username
-	createdWorkOrders.Store(id, workOrder)
-	persistDemoState()
-	c.JSON(http.StatusOK, workOrder)
-}
-
-// AssignWorkOrder assigns a work order to an engineer
+// AssignWorkOrder assigns a work order to an engineer (direct DB update)
 func (h *DemoHandlers) AssignWorkOrder(c *gin.Context) {
 	id := c.Param("id")
 
@@ -425,23 +498,261 @@ func (h *DemoHandlers) AssignWorkOrder(c *gin.Context) {
 		return
 	}
 
-	username := h.getUsernameFromSession(c)
-
-	workOrder, found := findWorkOrder(id)
+	wo, found := findWorkOrder(id)
 	if !found {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
 		return
 	}
 
-	engineerName := findEngineerName(req.EngineerID)
+	engineerUUID, err := uuid.Parse(req.EngineerID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid engineer ID"})
+		return
+	}
 
-	workOrder["engineer_id"] = req.EngineerID
-	workOrder["engineer_name"] = engineerName
-	workOrder["handler_id"] = username
-	workOrder["handler_name"] = username
-	createdWorkOrders.Store(id, workOrder)
-	persistDemoState()
-	c.JSON(http.StatusOK, workOrder)
+	wo.EngineerID = &engineerUUID
+	db, err := database.GetDB()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database connection failed"})
+		return
+	}
+	if err := db.Save(wo).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to assign engineer"})
+		return
+	}
+
+	// Refresh from DB to get updated model
+	db.First(&wo, "id = ?", wo.ID)
+
+	c.JSON(http.StatusOK, toDemoWorkOrderMap(wo))
+}
+
+// AcceptWorkOrder accepts a work order (uses OrderService, transitions DISPATCHED → RESERVED)
+func (h *DemoHandlers) AcceptWorkOrder(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		ScheduledAt *time.Time `json:"scheduled_at"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	username := h.getUsernameFromSession(c)
+	user, err := getDemoUserFromDB(username)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		return
+	}
+
+	woID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid work order ID"})
+		return
+	}
+
+	scheduledAt := time.Now()
+	if req.ScheduledAt != nil {
+		scheduledAt = *req.ScheduledAt
+	}
+
+	order, err := OrderService.Accept(c.Request.Context(), woID, user.ID, user.DisplayName, scheduledAt)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, toDemoWorkOrderMap(order))
+}
+
+// ReserveWorkOrder sets the appointment time (uses OrderService)
+func (h *DemoHandlers) ReserveWorkOrder(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		AppointedAt string `json:"appointed_at" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	appointedAt, err := time.Parse(time.RFC3339, req.AppointedAt)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid appointed_at format"})
+		return
+	}
+
+	username := h.getUsernameFromSession(c)
+	user, err := getDemoUserFromDB(username)
+	// Fallback: try other common formats
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		return
+	}
+
+	woID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid work order ID"})
+		return
+	}
+
+	order, err := OrderService.Reserve(c.Request.Context(), woID, user.ID, user.OrganizationID, user.DisplayName, appointedAt)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, toDemoWorkOrderMap(order))
+}
+
+// ArriveWorkOrder marks engineer arrival (uses OrderService)
+func (h *DemoHandlers) ArriveWorkOrder(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		PhotoURLs []string `json:"photo_urls"`
+		Comment   string   `json:"comment"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	username := h.getUsernameFromSession(c)
+	user, err := getDemoUserFromDB(username)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		return
+	}
+
+	woID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid work order ID"})
+		return
+	}
+
+	order, err := OrderService.Arrive(c.Request.Context(), woID, user.ID, user.OrganizationID, user.DisplayName, req.PhotoURLs, req.Comment)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, toDemoWorkOrderMap(order))
+}
+
+// FinishWorkOrder completes the work (uses OrderService)
+func (h *DemoHandlers) FinishWorkOrder(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		Description string   `json:"description" binding:"required"`
+		PhotoURLs   []string `json:"photo_urls"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	username := h.getUsernameFromSession(c)
+	user, err := getDemoUserFromDB(username)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		return
+	}
+
+	woID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid work order ID"})
+		return
+	}
+
+	order, err := OrderService.Finish(c.Request.Context(), woID, user.ID, user.OrganizationID, user.DisplayName, req.Description, req.PhotoURLs, 0, 0, 0)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, toDemoWorkOrderMap(order))
+}
+
+// VerifyWorkOrder verifies a finished work order (uses OrderService)
+func (h *DemoHandlers) VerifyWorkOrder(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		Action  string `json:"action"`  // "approve" or "reject"
+		Comment string `json:"comment"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if req.Action == "" {
+		req.Action = "approve" // default to approve for backward compatibility
+	}
+
+	username := h.getUsernameFromSession(c)
+	user, err := getDemoUserFromDB(username)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		return
+	}
+
+	woID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid work order ID"})
+		return
+	}
+
+	order, err := OrderService.Verify(c.Request.Context(), woID, user.ID, user.OrganizationID, user.DisplayName, req.Action, req.Comment)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, toDemoWorkOrderMap(order))
+}
+
+// RejectWorkOrder rejects a work order (uses OrderService)
+func (h *DemoHandlers) RejectWorkOrder(c *gin.Context) {
+	id := c.Param("id")
+
+	var req struct {
+		Reason string `json:"reason" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	username := h.getUsernameFromSession(c)
+	user, err := getDemoUserFromDB(username)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		return
+	}
+
+	woID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid work order ID"})
+		return
+	}
+
+	order, err := OrderService.Reject(c.Request.Context(), woID, user.ID, user.DisplayName, req.Reason)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, toDemoWorkOrderMap(order))
 }
 
 // GetOrganizations returns all organizations from demo data
@@ -535,27 +846,40 @@ func (h *DemoHandlers) Login(c *gin.Context) {
 		role = "BRANCH_ADMIN"
 	}
 
-	// Get org from username
+	// Look up user ID and org from database, fallback to username parsing
+	userID := "jm-user-" + username
 	orgId, orgName := getOrgFromUsername(username)
+	orgAddress := ""
+	user, err := getDemoUserFromDB(username)
+	if err == nil {
+		userID = user.ID.String()
+		orgId = user.OrganizationID.String()
+		// Look up org address from DB
+		db, dbErr := database.GetDB()
+		if dbErr == nil {
+			var org model.Organization
+			if db.Where("id = ?", user.OrganizationID).First(&org).Error == nil {
+				orgAddress = org.Address
+			}
+		}
+	}
 
 	// Create session for demo mode
 	sessionID := generateSessionID(username)
 	sessions.Store(sessionID, username)
 
-	// Persist state to file
-	persistDemoState()
-
 	// Return user with parsed role
 	c.JSON(http.StatusOK, gin.H{
-		"session": sessionID, // Return session ID instead of token
+		"session": sessionID,
 		"user": map[string]interface{}{
-			"id":          "jm-user-" + username,
+			"id":          userID,
 			"username":    username,
 			"displayName": username,
 			"role":        role,
 			"orgId":       orgId,
 			"orgName":     orgName,
-			"tenantId":    "jm-tenant1",
+			"orgAddress":  orgAddress,
+			"tenantId":    demoTenantUUID.String(),
 		},
 	})
 }
@@ -623,26 +947,26 @@ func (h *DemoHandlers) parseRoleFromUsername(username string) string {
 func getOrgFromUsername(username string) (orgId string, orgName string) {
 	// Default fallback
 	orgId = "jm-branch1"
-	orgName = "Branch 001"
+	orgName = "寿司郎太阳宫店"
 
 	if contains(username, "@branch1") {
 		orgId = "jm-branch1"
-		orgName = "Branch 001"
+		orgName = "寿司郎太阳宫店"
 	} else if contains(username, "@branch2") {
 		orgId = "jm-branch2"
 		orgName = "Branch 002"
 	} else if contains(username, "@contractor1") {
 		orgId = "jm-contractor1"
-		orgName = "Contractor A"
+		orgName = "建王"
 	} else if contains(username, "@contractor2") {
 		orgId = "jm-contractor2"
-		orgName = "Contractor B"
+		orgName = "希望"
 	} else if contains(username, "@vendor1") {
 		orgId = "jm-vendor1"
-		orgName = "Vendor X"
+		orgName = "森泉"
 	} else if contains(username, "@vendor2") {
 		orgId = "jm-vendor2"
-		orgName = "Vendor Y"
+		orgName = "相川"
 	}
 
 	return orgId, orgName
@@ -836,7 +1160,7 @@ func (h *DemoHandlers) GetRegions(c *gin.Context) {
 	})
 }
 
-// GetDispatchableTargets returns dispatchable targets based on user's organization
+// GetDispatchableTargets returns dispatchable targets based on user's organization (from DB)
 func (h *DemoHandlers) GetDispatchableTargets(c *gin.Context) {
 	username := h.getUsernameFromSession(c)
 	if username == "" {
@@ -845,46 +1169,78 @@ func (h *DemoHandlers) GetDispatchableTargets(c *gin.Context) {
 	}
 
 	userRole := h.parseRoleFromUsername(username)
-	orgId, _ := getOrgFromUsername(username)
 
-	demoData, err := data.LoadDemoData()
+	db, err := database.GetDB()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database connection failed"})
 		return
 	}
 
-	var organizations []map[string]interface{}
-	if err := json.Unmarshal(demoData.Organizations, &organizations); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse organizations"})
+	user, err := getDemoUserFromDB(username)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
 		return
 	}
 
-	var targets []map[string]interface{}
+	var orgs []map[string]interface{}
+	var engineers []map[string]interface{}
 
-	// BRANCH_ADMIN or EMPLOYEE can dispatch to MAIN_CONTRACTOR
-	if strings.Contains(userRole, "BRANCH") || userRole == "EMPLOYEE" {
-		for _, org := range organizations {
-			if org["type"] == "MAIN_CONTRACTOR" {
-				targets = append(targets, org)
-			}
+	switch {
+	case strings.Contains(userRole, "BRANCH") || userRole == "EMPLOYEE":
+		// Branch sees all MAIN_CONTRACTOR orgs
+		var targets []model.Organization
+		db.Where("type = ? AND tenant_id = ?", model.OrgTypeMainContractor, demoTenantUUID).Find(&targets)
+		for _, org := range targets {
+			orgs = append(orgs, map[string]interface{}{
+				"id":   org.ID.String(),
+				"name": org.Name,
+				"type": string(org.Type),
+			})
 		}
-	}
-	// CONTRACTOR_EMPLOYEE or CONTRACTOR_ADMIN can dispatch to VENDOR
-	if strings.Contains(userRole, "CONTRACTOR") {
-		for _, org := range organizations {
-			if org["type"] == "VENDOR" && org["parent_id"] == orgId {
-				targets = append(targets, org)
-			}
+
+	case strings.Contains(userRole, "CONTRACTOR"):
+		// Contractor sees VENDOR orgs under them + own engineers
+		var targets []model.Organization
+		db.Where("type = ? AND parent_id = ? AND tenant_id = ?", model.OrgTypeVendor, user.OrganizationID, demoTenantUUID).Find(&targets)
+		for _, org := range targets {
+			orgs = append(orgs, map[string]interface{}{
+				"id":   org.ID.String(),
+				"name": org.Name,
+				"type": string(org.Type),
+			})
+		}
+		var engs []model.User
+		db.Where("organization_id = ? AND role = ?", user.OrganizationID, model.UserRoleEngineer).Find(&engs)
+		for _, eng := range engs {
+			engineers = append(engineers, map[string]interface{}{
+				"id":           eng.ID.String(),
+				"username":     eng.Username,
+				"display_name": eng.DisplayName,
+				"role":         string(eng.Role),
+			})
+		}
+
+	case strings.Contains(userRole, "VENDOR"):
+		// Vendor sees only own engineers
+		var engs []model.User
+		db.Where("organization_id = ? AND role = ?", user.OrganizationID, model.UserRoleEngineer).Find(&engs)
+		for _, eng := range engs {
+			engineers = append(engineers, map[string]interface{}{
+				"id":           eng.ID.String(),
+				"username":     eng.Username,
+				"display_name": eng.DisplayName,
+				"role":         string(eng.Role),
+			})
 		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"list":  targets,
-		"total": len(targets),
+		"organizations": orgs,
+		"engineers":     engineers,
 	})
 }
 
-// GetOrganizationEngineers returns engineers for a specific organization
+// GetOrganizationEngineers returns engineers for a specific organization (from DB)
 func (h *DemoHandlers) GetOrganizationEngineers(c *gin.Context) {
 	orgID := c.Param("id")
 	if orgID == "" {
@@ -892,29 +1248,40 @@ func (h *DemoHandlers) GetOrganizationEngineers(c *gin.Context) {
 		return
 	}
 
-	demoData, err := data.LoadDemoData()
+	db, err := database.GetDB()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database connection failed"})
 		return
 	}
 
-	var users []map[string]interface{}
-	if err := json.Unmarshal(demoData.Users, &users); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse users"})
-		return
-	}
-
-	var engineers []map[string]interface{}
-	for _, user := range users {
-		// Check if user belongs to the org and has ENGINEER role
-		if user["org_id"] == orgID && strings.Contains(user["role"].(string), "ENGINEER") {
-			engineers = append(engineers, user)
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		// Try resolving as legacy demo ID
+		resolved, ok := demoOrgIDMap[orgID]
+		if !ok {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid organization ID"})
+			return
 		}
+		orgUUID = resolved
+	}
+
+	var engineers []model.User
+	db.Where("organization_id = ? AND role = ?", orgUUID, model.UserRoleEngineer).Find(&engineers)
+
+	var list []map[string]interface{}
+	for _, eng := range engineers {
+		list = append(list, map[string]interface{}{
+			"id":           eng.ID.String(),
+			"username":     eng.Username,
+			"display_name": eng.DisplayName,
+			"role":         string(eng.Role),
+			"org_id":       orgID,
+		})
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"list":  engineers,
-		"total": len(engineers),
+		"list":  list,
+		"total": len(list),
 	})
 }
 
@@ -956,170 +1323,4 @@ func (h *DemoHandlers) GetRegionCategories(c *gin.Context) {
 	})
 }
 
-// FinishWorkOrder completes the work for a work order (ENGINEER only)
-func (h *DemoHandlers) FinishWorkOrder(c *gin.Context) {
-	workOrderID := c.Param("id")
 
-	var req struct {
-		Description string   `json:"description"`
-		PhotoURLs   []string `json:"photo_urls"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Demo mode - just return success with status change to OBSERVING
-	c.JSON(http.StatusOK, gin.H{
-		"id":          workOrderID,
-		"status":      "observing",
-		"description": req.Description,
-		"photo_urls":  req.PhotoURLs,
-		"finished_at": time.Now().Format(time.RFC3339),
-	})
-}
-
-// ReserveWorkOrder sets the appointment time for a work order
-func (h *DemoHandlers) ReserveWorkOrder(c *gin.Context) {
-	id := c.Param("id")
-
-	var req struct {
-		AppointedAt string `json:"appointed_at" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	workOrder, found := findWorkOrder(id)
-	if !found {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
-		return
-	}
-
-	workOrder["appointed_at"] = req.AppointedAt
-	workOrder["status"] = "RESERVED"
-	createdWorkOrders.Store(id, workOrder)
-	persistDemoState()
-
-	c.JSON(http.StatusOK, workOrder)
-}
-
-// AcceptWorkOrder accepts a work order (engineer accepts the job)
-func (h *DemoHandlers) AcceptWorkOrder(c *gin.Context) {
-	id := c.Param("id")
-
-	var req struct {
-		ScheduledAt string `json:"scheduled_at"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	workOrder, found := findWorkOrder(id)
-	if !found {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
-		return
-	}
-
-	if status, ok := workOrder["status"].(string); !ok || status != "DISPATCHED" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Work order must be in DISPATCHED status to accept"})
-		return
-	}
-
-	workOrder["status"] = "ACCEPTED"
-	if req.ScheduledAt != "" {
-		workOrder["scheduled_at"] = req.ScheduledAt
-	}
-	createdWorkOrders.Store(id, workOrder)
-	persistDemoState()
-
-	c.JSON(http.StatusOK, workOrder)
-}
-
-// ArriveWorkOrder marks engineer arrival at the work site
-func (h *DemoHandlers) ArriveWorkOrder(c *gin.Context) {
-	id := c.Param("id")
-
-	var req struct {
-		Latitude  float64 `json:"latitude"`
-		Longitude float64 `json:"longitude"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	workOrder, found := findWorkOrder(id)
-	if !found {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
-		return
-	}
-
-	if status, ok := workOrder["status"].(string); !ok || status != "RESERVED" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Work order must be in RESERVED status to arrive"})
-		return
-	}
-
-	workOrder["status"] = "WORKING"
-	workOrder["started_at"] = time.Now().Format(time.RFC3339)
-	createdWorkOrders.Store(id, workOrder)
-	persistDemoState()
-
-	c.JSON(http.StatusOK, workOrder)
-}
-
-// VerifyWorkOrder verifies/complete a work order
-func (h *DemoHandlers) VerifyWorkOrder(c *gin.Context) {
-	id := c.Param("id")
-
-	workOrder, found := findWorkOrder(id)
-	if !found {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
-		return
-	}
-
-	if status, ok := workOrder["status"].(string); !ok || status != "WORKING" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Work order must be in WORKING status to verify"})
-		return
-	}
-
-	workOrder["status"] = "FINISHED"
-	workOrder["finished_at"] = time.Now().Format(time.RFC3339)
-	createdWorkOrders.Store(id, workOrder)
-	persistDemoState()
-
-	c.JSON(http.StatusOK, workOrder)
-}
-
-// RejectWorkOrder rejects a work order
-func (h *DemoHandlers) RejectWorkOrder(c *gin.Context) {
-	id := c.Param("id")
-
-	var req struct {
-		Reason string `json:"reason"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	workOrder, found := findWorkOrder(id)
-	if !found {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
-		return
-	}
-
-	workOrder["status"] = "PENDING"
-	workOrder["rejection_reason"] = req.Reason
-	createdWorkOrders.Store(id, workOrder)
-	persistDemoState()
-
-	c.JSON(http.StatusOK, workOrder)
-}

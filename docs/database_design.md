@@ -110,6 +110,7 @@
 | labor_fee | DECIMAL(10,2) | 人工费 |
 | material_fee | DECIMAL(10,2) | 材料费 |
 | other_fee | DECIMAL(10,2) | 其他费用 |
+| appointment_type | SMALLINT | 上门方式：1-指定上门时段(默认) 2-要求提前预约 |
 | appointed_at | TIMESTAMP | 预约时间 |
 | started_at | TIMESTAMP | 开始时间 |
 | finished_at | TIMESTAMP | 完工时间 |

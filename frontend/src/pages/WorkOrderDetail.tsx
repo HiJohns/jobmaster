@@ -71,7 +71,7 @@ function WorkOrderDetail() {
   const getCurrentPosition = (): Promise<{ latitude: number; longitude: number }> => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
-        reject(new Error('Geolocation is not supported'))
+        reject(new Error('浏览器不支持地理定位'))
         return
       }
       navigator.geolocation.getCurrentPosition(
@@ -116,7 +116,7 @@ function WorkOrderDetail() {
     setActionLoading(true)
     try {
       const position = await getCurrentPosition()
-      const response = await api.workorder.arrive(id, position.latitude, position.longitude) as any
+      const response = await api.workorder.arrive(id, [], `签到位置 [${position.latitude}, ${position.longitude}]`) as any
       if (response.code === 200) {
         Toast.show('签到成功')
         fetchOrderDetail()
@@ -205,7 +205,7 @@ function WorkOrderDetail() {
     // The line below was removed as its return value was not being used.
     // getAvailableActions(order.status)
     
-    if (canPerformAction(order.status, 'reserve')) {
+    if (canPerformAction(order.status, 'reserve') && order.appointment_type !== 1) {
       buttons.push(
         <Button key="reserve" onClick={() => setReserveModalVisible(true)} loading={actionLoading} style={isImpersonated ? {
           border: '2px dashed #8B5CF6',

@@ -12,7 +12,7 @@
 import { Card } from 'antd-mobile'
 import { FireFill } from 'antd-mobile-icons'
 import { WorkOrder } from '../api/workorder'
-import { getStatusConfig } from '../config/status'
+import { getStatusConfig, getContextStatusText } from '../config/status'
 import { useState, useEffect } from 'react'
 import { theme } from '../styles/theme'
 
@@ -75,6 +75,7 @@ const isEmergencyOrder = (order: WorkOrder): boolean => {
 
 function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
   const statusConfig = getStatusConfig(order.status)
+  const statusText = getContextStatusText(order.status, order.engineer_id || undefined)
   const [slaDisplay, setSlaDisplay] = useState<{ text: string; isOverdue: boolean } | null>(null)
   const urgent = isUrgentOrder(order)
   const emergency = isEmergencyOrder(order)
@@ -188,7 +189,7 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
               fontWeight: 500,
             }}
           >
-            {statusConfig.text}
+            {statusText}
           </div>
         </div>
       </div>

@@ -199,3 +199,14 @@ export function canPerformAction(status: WorkOrderStatus, action: string): boole
 export function getAvailableActions(status: WorkOrderStatus): string[] {
   return getStatusConfig(status).actions
 }
+
+/**
+ * Get context-aware status text based on order details
+ * DISPATCHED + engineer assigned → "已指派" instead of "流转"
+ */
+export function getContextStatusText(status: WorkOrderStatus, engineerId?: string): string {
+  if (status === 'DISPATCHED' && engineerId) {
+    return '已指派'
+  }
+  return getStatusText(status)
+}

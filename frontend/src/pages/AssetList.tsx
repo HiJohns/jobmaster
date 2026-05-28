@@ -55,7 +55,7 @@ export default function AssetList() {
         setTotal(response.data.total || 0)
       }
     } catch (error) {
-      message.error('Failed to fetch devices')
+      message.error('获取设备列表失败')
     } finally {
       setLoading(false)
     }
@@ -68,33 +68,33 @@ export default function AssetList() {
 
   const columns = [
     {
-      title: 'SN',
+      title: '序列号',
       dataIndex: 'sn',
       key: 'sn',
       render: (sn: string) => <code>{sn}</code>,
     },
     {
-      title: 'Name',
+      title: '名称',
       dataIndex: 'name',
       key: 'name',
     },
     {
-      title: 'Brand',
+      title: '品牌',
       dataIndex: 'brand',
       key: 'brand',
     },
     {
-      title: 'Model',
+      title: '型号',
       dataIndex: 'model',
       key: 'model',
     },
     {
-      title: 'Site',
+      title: '站点',
       dataIndex: 'site_name',
       key: 'site_name',
     },
     {
-      title: 'Status',
+      title: '状态',
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
@@ -104,15 +104,15 @@ export default function AssetList() {
       ),
     },
     {
-      title: 'Actions',
+      title: '操作',
       key: 'actions',
       render: (_: unknown, record: Device) => (
         <Space>
           <Link to={`/assets/${record.id}`}>
-            <Button type="link" size="small">View</Button>
+            <Button type="link" size="small">查看</Button>
           </Link>
           <Link to={`/assets/${record.id}/qr`}>
-            <Button type="link" size="small" icon={<QrcodeOutlined />}>QR</Button>
+            <Button type="link" size="small" icon={<QrcodeOutlined />}>二维码</Button>
           </Link>
         </Space>
       ),
@@ -121,7 +121,7 @@ export default function AssetList() {
 
   return (
     <Card
-      title="Asset List"
+      title="设备清单"
       extra={
         <Button type="primary" icon={<PlusOutlined />}>
           Add Device
@@ -130,7 +130,7 @@ export default function AssetList() {
     >
       <Space style={{ marginBottom: 16 }}>
         <Input
-          placeholder="Search by SN or name"
+          placeholder="按序列号或名称搜索"
           prefix={<SearchOutlined />}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -138,7 +138,7 @@ export default function AssetList() {
           style={{ width: 250 }}
         />
         <Select
-          placeholder="Status"
+          placeholder="状态"
           allowClear
           value={statusFilter || undefined}
           onChange={(value) => {
@@ -147,12 +147,12 @@ export default function AssetList() {
           }}
           style={{ width: 150 }}
         >
-          <Option value="ACTIVE">Active</Option>
-          <Option value="INACTIVE">Inactive</Option>
-          <Option value="MAINTENANCE">Maintenance</Option>
-          <Option value="REPAIRING">Repairing</Option>
+          <Option value="ACTIVE">启用</Option>
+          <Option value="INACTIVE">停用</Option>
+          <Option value="MAINTENANCE">维保中</Option>
+          <Option value="REPAIRING">维修中</Option>
         </Select>
-        <Button onClick={handleSearch}>Search</Button>
+        <Button onClick={handleSearch}>搜索</Button>
       </Space>
 
       <Table

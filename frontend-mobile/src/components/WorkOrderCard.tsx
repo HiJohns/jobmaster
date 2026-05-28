@@ -13,6 +13,8 @@ export interface WorkOrder {
   appointed_at?: string
   description: string
   engineer_name?: string
+  engineer_id?: string
+  owner_org_name?: string
   created_at: string
   is_urgent?: boolean
 }
@@ -29,6 +31,7 @@ const STATUS_CONFIG: Record<string, { text: string; color: string; bgColor: stri
   RESERVED: { text: '已预约', color: '#FF8F1F', bgColor: '#fff4e6' },
   WORKING: { text: '施工中', color: '#6366F1', bgColor: '#e6e7ff' },
   FINISHED: { text: '已完成', color: '#10B981', bgColor: '#e6f8f1' },
+  PENDING_EVALUATION: { text: '待评估', color: '#F59E0B', bgColor: '#fef3c7' },
   CLOSED: { text: '已关闭', color: '#1F2937', bgColor: '#f3f4f6' },
 }
 
@@ -37,6 +40,10 @@ const STATUS_CONFIG: Record<string, { text: string; color: string; bgColor: stri
  * 功能：显示工单基本信息，支持点击跳转
  */
 export default function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
+  let statusText = STATUS_CONFIG[order.status]?.text || order.status
+  if (order.status === 'DISPATCHED' && order.engineer_id) {
+    statusText = '已分配'
+  }
   const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.PENDING
 
   return (
@@ -68,7 +75,7 @@ export default function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
               backgroundColor: statusConfig.bgColor,
             }}
           >
-            {statusConfig.text}
+            {statusText}
           </div>
         </div>
 
@@ -114,6 +121,11 @@ export default function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
           <div>创建时间：{new Date(order.created_at).toLocaleString()}</div>
           <div>工程师：{order.engineer_name || '未分配'}</div>
         </div>
+        {order.owner_org_name && (
+          <div style={{ marginTop: '4px', fontSize: '12px', color: '#1677FF' }}>
+            当前归属：{order.owner_org_name}
+          </div>
+        )}
       </div>
     </Card>
   )

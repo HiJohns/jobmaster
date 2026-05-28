@@ -18,6 +18,7 @@ import { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import { api } from '../api/factory'
 import { CreateWorkOrderRequest } from '../api/workorder'
 import { useAuthStore } from '../store/useAuthStore'
+import { addPendingOrder } from '../utils/pendingOrders'
 
 interface CreateWorkOrderModalProps {
   visible: boolean
@@ -58,6 +59,14 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
   const [selectedDivisionPath, setSelectedDivisionPath] = useState<string[]>([])
   
   const { userInfo } = useAuthStore()
+  const [appointmentType, setAppointmentType] = useState(1)
+
+  // Pre-fill address for Employee role
+  useEffect(() => {
+    if (visible && userInfo?.role === 'EMPLOYEE') {
+      form.setFieldsValue({ addressDetail: '太阳宫中路12号凯德MALL3层' })
+    }
+  }, [visible, userInfo?.role])
 
   // Load regions when modal opens
   useEffect(() => {
@@ -134,6 +143,7 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
         category_id: values.categoryId,
         coordinates: values.coordinates,
         division_id: selectedDivisionPath.length > 0 ? selectedDivisionPath[selectedDivisionPath.length - 1] : undefined,
+        appointment_type: appointmentType,
       }
 
       const response = await api.workorder.create(requestData)
@@ -162,6 +172,34 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSavePending = () => {
+    const values = form.getFieldsValue()
+    if (!values.title || values.title.length < 3) {
+      Toast.show('请输入工单标题')
+      return
+    }
+    addPendingOrder({
+      id: 'pending_' + Date.now(),
+      store_id: userInfo?.orgId || '',
+      title: values.title,
+      description: values.description || '',
+      category_id: values.categoryId,
+      photo_urls: values.photoUrls,
+      priority: activePriority as 0 | 1 | 2,
+      is_urgent: activePriority > 0,
+      address_detail: values.addressDetail,
+      appointment_type: appointmentType,
+      created_at: new Date().toISOString(),
+    })
+    Toast.show('已存入待提交')
+    onClose()
+    form.resetFields()
+    setActivePriority(0)
+    setSelectedRegion('')
+    setCategoriesVisible(false)
+    setSelectedDivisionPath([])
   }
 
   return (
@@ -350,6 +388,52 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
             </div>
           </Card>
 
+          {/* 详细地址 */}
+          <Card style={{ borderRadius: '12px', marginBottom: '12px', background: '#fff' }}>
+            <div style={{ padding: '16px 20px' }}>
+              <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>详细地址</div>
+              <Form.Item name="addressDetail" noStyle>
+                <Input
+                  placeholder='请输入详细地址'
+                  readOnly={userInfo?.role === 'EMPLOYEE'}
+                  style={{
+                    background: '#F9FAFB',
+                    border: '1px solid #E5E7EB',
+                    borderRadius: '8px',
+                    padding: '12px 16px',
+                  }}
+                />
+              </Form.Item>
+            </div>
+          </Card>
+
+          {/* 上门方式 */}
+          <Card style={{ borderRadius: '12px', marginBottom: '12px', background: '#fff' }}>
+            <div style={{ padding: '16px 20px' }}>
+              <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>上门方式</div>
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="appointmentType"
+                    checked={appointmentType === 1}
+                    onChange={() => setAppointmentType(1)}
+                  />
+                  <span style={{ fontSize: '14px', color: '#333' }}>指定上门时段（无需预约）</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="appointmentType"
+                    checked={appointmentType === 2}
+                    onChange={() => setAppointmentType(2)}
+                  />
+                  <span style={{ fontSize: '14px', color: '#333' }}>要求提前预约</span>
+                </label>
+              </div>
+            </div>
+          </Card>
+
           <Button
             type="submit"
             loading={loading}
@@ -364,6 +448,23 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
           >
             创建工单
           </Button>
+
+          <div style={{ marginTop: 8 }}>
+            <Button
+              block
+              fill="none"
+              style={{
+                '--border-color': '#1677FF',
+                '--border-radius': '8px',
+                height: '40px',
+                fontSize: '14px',
+                color: '#1677FF',
+              }}
+              onClick={handleSavePending}
+            >
+              存入待提交
+            </Button>
+          </div>
         </div>
       </Form>
     }

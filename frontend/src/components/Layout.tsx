@@ -277,7 +277,7 @@ function AppLayout() {
             overflow: 'hidden',
             textOverflow: 'ellipsis',
           }}>
-            {userInfo?.displayName || 'User'}
+            {userInfo?.displayName || '用户'}
           </div>
           <div style={{
             color: 'rgba(255,255,255,0.7)',
@@ -286,7 +286,7 @@ function AppLayout() {
             overflow: 'hidden',
             textOverflow: 'ellipsis',
           }}>
-            {userInfo?.role || 'User'}
+            {userInfo?.role || '用户'}
           </div>
         </div>
       </div>

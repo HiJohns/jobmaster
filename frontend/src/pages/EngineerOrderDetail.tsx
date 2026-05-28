@@ -4,11 +4,13 @@
  */
 
 import { useState, useEffect } from 'react'
-import { Card, Button, Tag, List, Toast, Dialog } from 'antd-mobile'
 import { useNavigate, useParams } from 'react-router-dom'
+import { Card, List, Tag, Button, Dialog, Toast } from 'antd-mobile'
 import dayjs from 'dayjs'
 import { api } from '../api/factory'
 import { WorkOrder, WorkRecord } from '../api/local'
+import { Modal, Input, ImageUploader } from 'antd-mobile'
+import { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: 'warning',
@@ -38,6 +40,9 @@ function EngineerOrderDetail() {
   const [logs, setLogs] = useState<WorkRecord[]>([])
   const [, setLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
+  const [arriveModalVisible, setArriveModalVisible] = useState(false)
+  const [arriveComment, setArriveComment] = useState('')
+  const [arrivePhotos, setArrivePhotos] = useState<string[]>([])
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -97,8 +102,11 @@ function EngineerOrderDetail() {
     if (!id) return
     try {
       setActionLoading(true)
-      await api.workorder.arrive(id, 39.9042, 116.4074)
+      await api.workorder.arrive(id, arrivePhotos, arriveComment)
       Toast.show('开始施工')
+      setArriveModalVisible(false)
+      setArriveComment('')
+      setArrivePhotos([])
       navigate(-1)
     } catch (error) {
       console.error('Start work failed:', error)
@@ -163,6 +171,16 @@ function EngineerOrderDetail() {
 
       {/* Order Info */}
       <Card title="工单信息" style={{ margin: '16px', marginBottom: 0 }}>
+        {order.appointment_type === 1 && (
+          <div style={{ margin: '0 16px 12px', padding: '10px 14px', background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0', fontSize: 13, color: '#166534' }}>
+            本工单已指定上门时段，无需预约，可直接到场签到
+          </div>
+        )}
+        {order.appointment_type === 2 && (
+          <div style={{ margin: '0 16px 12px', padding: '10px 14px', background: '#eff6ff', borderRadius: 8, border: '1px solid #bfdbfe', fontSize: 13, color: '#1e40af' }}>
+            本工单要求提前预约，请先设置预约时间
+          </div>
+        )}
         <List>
           <List.Item>
             <div style={{ color: '#999' }}>故障分类</div>
@@ -191,18 +209,28 @@ function EngineerOrderDetail() {
 
       {/* Action Buttons */}
       <div style={{ padding: '16px' }}>
-        {order.status === 'DISPATCHED' && (
+        {order.status === 'DISPATCHED' && order.appointment_type !== 1 && (
           <Button block color="primary" onClick={handleAccept} loading={actionLoading}>
             接单
           </Button>
         )}
-        {order.status === 'ACCEPTED' && (
+        {order.status === 'DISPATCHED' && order.appointment_type === 1 && (
+          <Button block color="primary" onClick={() => setArriveModalVisible(true)} loading={actionLoading}>
+            到场签到
+          </Button>
+        )}
+        {order.status === 'ACCEPTED' && order.appointment_type !== 1 && (
           <Button block color="primary" onClick={handleReserve} loading={actionLoading}>
             设置预约时间
           </Button>
         )}
+        {order.status === 'ACCEPTED' && order.appointment_type === 1 && (
+          <Button block color="primary" onClick={() => setArriveModalVisible(true)} loading={actionLoading}>
+            开始施工
+          </Button>
+        )}
         {order.status === 'RESERVED' && (
-          <Button block color="primary" onClick={handleStartWork} loading={actionLoading}>
+          <Button block color="primary" onClick={() => setArriveModalVisible(true)} loading={actionLoading}>
             开始施工
           </Button>
         )}
@@ -237,6 +265,48 @@ function EngineerOrderDetail() {
           ))}
         </Card>
       )}
+
+      {/* Arrive Modal */}
+      <Modal
+        visible={arriveModalVisible}
+        onClose={() => setArriveModalVisible(false)}
+        title="开始施工"
+        content={
+          <div>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 14, color: '#333', marginBottom: 6 }}>施工前拍照</div>
+              <ImageUploader
+                upload={async (file: File): Promise<ImageUploadItem> => ({
+                  url: URL.createObjectURL(file),
+                  thumbnailUrl: URL.createObjectURL(file),
+                })}
+                value={arrivePhotos.map(u => ({ url: u }))}
+                onChange={items => setArrivePhotos(items.map(i => i.url))}
+                multiple
+                maxCount={9}
+                accept="image/*"
+              />
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 14, color: '#333', marginBottom: 6 }}>备注</div>
+              <Input
+                placeholder="请输入施工前备注"
+                value={arriveComment}
+                onChange={setArriveComment}
+              />
+            </div>
+            <Button
+              block
+              color="primary"
+              loading={actionLoading}
+              onClick={handleStartWork}
+              style={{ height: 44, fontSize: 16 }}
+            >
+              确认开始施工
+            </Button>
+          </div>
+        }
+      />
     </div>
   )
 }

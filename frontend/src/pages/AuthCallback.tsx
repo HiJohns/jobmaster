@@ -12,7 +12,7 @@ export default function AuthCallback() {
       const state = params.get('state')
 
       if (!code) {
-        message.error('Invalid callback: missing code')
+        message.error('回调参数无效：缺少 code')
         navigate('/login')
         return
       }
@@ -38,15 +38,15 @@ export default function AuthCallback() {
             localStorage.setItem('brand_config', JSON.stringify(brand_config))
           }
 
-          message.success('Login successful')
+          message.success('登录成功')
           navigate('/')
         } else {
-          message.error(result.message || 'Authentication failed')
+          message.error(result.message || '认证失败')
           navigate('/login')
         }
       } catch (error) {
         console.error('Auth callback error:', error)
-        message.error('Authentication failed')
+        message.error('认证失败')
         navigate('/login')
       }
     }
@@ -64,7 +64,7 @@ export default function AuthCallback() {
       gap: '16px'
     }}>
       <div className="loading-spinner" />
-      <p>Authenticating...</p>
+      <p>认证中...</p>
     </div>
   )
 }

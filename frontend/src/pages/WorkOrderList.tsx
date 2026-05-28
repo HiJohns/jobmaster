@@ -7,6 +7,8 @@ import { useAuthStore } from '../store/useAuthStore'
 import { WorkOrder } from '../api/local'
 import WorkOrderCard from '../components/WorkOrderCard'
 import { CreateWorkOrderModal } from '../components/CreateWorkOrderModal'
+import { PendingOrdersModal } from '../components/PendingOrdersModal'
+import { getPendingCount } from '../utils/pendingOrders'
 
 const FILTER_MAP: Record<string, string[]> = {
   total: ['PENDING', 'DISPATCHED', 'RESERVED', 'WORKING', 'FINISHED', 'CLOSED'],
@@ -26,6 +28,7 @@ function WorkOrderList() {
   const [loading, setLoading] = useState(false)
   const [, setRefreshing] = useState(false)
   const [createModalVisible, setCreateModalVisible] = useState(false)
+  const [pendingModalVisible, setPendingModalVisible] = useState(false)
 
   // Check if user can create orders (BRANCH_ADMIN or EMPLOYEE role)
   const canCreateOrder = userInfo?.role === 'BRANCH_ADMIN' || userInfo?.role === 'EMPLOYEE'
@@ -50,7 +53,7 @@ function WorkOrderList() {
       const params = {
         status: FILTER_MAP.total.join(','),
         keyword: searchText,
-        sort_by: 'priority' as 'priority' | 'created_at' | 'updated_at',
+        sort_by: 'created_at' as 'created_at' | 'priority' | 'updated_at',
         sort_order: sortOrder,
         start_date: selectedDate.startOf('day').toISOString(),
         end_date: selectedDate.endOf('day').toISOString(),
@@ -64,14 +67,8 @@ function WorkOrderList() {
       console.log('[DEBUG WorkOrderList] res:', res)
       if (res && res.code === 200 && res.data && res.data.list) {
         console.log('[DEBUG WorkOrderList] list length:', res.data.list.length)
-        // Sort: urgent orders first, then by created_at desc
-        const sortedOrders = [...res.data.list].sort((a, b) => {
-          if (a.is_urgent && !b.is_urgent) return -1
-          if (!a.is_urgent && b.is_urgent) return 1
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        })
-        setOrders(sortedOrders)
-        console.log('[DEBUG WorkOrderList] setOrders done, count:', sortedOrders.length)
+        setOrders(res.data.list)
+        console.log('[DEBUG WorkOrderList] setOrders done, count:', res.data.list.length)
       } else {
         console.log('[DEBUG WorkOrderList] condition failed, res:', res)
       }
@@ -220,6 +217,12 @@ function WorkOrderList() {
         {/* Right: Sort */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
           <div
+            onClick={() => setPendingModalVisible(true)}
+            style={{ cursor: 'pointer', color: '#1677FF', fontSize: '12px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}
+          >
+            待提交{getPendingCount() > 0 && `（${getPendingCount()}）`}
+          </div>
+          <div
             onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
             style={{ cursor: 'pointer', color: '#6B7280', fontSize: '12px', whiteSpace: 'nowrap' }}
           >
@@ -330,6 +333,10 @@ function WorkOrderList() {
           onSuccess={handleCreateSuccess}
         />
       )}
+      <PendingOrdersModal
+        visible={pendingModalVisible}
+        onClose={() => setPendingModalVisible(false)}
+      />
     </div>
   )
 }

@@ -94,6 +94,15 @@ User logs in with employee1@branch1 common password
 User views related contractors, can see contractor1
 
 User creates work orders 3, 4, assigns to contractor1
+User selects service mode during creation (time window / appointment required, default: time window)
+
+**Sub-flow: Batch Create Work Orders**
+1. User clicks "Save to Pending" instead of direct submit
+2. Pending orders are saved to local pending list
+3. User can continue creating more orders, repeat steps 1-2
+4. View all pending orders in the pending list
+5. Click "Submit All" to create all pending orders sequentially
+6. Pending list is cleared after successful submission
 
 User views logs, can see records of own login, work order creation
 
@@ -187,13 +196,17 @@ User logs in with employee1@contractor2 + common password
 
 User views work order list, can see work orders 3, 4 where 4 in transferred status
 
-User assigns work order 4 to Engineer2
+User assigns work order 4 to Engineer2 (can only see own company's engineers, cannot forward to other orgs)
 
 System starts WeChat call to Engineer2
 
 User views work order list, can see work order 4 in assigned status
 
 User views logs, can see records of own login, work order assignment
+
+**Permission Boundaries**:
+- ✅ Allowed: View work orders, assign to own company engineers
+- ❌ Not allowed: Reserve (reserved for VENDOR_ADMIN/ENGINEER only), forward to other organizations, reject orders
 
 ## Use Case 10: Maintenance Process
 
