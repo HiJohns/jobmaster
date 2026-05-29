@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Form, Input, Button, Card, Checkbox, Space, Tag, message } from 'antd'
+import { Form, Input, Button, Card, Checkbox, message } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/useAuthStore'
@@ -7,17 +7,60 @@ import { initializeMockData } from '../api/local'
 import Logo from '../components/Logo'
 import { demoApi, setUserRole } from '../api/factory'
 
-const DEMO_ACCOUNTS = [
-  { username: 'admin@branch1', displayName: '寿司郎太阳宫店 管理员', role: 'BRANCH_ADMIN', password: 'demo123' },
-  { username: 'employee1@branch1', displayName: '寿司郎太阳宫店 职员', role: 'EMPLOYEE', password: 'demo123' },
-  { username: 'admin@contractor1', displayName: '建王 管理员', role: 'CONTRACTOR_ADMIN', password: 'demo123' },
-  { username: 'employee1@contractor1', displayName: '建王 职员', role: 'CONTRACTOR_EMPLOYEE', password: 'demo123' },
-  { username: 'engineer1@contractor1', displayName: '建王 项目组', role: 'ENGINEER', password: 'demo123' },
-  { username: 'engineer2@contractor1', displayName: '建王 项目组2', role: 'ENGINEER', password: 'demo123' },
-  { username: 'admin@vendor1', displayName: '森泉 管理员', role: 'VENDOR_ADMIN', password: 'demo123' },
-  { username: 'employee1@vendor1', displayName: '森泉 职员', role: 'VENDOR_EMPLOYEE', password: 'demo123' },
-  { username: 'engineer1@vendor1', displayName: '森泉 项目组', role: 'ENGINEER', password: 'demo123' },
-  { username: 'admin@contractor2', displayName: '希望 管理员', role: 'CONTRACTOR_ADMIN', password: 'demo123' },
+interface DemoOrg {
+  name: string
+  label: string
+  accounts: { username: string; displayName: string }[]
+}
+
+const DEMO_ORGS: DemoOrg[] = [
+  {
+    name: '寿司郎太阳宫店',
+    label: '寿司郎太阳宫店',
+    accounts: [
+      { username: 'admin@branch1', displayName: '管理员' },
+      { username: 'employee1@branch1', displayName: '职员' },
+    ],
+  },
+  {
+    name: '建王',
+    label: '建王（工程公司）',
+    accounts: [
+      { username: 'admin@contractor1', displayName: '管理员' },
+      { username: 'employee1@contractor1', displayName: '职员' },
+      { username: 'engineer1@contractor1', displayName: '工程师1' },
+      { username: 'engineer2@contractor1', displayName: '工程师2' },
+    ],
+  },
+  {
+    name: '希望',
+    label: '希望（工程公司）',
+    accounts: [
+      { username: 'admin@contractor2', displayName: '管理员' },
+      { username: 'employee1@contractor2', displayName: '职员' },
+      { username: 'engineer1@contractor2', displayName: '工程师1' },
+      { username: 'engineer2@contractor2', displayName: '工程师2' },
+    ],
+  },
+  {
+    name: '森泉',
+    label: '森泉（供应商）',
+    accounts: [
+      { username: 'admin@vendor1', displayName: '管理员' },
+      { username: 'employee1@vendor1', displayName: '职员' },
+      { username: 'engineer1@vendor1', displayName: '工程师' },
+    ],
+  },
+  {
+    name: '相川',
+    label: '相川（供应商）',
+    accounts: [
+      { username: 'admin@相川', displayName: '管理员' },
+      { username: 'employee1@相川', displayName: '职员' },
+      { username: 'engineer1@相川', displayName: '工程师1' },
+      { username: 'engineer2@相川', displayName: '工程师2' },
+    ],
+  },
 ]
 
 const REMEMBER_USERNAME_KEY = 'remember_username'
@@ -28,6 +71,7 @@ function Login() {
   const { login } = useAuthStore()
   const [loading, setLoading] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
+  const [selectedOrg, setSelectedOrg] = useState<string | null>(null)
   const [selectedDemo, setSelectedDemo] = useState<string | null>(null)
 
   useEffect(() => {
@@ -38,6 +82,11 @@ function Login() {
     }
   }, [form])
 
+  const handleSelectOrg = (orgName: string) => {
+    setSelectedOrg(orgName)
+    setSelectedDemo(null)
+  }
+
   const handleSelectDemo = (username: string) => {
     setSelectedDemo(username)
     form.setFieldsValue({ username, password: 'demo123' })
@@ -46,23 +95,18 @@ function Login() {
   const handleSubmit = async (values: { username: string; password: string; remember?: boolean }) => {
     setLoading(true)
     try {
-      // 清除旧的 localStorage，确保 userInfo 更新
       localStorage.removeItem('auth-storage')
-      localStorage.removeItem('jobmaster-auth-storage')  // 兼容旧 key
-      
+      localStorage.removeItem('jobmaster-auth-storage')
       initializeMockData()
-      // Use demoApi for login
-      console.log('[DEBUG Login] calling demoApi.login')
+
       const response = await demoApi.login(values.username, values.password)
       console.log('[DEBUG Login] response:', response)
       const user = response.user || {}
-      
-      // Set user role for API filtering
+
       if (user.role) {
-        console.log('[DEBUG Login] setting user role:', user.role)
         setUserRole(user.role)
       }
-      
+
       login(response.token, {
         userId: user.id || response.user_id || '',
         username: user.username || response.username || '',
@@ -70,6 +114,7 @@ function Login() {
         role: user.role || response.role || '',
         orgId: user.orgId || response.org_id || '',
         orgName: user.orgName || response.org_name || '',
+        orgAddress: user.orgAddress || '',
         tenantId: user.tenantId || response.tenant_id || '',
       })
 
@@ -167,19 +212,53 @@ function Login() {
           </Form>
 
           <div className="mb-4">
-            <div className="text-sm text-gray-500 mb-2">快速选择演示账户:</div>
-            <Space wrap size={4}>
-              {DEMO_ACCOUNTS.map((account) => (
-                <Tag
-                  key={account.username}
-                  color={selectedDemo === account.username ? 'blue' : 'default'}
-                  style={{ cursor: 'pointer', marginBottom: '4px' }}
-                  onClick={() => handleSelectDemo(account.username)}
+            <div className="text-sm text-gray-500 mb-2">选择公司：</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
+              {DEMO_ORGS.map((org) => (
+                <span
+                  key={org.name}
+                  onClick={() => handleSelectOrg(org.name)}
+                  style={{
+                    display: 'inline-block',
+                    padding: '2px 10px',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    background: selectedOrg === org.name ? '#1677FF' : '#f0f0f0',
+                    color: selectedOrg === org.name ? '#fff' : '#333',
+                    border: '1px solid #e8e8e8',
+                  }}
                 >
-                  {account.displayName}
-                </Tag>
+                  {org.label}
+                </span>
               ))}
-            </Space>
+            </div>
+
+            {selectedOrg && (
+              <>
+                <div className="text-sm text-gray-500 mb-1">选择账号：</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                  {DEMO_ORGS.find(o => o.name === selectedOrg)!.accounts.map((acc) => (
+                    <span
+                      key={acc.username}
+                      onClick={() => handleSelectDemo(acc.username)}
+                      style={{
+                        display: 'inline-block',
+                        padding: '2px 10px',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        background: selectedDemo === acc.username ? '#1677FF' : '#f5f5f5',
+                        color: selectedDemo === acc.username ? '#fff' : '#333',
+                        border: '1px solid #e8e8e8',
+                      }}
+                    >
+                      {acc.displayName}
+                    </span>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </Card>
       </div>

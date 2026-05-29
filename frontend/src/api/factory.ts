@@ -52,11 +52,12 @@ export const demoApi = {
     let statusFilter = '' // 不设置则返回全部
     
     if (userRole === 'BRANCH_ADMIN' || userRole === 'EMPLOYEE') {
-      // 分公司管理员、员工：查看所有工单
       statusFilter = ''
     } else if (userRole === 'ENGINEER') {
-      statusFilter = 'ACCEPTED,RESERVED,WORKING'
+      statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING,FINISHED'
     } else if (userRole === 'CONTRACTOR_EMPLOYEE' || userRole === 'CONTRACTOR_ADMIN') {
+      statusFilter = 'PENDING,DISPATCHED,ACCEPTED,RESERVED,WORKING,FINISHED'
+    } else if (userRole === 'VENDOR_EMPLOYEE' || userRole === 'VENDOR_ADMIN') {
       statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING,FINISHED'
     } else if (userRole === 'VENDOR_EMPLOYEE' || userRole === 'VENDOR_ADMIN') {
       statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING,FINISHED'
