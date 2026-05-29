@@ -1125,7 +1125,9 @@ func (h *DemoHandlers) GetWorkOrderRecords(c *gin.Context) {
 			"details":    log.Details,
 			"photo_urls": log.PhotoURLs,
 		}
-		if log.Action == model.LogActionStatusChangeToWorking || log.Action == model.LogActionArrive {
+		if log.Action == model.LogActionArrive {
+			entry["type"] = "arrive"
+		} else if log.Action == model.LogActionStatusChangeToWorking {
 			entry["type"] = "start"
 		} else {
 			entry["type"] = "record"

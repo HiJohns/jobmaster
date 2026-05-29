@@ -287,11 +287,11 @@ function WorkOrderDetail() {
         <Card title="施工日志" style={{ marginBottom: 12 }}>
           <Timeline
             items={logs.map((log: any) => ({
-              color: log.type === 'start' ? 'green' : 'blue',
+              color: log.type === 'record' ? 'blue' : 'green',
               children: (
                 <div>
                   <div style={{ fontSize: 12, color: '#999', marginBottom: 2 }}>
-                    {log.type === 'start' ? '🛠️ 开始施工' : '📝 施工记录'} · {dayjs(log.timestamp).format('MM-DD HH:mm')}
+                    {log.type === 'arrive' ? '📋 到场签到' : log.type === 'start' ? '🛠️ 开始施工' : '📝 施工记录'} · {dayjs(log.timestamp).format('MM-DD HH:mm')}
                   </div>
                   {log.details && <div style={{ fontSize: 14 }}>{log.details}</div>}
                   {log.photo_urls && log.photo_urls.length > 0 && (

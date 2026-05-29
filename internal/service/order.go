@@ -438,7 +438,14 @@ func (s *OrderService) Arrive(ctx context.Context, orderID uuid.UUID, userID uui
 		if comment != "" {
 			details = comment
 		}
-		order.Logs.AddWorkLog(userID, userName, details, photoURLs)
+		order.Logs = append(order.Logs, model.WorkOrderLog{
+			Timestamp: time.Now(),
+			UserID:    userID,
+			UserName:  userName,
+			Action:    model.LogActionArrive,
+			Details:   details,
+			PhotoURLs: photoURLs,
+		})
 
 		// Auto-transition to WORKING
 		order.Status = model.WorkOrderStatusWorking

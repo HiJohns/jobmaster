@@ -159,7 +159,7 @@ export default function ConstructionRecordPage() {
             logs.map((log, i) => (
               <div key={i} style={{ padding: '8px 0', borderBottom: i < logs.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
                 <div style={{ fontSize: '12px', color: '#999', marginBottom: '2px' }}>
-                  {log.type === 'start' ? '🛠️ 开始施工' : '📝 施工记录'} · {formatTime(log.timestamp)}
+                  {log.type === 'arrive' ? '📋 到场签到' : log.type === 'start' ? '🛠️ 开始施工' : '📝 施工记录'} · {formatTime(log.timestamp)}
                 </div>
                 {log.details && <div style={{ fontSize: '14px', color: '#333' }}>{log.details}</div>}
                 {log.photo_urls && log.photo_urls.length > 0 && (
