@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { Card, Button, Modal, TextArea, SpinLoading, Toast, Input } from 'antd-mobile'
-import { Timeline } from 'antd'
+import { Timeline, Image } from 'antd'
 import dayjs from 'dayjs'
 import { api } from '../api/factory'
 import type { WorkOrderDetail } from '../api/workorder'
@@ -294,6 +294,15 @@ function WorkOrderDetail() {
                     {log.type === 'start' ? '🛠️ 开始施工' : '📝 施工记录'} · {dayjs(log.timestamp).format('MM-DD HH:mm')}
                   </div>
                   {log.details && <div style={{ fontSize: 14 }}>{log.details}</div>}
+                  {log.photo_urls && log.photo_urls.length > 0 && (
+                    <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                      <Image.PreviewGroup>
+                        {log.photo_urls.map((url: string, j: number) => (
+                          <Image key={j} src={url} width={60} height={60} style={{ borderRadius: 6, objectFit: 'cover' }} preview={{ mask: '查看' }} />
+                        ))}
+                      </Image.PreviewGroup>
+                    </div>
+                  )}
                 </div>
               ),
             }))}
