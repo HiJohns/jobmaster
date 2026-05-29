@@ -297,7 +297,7 @@ function WorkOrderDetail() {
                   {log.photo_urls && log.photo_urls.length > 0 && (
                     <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
                       <Image.PreviewGroup>
-                        {log.photo_urls.filter((u: string) => u && !u.startsWith('blob:')).map((url: string, j: number) => (
+                        {log.photo_urls.filter((u: string) => u).map((url: string, j: number) => (
                           <Image key={j} src={url} width={60} height={60} style={{ borderRadius: 6, objectFit: 'cover' }} preview={{ mask: '查看' }} />
                         ))}
                       </Image.PreviewGroup>
