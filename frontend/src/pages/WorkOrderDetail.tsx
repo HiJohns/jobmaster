@@ -265,7 +265,7 @@ function WorkOrderDetail() {
   return (
     <div style={{ padding: 12, paddingBottom: 80 }}>
       <ImpersonationWarning />
-      <StepFlow currentStatus={order.status} />
+      <StepFlow currentStatus={order.status} appointmentType={(order as any).appointment_type} />
       <Card style={{ marginBottom: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <span style={{ fontSize: 18, fontWeight: 'bold' }}>{order.order_no}</span>

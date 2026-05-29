@@ -3,15 +3,17 @@ import { WorkOrderStatus } from '../config/status'
 
 interface StepFlowProps {
   currentStatus: WorkOrderStatus
+  appointmentType?: number
   className?: string
 }
 
 /**
  * Step Flow component to display work order status progression
- * Shows the current step based on work order status
+ * Shows the current step based on work order status.
+ * For appointment_type=1 (指定上门时段), the reservation step is skipped.
  */
-export function StepFlow({ currentStatus, className }: StepFlowProps) {
-  const stepSequence: WorkOrderStatus[] = [
+export function StepFlow({ currentStatus, appointmentType, className }: StepFlowProps) {
+  const baseSequence: WorkOrderStatus[] = [
     'PENDING',
     'DISPATCHED',
     'ACCEPTED',
@@ -20,6 +22,11 @@ export function StepFlow({ currentStatus, className }: StepFlowProps) {
     'FINISHED',
     'CLOSED',
   ]
+
+  // Skip RESERVED for appointment_type=1 (无需预约)
+  const stepSequence = appointmentType === 1
+    ? baseSequence.filter(s => s !== 'RESERVED')
+    : baseSequence
 
   const currentIndex = stepSequence.indexOf(currentStatus)
 
