@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { Card, Button, Modal, TextArea, SpinLoading, Toast, Input } from 'antd-mobile'
+import { Timeline } from 'antd'
+import dayjs from 'dayjs'
 import { api } from '../api/factory'
 import type { WorkOrderDetail } from '../api/workorder'
 import { useAuthStore } from '../store/useAuthStore'
@@ -29,6 +31,7 @@ function WorkOrderDetail() {
   const [finishDescription, setFinishDescription] = useState('')
   const [quotationItems, setQuotationItems] = useState<QuotationItem[]>([])
   const [quotationSubmitted, setQuotationSubmitted] = useState(false)
+  const [logs, setLogs] = useState<any[]>([])
 
   const fetchOrderDetail = async () => {
     if (!id) return
@@ -48,6 +51,20 @@ function WorkOrderDetail() {
 
   useEffect(() => {
     fetchOrderDetail()
+  }, [id])
+
+  const fetchRecords = async () => {
+    if (!id) return
+    try {
+      const res = await api.workorder.records(id) as any
+      if (res.code === 200) {
+        setLogs(res.data.list || [])
+      }
+    } catch { /* ignore */ }
+  }
+
+  useEffect(() => {
+    fetchRecords()
   }, [id])
 
   // Pre-fill dummy quotation data for demo work orders
@@ -266,6 +283,23 @@ function WorkOrderDetail() {
     <div style={{ padding: 12, paddingBottom: 80 }}>
       <ImpersonationWarning />
       <StepFlow currentStatus={order.status} appointmentType={(order as any).appointment_type} />
+      {logs.length > 0 && (
+        <Card title="施工日志" style={{ marginBottom: 12 }}>
+          <Timeline
+            items={logs.map((log: any) => ({
+              color: log.type === 'start' ? 'green' : 'blue',
+              children: (
+                <div>
+                  <div style={{ fontSize: 12, color: '#999', marginBottom: 2 }}>
+                    {log.type === 'start' ? '🛠️ 开始施工' : '📝 施工记录'} · {dayjs(log.timestamp).format('MM-DD HH:mm')}
+                  </div>
+                  {log.details && <div style={{ fontSize: 14 }}>{log.details}</div>}
+                </div>
+              ),
+            }))}
+          />
+        </Card>
+      )}
       <Card style={{ marginBottom: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <span style={{ fontSize: 18, fontWeight: 'bold' }}>{order.order_no}</span>

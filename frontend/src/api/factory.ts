@@ -79,6 +79,13 @@ export const demoApi = {
     })
     return response.data || response
   },
+  getWorkOrderRecords: async (workOrderId: string) => {
+    const response = await apiClient.request({
+      url: `/workorders/${workOrderId}/records`,
+      method: 'GET',
+    })
+    return response.data || response
+  },
   updateWorkOrder: async (id: string, data: Record<string, unknown>) => {
     const response = await apiClient.request({
       url: `/workorders/${id}`,
@@ -386,6 +393,11 @@ export const createApi = () => {
           Promise.resolve({ code: 200, data: {} }),
         rejectHandle: () =>
           Promise.resolve({ code: 200, data: null }),
+        records: (id: string) =>
+          demoApi.getWorkOrderRecords(id).then((res: { list: unknown[] }) => ({
+            code: 200,
+            data: { list: res.list },
+          })),
       }
     : workorderApi
 
