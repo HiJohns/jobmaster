@@ -17,11 +17,11 @@ export const demoApi = {
     if (currentUserRole === 'BRANCH_ADMIN' || currentUserRole === 'EMPLOYEE') {
       statusFilter = ''
     } else if (currentUserRole === 'ENGINEER') {
-      statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING'
+      statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING,FINISHED'
     } else if (currentUserRole === 'CONTRACTOR_EMPLOYEE' || currentUserRole === 'CONTRACTOR_ADMIN') {
-      statusFilter = 'PENDING,DISPATCHED,ACCEPTED,RESERVED,WORKING'
+      statusFilter = 'PENDING,DISPATCHED,ACCEPTED,RESERVED,WORKING,FINISHED'
     } else if (currentUserRole === 'VENDOR_EMPLOYEE' || currentUserRole === 'VENDOR_ADMIN') {
-      statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING'
+      statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING,FINISHED'
     }
     
     const response = await demoApiClient.request({
