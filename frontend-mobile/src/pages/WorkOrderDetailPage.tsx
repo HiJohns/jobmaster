@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Button, Card, Toast, NavBar, Steps, Loading, Radio, Selector, DatePicker, Dialog } from 'antd-mobile'
+import { Button, Card, Toast, NavBar, Loading, Radio, Selector, DatePicker, Dialog } from 'antd-mobile'
 import { LeftOutline } from 'antd-mobile-icons'
 import { demoApi } from '../api/demo'
 import { localReservationApi } from '../api/local/reservation'
@@ -24,25 +24,11 @@ interface WorkOrder {
   hop_limit?: number
 }
 
-interface StatusStep {
-  status: string
-  title: string
-  description: string
-  action: string
-}
-
 interface EngineerOption {
   id: string
   name: string
   username: string
 }
-
-const STATUS_STEPS: StatusStep[] = [
-  { status: 'DISPATCHED', title: '接单', description: '点击接单', action: 'accept' },
-  { status: 'ACCEPTED', title: '预约', description: '选择预约时间', action: 'reserve' },
-  { status: 'RESERVED', title: '施工', description: '开始施工', action: 'work' },
-  { status: 'WORKING', title: '离场', description: '确认离场', action: 'finish' },
-]
 
 const STATUS_CONFIG: Record<string, { text: string; color: string }> = {
   PENDING: { text: '待处理', color: '#999999' },
@@ -66,7 +52,6 @@ export default function WorkOrderDetailPage() {
   const { userInfo } = useAuthStore()
   const [workOrder, setWorkOrder] = useState<WorkOrder | null>(null)
   const [loading, setLoading] = useState(true)
-  const [currentStepIndex, setCurrentStepIndex] = useState(0)
   const [dispatchType, setDispatchType] = useState<'assign' | 'distribute'>(
     userInfo?.role?.startsWith('VENDOR') ? 'distribute' : 'assign'
   )
@@ -90,16 +75,6 @@ export default function WorkOrderDetailPage() {
         const response = await demoApi.getWorkOrder(orderId)
         const workOrderData = response.data || response
         setWorkOrder(workOrderData)
-
-        // 根据状态设置当前步骤
-        let stepIndex = STATUS_STEPS.findIndex(step => step.status === workOrderData.status)
-        // 如果工单类型为"指定时段"且当前步为 ACCEPTED（预约），跳过预约步
-        if (workOrderData.appointment_type === 1 && STATUS_STEPS[stepIndex]?.status === 'ACCEPTED') {
-          stepIndex = stepIndex + 1
-        }
-        if (stepIndex !== -1) {
-          setCurrentStepIndex(stepIndex)
-        }
       } catch (error) {
         Toast.show({
           content: '获取工单详情失败',
@@ -192,72 +167,33 @@ export default function WorkOrderDetailPage() {
   /**
    * 处理 Step Flow 按钮点击
    */
-  const handleStepAction = async () => {
-    if (!workOrder || currentStepIndex >= STATUS_STEPS.length) return
-
-    const currentStep = STATUS_STEPS[currentStepIndex]
-
-    if (currentStep.action === 'reserve') {
-      setReservePickerVisible(true)
-      return
-    }
-
+  const handleStartWork = async () => {
+    if (!workOrder) return
     try {
-      Toast.show({
-        content: '正在处理...',
-        icon: 'loading',
-        duration: 0
-      })
-
-      if (currentStep.action === 'accept') {
-        await demoApi.acceptWorkOrder(workOrder.id, new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString())
-      } else if (currentStep.action === 'work') {
-        await demoApi.arriveWorkOrder(workOrder.id, [], '')
-      } else if (currentStep.action === 'finish') {
-        await demoApi.verifyWorkOrder(workOrder.id)
-      }
-
+      Toast.show({ content: '开始施工...', icon: 'loading', duration: 0 })
+      await demoApi.arriveWorkOrder(workOrder.id, [], '')
       Toast.clear()
-      
-      Toast.show({
-        content: '操作成功',
-        icon: 'success',
-        duration: 1500
-      })
-
-      const nextStepIndex = currentStepIndex + 1
-      if (nextStepIndex < STATUS_STEPS.length) {
-        const nextStatus = STATUS_STEPS[nextStepIndex].status
-        setWorkOrder(prev => prev ? { ...prev, status: nextStatus } : prev)
-        setCurrentStepIndex(nextStepIndex)
-      }
-      
+      Toast.show({ content: '已开始施工', icon: 'success', duration: 1500 })
+      const resp = await demoApi.getWorkOrder(workOrder.id)
+      const updated = resp.data || resp
+      setWorkOrder(updated)
     } catch (error) {
       Toast.clear()
-      Toast.show({
-        content: '操作失败',
-        icon: 'fail',
-        duration: 2000
-      })
+      Toast.show({ content: '操作失败', icon: 'fail', duration: 2000 })
     }
   }
 
-  const handleReserveConfirm = async (date: Date) => {
+  const handleReserve = async (date: Date) => {
     setReservePickerVisible(false)
     if (!workOrder) return
-
     try {
       Toast.show({ content: '正在预约...', icon: 'loading', duration: 0 })
-      const appointedAt = date.toISOString()
-      await demoApi.reserveWorkOrder(workOrder.id, appointedAt)
+      await demoApi.reserveWorkOrder(workOrder.id, date.toISOString())
       Toast.clear()
       Toast.show({ content: '预约成功', icon: 'success', duration: 1500 })
-
-      const nextStepIndex = currentStepIndex + 1
-      if (nextStepIndex < STATUS_STEPS.length) {
-        setWorkOrder(prev => prev ? { ...prev, status: STATUS_STEPS[nextStepIndex].status } : prev)
-        setCurrentStepIndex(nextStepIndex)
-      }
+      const resp = await demoApi.getWorkOrder(workOrder.id)
+      const updated = resp.data || resp
+      setWorkOrder(updated)
     } catch (error) {
       Toast.clear()
       Toast.show({ content: '预约失败', icon: 'fail', duration: 2000 })
@@ -335,61 +271,60 @@ export default function WorkOrderDetailPage() {
           )}
         </Card>
 
-        {/* Step Flow - 当前步骤大按钮 */}
-                {/* 操作步骤 */}
-        <Card title="操作步骤" style={{ marginBottom: '16px' }}>
-          {/* 状态流程 - 水平显示 */}
-          <Steps current={currentStepIndex} direction="horizontal" style={{ overflowX: 'auto' }}>
-            {STATUS_STEPS.map((step, index) => (
-              <Steps.Step 
-                key={step.status} 
-                title={step.title}
-                status={index < currentStepIndex ? 'finish' : index === currentStepIndex ? 'process' : 'wait'}
-              />
-            ))}
-          </Steps>
-        </Card>
-        
-        {/* 检查是否有接单权限 (VENDOR 或 ENGINEER) */}
+        {/* 工单处理 - 根据预约类型显示不同按钮 */}
         {(() => {
           const role = userInfo?.role || ''
-          const canAcceptOrder = ['VENDOR_ADMIN', 'ENGINEER'].includes(role)
-          return canAcceptOrder && currentStepIndex < STATUS_STEPS.length && (
-          <div style={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            padding: '16px',
-            background: '#fff',
-            boxShadow: '0 -2px 8px rgba(0,0,0,0.1)',
-            zIndex: 1000,
-          }}>
-            <Button
-              block
-              size="large"
-              style={{
-                height: '48px',
-                fontSize: '18px',
-                fontWeight: 600,
-                '--background-color': '#0033FF',
-                '--border-radius': '12px',
-              }}
-              onClick={handleStepAction}
-            >
-              {STATUS_STEPS[currentStepIndex].title}
-              <div style={{ fontSize: '14px', fontWeight: 'normal', marginTop: '4px' }}>
-                {STATUS_STEPS[currentStepIndex].description}
-              </div>
-            </Button>
-          </div>
-        )})()}
+          const isEngVendor = ['VENDOR_ADMIN', 'ENGINEER'].includes(role)
+          if (!workOrder || !isEngVendor) return null
+          
+          if (workOrder.appointment_type === 1 && workOrder.status === 'DISPATCHED') {
+            return (
+              <Card style={{ marginBottom: '16px' }}>
+                <div style={{ padding: '16px' }}>
+                  <div style={{ fontSize: '14px', color: '#166534', background: '#f0fdf4', borderRadius: 8, padding: '10px 14px', marginBottom: '12px', border: '1px solid #bbf7d0' }}>
+                    本工单已指定上门时段，确认后可开始施工
+                  </div>
+                  <Button
+                    block
+                    size="large"
+                    style={{ '--background-color': '#00B578', '--border-radius': '8px', height: '48px', fontSize: '16px' }}
+                    onClick={handleStartWork}
+                  >
+                    开始施工
+                  </Button>
+                </div>
+              </Card>
+            )
+          }
+          
+          if (workOrder.appointment_type === 2 && workOrder.status === 'DISPATCHED') {
+            return (
+              <Card style={{ marginBottom: '16px' }}>
+                <div style={{ padding: '16px' }}>
+                  <div style={{ fontSize: '14px', color: '#1e40af', background: '#eff6ff', borderRadius: 8, padding: '10px 14px', marginBottom: '12px', border: '1px solid #bfdbfe' }}>
+                    本工单要求提前预约，请选择上门时间
+                  </div>
+                  <Button
+                    block
+                    size="large"
+                    style={{ '--background-color': '#FF8F1F', '--border-radius': '8px', height: '48px', fontSize: '16px' }}
+                    onClick={() => setReservePickerVisible(true)}
+                  >
+                    选择预约时间
+                  </Button>
+                </div>
+              </Card>
+            )
+          }
+          
+          return null
+        })()}
 
         <DatePicker
           title="选择预约时间"
           visible={reservePickerVisible}
           onClose={() => setReservePickerVisible(false)}
-          onConfirm={(val) => handleReserveConfirm(val as unknown as Date)}
+          onConfirm={(val) => handleReserve(val as unknown as Date)}
           min={new Date()}
           precision="minute"
         />

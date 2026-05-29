@@ -129,6 +129,7 @@ func setupTestDB() bool {
 	testDB.Exec("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS admin_email VARCHAR(255)")
 	testDB.Exec("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS admin_phone VARCHAR(20)")
 	testDB.Exec("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS max_hops INT DEFAULT 3")
+	testDB.Exec("CREATE TABLE IF NOT EXISTS log_images (id UUID PRIMARY KEY, log_entry_id UUID, file_key VARCHAR(500), thumbnail_key VARCHAR(500), file_size BIGINT, width INT, height INT, uploaded_at TIMESTAMP, uploaded_by UUID, work_order_id UUID)")
 
 	// Run seeder to ensure admin user exists
 	seeder := db.NewSeeder(testDB)

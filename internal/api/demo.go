@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"jobmaster/internal/data"
 	"jobmaster/internal/model"
+	"jobmaster/internal/service"
 	"jobmaster/pkg/database"
 )
 
@@ -120,6 +122,15 @@ func toDemoWorkOrderMap(wo *model.WorkOrder) map[string]interface{} {
 		result["category_id"] = wo.Info.CategoryPath[0]
 		result["category_path"] = wo.Info.CategoryPath
 	}
+	// Look up store name from DB
+	if wo.StoreID != uuid.Nil {
+		if db, dbErr := database.GetDB(); dbErr == nil {
+			var storeOrg model.Organization
+			if db.Where("id = ?", wo.StoreID).First(&storeOrg).Error == nil {
+				result["store_name"] = storeOrg.Name
+			}
+		}
+	}
 	if wo.EngineerID != nil {
 		result["engineer_id"] = wo.EngineerID.String()
 		if db, dbErr := database.GetDB(); dbErr == nil {
@@ -199,6 +210,10 @@ func RegisterDemoRoutes(r *gin.Engine) {
 
 	// Organization engineers endpoint
 	demo.GET("/organizations/:id/engineers", handlers.GetOrganizationEngineers)
+
+	// Image upload & serve endpoints
+	demo.POST("/workorders/:id/images", handlers.UploadImage)
+	demo.GET("/files/*filekey", handlers.ServeLogImage)
 }
 
 // GetWorkOrders returns work orders from database with user-based filtering
@@ -1076,37 +1091,55 @@ func (h *DemoHandlers) RejectReservation(c *gin.Context) {
 	})
 }
 
-// GetWorkOrderRecords returns work order records (messages + photos) from demo data
+// GetWorkOrderRecords returns work order records from DB logs
 func (h *DemoHandlers) GetWorkOrderRecords(c *gin.Context) {
 	workOrderID := c.Param("id")
-
-	demoData, err := data.LoadDemoData()
+	woID, err := uuid.Parse(workOrderID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid work order ID"})
 		return
 	}
 
-	var workRecords []map[string]interface{}
-	if err := json.Unmarshal(demoData.WorkRecords, &workRecords); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse work records: " + err.Error()})
+	db, err := database.GetDB()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database connection failed"})
 		return
 	}
 
-	// Filter by work order ID
-	var filtered []map[string]interface{}
-	for _, record := range workRecords {
-		if woID, ok := record["work_order_id"].(string); ok && woID == workOrderID {
-			filtered = append(filtered, record)
+	var wo model.WorkOrder
+	if err := db.Where("id = ?", woID).First(&wo).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
+		return
+	}
+
+	// Get arrive and work_record logs
+	var list []map[string]interface{}
+	for _, log := range wo.Logs {
+		if log.Action != model.LogActionArrive && log.Action != model.LogActionWorkRecord && log.Action != model.LogActionStatusChangeToWorking {
+			continue
 		}
+		entry := map[string]interface{}{
+			"timestamp":  log.Timestamp,
+			"user_name":  log.UserName,
+			"action":     log.Action,
+			"details":    log.Details,
+			"photo_urls": log.PhotoURLs,
+		}
+		if log.Action == model.LogActionStatusChangeToWorking || log.Action == model.LogActionArrive {
+			entry["type"] = "start"
+		} else {
+			entry["type"] = "record"
+		}
+		list = append(list, entry)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"list":  filtered,
-		"total": len(filtered),
+		"list":  list,
+		"total": len(list),
 	})
 }
 
-// CreateWorkOrderRecord creates a new work order record (message + photo)
+// CreateWorkOrderRecord creates a new work order record (message + photo) - saves to DB logs
 func (h *DemoHandlers) CreateWorkOrderRecord(c *gin.Context) {
 	workOrderID := c.Param("id")
 
@@ -1120,16 +1153,49 @@ func (h *DemoHandlers) CreateWorkOrderRecord(c *gin.Context) {
 		return
 	}
 
-	// Demo mode - just return success
+	db, err := database.GetDB()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database connection failed"})
+		return
+	}
+
+	woID, err := uuid.Parse(workOrderID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid work order ID"})
+		return
+	}
+
+	var wo model.WorkOrder
+	if err := db.Where("id = ?", woID).First(&wo).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Work order not found"})
+		return
+	}
+
 	username := h.getUsernameFromSession(c)
+	if username == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+		return
+	}
+	user, err := getDemoUserFromDB(username)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		return
+	}
+
+	wo.Logs.AddWorkLog(user.ID, user.DisplayName, req.Message, req.PhotoURLs)
+	if err := db.Save(&wo).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save work record"})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"id":            "record_" + workOrderID + "_" + fmt.Sprint(os.Getpid()),
+		"id":         uuid.New().String(),
 		"work_order_id": workOrderID,
-		"user_name":     username,
-		"message":       req.Message,
-		"photo_urls":    req.PhotoURLs,
-		"created_at":    "2026-04-27T10:00:00Z",
+		"user_name":  user.DisplayName,
+		"message":    req.Message,
+		"photo_urls": req.PhotoURLs,
+		"created_at": time.Now().Format(time.RFC3339),
+		"type":       "record",
 	})
 }
 
@@ -1158,6 +1224,89 @@ func (h *DemoHandlers) GetRegions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"regions": []string{},
 	})
+}
+
+// UploadImage handles image upload for work order logs
+func (h *DemoHandlers) UploadImage(c *gin.Context) {
+	workOrderID := c.Param("id")
+	woID, err := uuid.Parse(workOrderID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid work order ID"})
+		return
+	}
+
+	username := h.getUsernameFromSession(c)
+	user, err := getDemoUserFromDB(username)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		return
+	}
+
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
+		return
+	}
+	defer file.Close()
+
+	// Size check (5MB)
+	if header.Size > 5*1024*1024 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file too large (max 5MB)"})
+		return
+	}
+
+	db, err := database.GetDB()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database connection failed"})
+		return
+	}
+
+	storage := service.NewImageStorage(db)
+	result, err := storage.SaveImage(woID, user.ID, file, header.Filename)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// ServeLogImage serves uploaded log images
+func (h *DemoHandlers) ServeLogImage(c *gin.Context) {
+	fileKey := c.Param("filekey")
+	if fileKey == "" {
+		c.String(http.StatusBadRequest, "file key required")
+		return
+	}
+
+	db, err := database.GetDB()
+	if err != nil {
+		c.String(http.StatusInternalServerError, "database error")
+		return
+	}
+
+	var logImage model.LogImage
+	if err := db.Where("file_key = ?", fileKey).First(&logImage).Error; err != nil {
+		c.String(http.StatusNotFound, "file not found")
+		return
+	}
+
+	basePath := os.Getenv("LOG_STORAGE_PATH")
+	if basePath == "" {
+		basePath = "./data/logs"
+	}
+	fullPath := filepath.Join(basePath, fileKey)
+	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+		// Try archive path
+		parts := strings.SplitN(fileKey, "/", 2)
+		if len(parts) == 2 {
+			archiveKey := parts[0] + "_archive/" + parts[1]
+			archivePath := filepath.Join(basePath, archiveKey)
+			fullPath = archivePath
+		}
+	}
+
+	c.File(fullPath)
 }
 
 // GetDispatchableTargets returns dispatchable targets based on user's organization (from DB)

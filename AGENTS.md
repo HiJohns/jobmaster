@@ -47,3 +47,4 @@ When writing end-to-end tests, verify the **complete data flow** — not just HT
 - `canAssign`/`canDistribute` logic duplicated in useEffect AND render section — fix both copies
 - Hardcoded user/org data in `mockData.ts` differs from seeded DB data
 - `api/demo.ts` status filters explicitly exclude new statuses added to the backend
+- **`_, _ :=` error ignore** — any `_` that swallows an error is a latent nil-pointer panic in production. Audit must REJECT any unchecked error in demo handlers (session lookup, DB lookup, etc.)

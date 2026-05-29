@@ -175,6 +175,33 @@ const (
 	LogActionWorkRecord                      = "work_record"
 )
 
+// LogImage stores image file metadata for work order logs
+type LogImage struct {
+	ID           uuid.UUID  `gorm:"type:uuid;primary_key" json:"id"`
+	LogEntryID   uuid.UUID  `gorm:"type:uuid;index" json:"log_entry_id"`
+	FileKey      string     `gorm:"size:500" json:"file_key"`
+	ThumbnailKey string     `gorm:"size:500" json:"thumbnail_key"`
+	FileSize     int64      `json:"file_size"`
+	Width        int        `json:"width"`
+	Height       int        `json:"height"`
+	UploadedAt   time.Time  `json:"uploaded_at"`
+	UploadedBy   uuid.UUID  `gorm:"type:uuid" json:"uploaded_by"`
+	WorkOrderID  uuid.UUID  `gorm:"type:uuid;index" json:"work_order_id"`
+}
+
+// TableName specifies the table name for LogImage
+func (LogImage) TableName() string {
+	return "log_images"
+}
+
+// BeforeCreate hook to generate UUID
+func (l *LogImage) BeforeCreate(tx *gorm.DB) error {
+	if l.ID == uuid.Nil {
+		l.ID = uuid.New()
+	}
+	return nil
+}
+
 // WorkOrderLogs is a slice of log entries
 type WorkOrderLogs []WorkOrderLog
 

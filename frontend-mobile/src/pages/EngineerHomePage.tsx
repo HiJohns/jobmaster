@@ -24,6 +24,9 @@ interface WorkOrder {
   brand_name: string
   description: string
   engineer_name?: string
+  engineer_id?: string
+  owner_org_name?: string
+  time_slots?: any[]
   created_at: string
   is_urgent?: boolean
 }
@@ -86,6 +89,7 @@ export default function EngineerHomePage() {
         engineer_name: o.engineer_name,
         engineer_id: o.engineer_id,
         owner_org_name: o.owner_org_name,
+        time_slots: o.time_slots,
         created_at: o.created_at,
         is_urgent: o.is_urgent,
       }))

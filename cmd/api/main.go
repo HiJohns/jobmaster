@@ -230,6 +230,7 @@ func autoMigrate() error {
 		&model.Order{},
 		&model.WorkOrder{},
 		&model.Tenant{},
+		&model.LogImage{},
 	}
 
 	for _, m := range models {
@@ -269,6 +270,9 @@ func runSeeder() error {
 			return fmt.Errorf("failed to seed demo data: %w", err)
 		}
 	}
+
+	// Ensure log_images table exists
+	db.Exec("CREATE TABLE IF NOT EXISTS log_images (id UUID PRIMARY KEY, log_entry_id UUID, file_key VARCHAR(500), thumbnail_key VARCHAR(500), file_size BIGINT, width INT, height INT, uploaded_at TIMESTAMP, uploaded_by UUID, work_order_id UUID)")
 
 	return nil
 }

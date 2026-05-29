@@ -30,9 +30,20 @@ export default function CreateOrderPage() {
   const [appointmentType, setAppointmentType] = useState(1)
   
   // Time slots for appointment_type=1
-  const [timeSlots, setTimeSlots] = useState<{ days: string; startTime: string; endTime: string }[]>([
-    { days: 'weekday', startTime: '09:00', endTime: '18:00' },
+  const [timeSlots, setTimeSlots] = useState<{ days: string; start_time: string; end_time: string }[]>([
+    { days: 'weekday', start_time: '09:00', end_time: '18:00' },
   ])
+  
+  // Time picker state
+  const hourOptions = Array.from({length: 24}, (_, i) => ({
+    label: `${String(i).padStart(2, '0')}时`,
+    value: String(i).padStart(2, '0')
+  }))
+  const minuteOptions = [0, 15, 30, 45].map(m => ({
+    label: `${String(m).padStart(2, '0')}分`,
+    value: String(m).padStart(2, '0')
+  }))
+  const [activeTimePicker, setActiveTimePicker] = useState<{index: number; field: 'start_time' | 'end_time'} | null>(null)
   
   // Region and Category states
   const [regions, setRegions] = useState<string[]>([])
@@ -150,6 +161,13 @@ export default function CreateOrderPage() {
     if (!selectedCategory) {
       Toast.show('请选择分类')
       return
+    }
+    if (appointmentType === 1) {
+      const invalidSlot = timeSlots.find(s => !s.start_time || !s.end_time)
+      if (invalidSlot) {
+        Toast.show('请填写所有上门时段的起止时间')
+        return
+      }
     }
 
     setSubmitting(true)
@@ -320,57 +338,70 @@ export default function CreateOrderPage() {
               <div style={{ marginTop: '12px' }}>
                 <div style={{ fontSize: '14px', color: '#333', marginBottom: '8px' }}>上门时段</div>
                 {timeSlots.map((slot, index) => (
-                  <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                    <select
-                      value={slot.days}
-                      onChange={(e) => {
-                        const updated = [...timeSlots]
-                        updated[index] = { ...updated[index], days: e.target.value }
-                        setTimeSlots(updated)
-                      }}
-                      style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #E5E7EB', background: '#F9FAFB', fontSize: '13px' }}
-                    >
-                      <option value="weekday">工作日</option>
-                      <option value="weekend">周末</option>
-                      <option value="everyday">每天</option>
-                    </select>
-                    <input
-                      type="time"
-                      value={slot.startTime}
-                      onChange={(e) => {
-                        const updated = [...timeSlots]
-                        updated[index] = { ...updated[index], startTime: e.target.value }
-                        setTimeSlots(updated)
-                      }}
-                      style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #E5E7EB', background: '#F9FAFB', fontSize: '13px' }}
-                    />
-                    <span style={{ color: '#999' }}>-</span>
-                    <input
-                      type="time"
-                      value={slot.endTime}
-                      onChange={(e) => {
-                        const updated = [...timeSlots]
-                        updated[index] = { ...updated[index], endTime: e.target.value }
-                        setTimeSlots(updated)
-                      }}
-                      style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #E5E7EB', background: '#F9FAFB', fontSize: '13px' }}
-                    />
-                    <span
-                      onClick={() => setTimeSlots(timeSlots.filter((_, i) => i !== index))}
-                      style={{ color: '#FF4D4F', cursor: 'pointer', fontSize: '18px', padding: '4px' }}
-                    >
-                      ×
-                    </span>
+                  <div key={index} style={{ marginBottom: '10px', background: '#F9FAFB', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '8px 10px' }}>
+                    {/* Row 1: day type + delete */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <select
+                        value={slot.days}
+                        onChange={(e) => {
+                          const updated = [...timeSlots]
+                          updated[index] = { ...updated[index], days: e.target.value }
+                          setTimeSlots(updated)
+                        }}
+                        style={{ flex: 1, padding: '6px 8px', borderRadius: '8px', border: '1px solid #E5E7EB', background: '#fff', fontSize: '13px' }}
+                      >
+                        <option value="weekday">工作日</option>
+                        <option value="weekend">周末</option>
+                        <option value="everyday">每天</option>
+                      </select>
+                      <span
+                        onClick={() => setTimeSlots(timeSlots.filter((_, i) => i !== index))}
+                        style={{ color: '#FF4D4F', cursor: 'pointer', fontSize: '18px', padding: '4px 4px 4px 12px' }}
+                      >
+                        ×
+                      </span>
+                    </div>
+                    {/* Row 2: time pickers */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <div
+                        onClick={() => setActiveTimePicker({ index, field: 'start_time' })}
+                        style={{ flex: 1, padding: '8px 10px', borderRadius: '8px', border: '1px solid #E5E7EB', background: '#fff', textAlign: 'center', fontSize: '15px', fontWeight: 500, color: '#333' }}
+                      >
+                        {slot.start_time}
+                      </div>
+                      <span style={{ color: '#999', fontSize: '14px' }}>—</span>
+                      <div
+                        onClick={() => setActiveTimePicker({ index, field: 'end_time' })}
+                        style={{ flex: 1, padding: '8px 10px', borderRadius: '8px', border: '1px solid #E5E7EB', background: '#fff', textAlign: 'center', fontSize: '15px', fontWeight: 500, color: '#333' }}
+                      >
+                        {slot.end_time}
+                      </div>
+                    </div>
                   </div>
                 ))}
                 <Button
                   size="small"
-                  onClick={() => setTimeSlots([...timeSlots, { days: 'weekday', startTime: '09:00', endTime: '18:00' }])}
+                  onClick={() => setTimeSlots([...timeSlots, { days: 'weekday', start_time: '09:00', end_time: '18:00' }])}
                   style={{ fontSize: '12px', padding: '4px 12px', color: '#1677FF', borderColor: '#1677FF' }}
                   fill="none"
                 >
                   + 添加上门时段
                 </Button>
+                {/* Time picker */}
+                {activeTimePicker && (
+                  <Picker
+                    columns={[hourOptions, minuteOptions]}
+                    visible={true}
+                    onClose={() => setActiveTimePicker(null)}
+                    onConfirm={(val) => {
+                      const time = `${val[0]}:${val[1]}`
+                      const updated = [...timeSlots]
+                      updated[activeTimePicker.index] = { ...updated[activeTimePicker.index], [activeTimePicker.field]: time }
+                      setTimeSlots(updated)
+                      setActiveTimePicker(null)
+                    }}
+                  />
+                )}
               </div>
             )}
 
