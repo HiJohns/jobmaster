@@ -48,3 +48,10 @@ When writing end-to-end tests, verify the **complete data flow** — not just HT
 - Hardcoded user/org data in `mockData.ts` differs from seeded DB data
 - `api/demo.ts` status filters explicitly exclude new statuses added to the backend
 - **`_, _ :=` error ignore** — any `_` that swallows an error is a latent nil-pointer panic in production. Audit must REJECT any unchecked error in demo handlers (session lookup, DB lookup, etc.)
+
+### PC / Mobile Sync Rule
+When modifying `frontend-mobile/src/api/demo.ts`, MUST also update `frontend/src/api/factory.ts`:
+- `demoApi.getWorkOrders` status filters → `factory.ts:demoApi.getWorkOrders`
+- `demoApi.login` response fields → `factory.ts:demoApi.login`
+- New demo accounts → both `Login.tsx` files
+- Backend API fields → both `WorkOrder` interfaces

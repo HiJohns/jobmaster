@@ -213,12 +213,14 @@ export default function EngineerHomePage() {
             )
           })}
         </div>
-        <div
-          onClick={() => navigate('/wechat/pending-orders')}
-          style={{ textAlign: 'center', padding: '8px 0 0', fontSize: '12px', color: '#1677FF', cursor: 'pointer' }}
-        >
-          待提交
-        </div>
+        {userInfo?.role && ['BRANCH_ADMIN', 'EMPLOYEE'].includes(userInfo.role) && (
+          <div
+            onClick={() => navigate('/wechat/pending-orders')}
+            style={{ textAlign: 'center', padding: '8px 0 0', fontSize: '12px', color: '#1677FF', cursor: 'pointer' }}
+          >
+            待提交
+          </div>
+        )}
       </Card>
 
       {/* 任务提示区 - 显示下一个即将开始的工单 */}

@@ -294,7 +294,7 @@ func (s *Seeder) seedDemoWorkOrders() error {
 		{demoWorkOrderIDs[0], "DEMO-00001", "消防门维修", model.WorkOrderStatusPending, nil, nil, nil},
 		{demoWorkOrderIDs[1], "DEMO-00002", "空调不制冷", model.WorkOrderStatusDispatched, &demoContractor1, &demoEngCon1, []uuid.UUID{demoContractor1}},
 		{demoWorkOrderIDs[2], "DEMO-00003", "墙面脱落", model.WorkOrderStatusDispatched, &demoContractor2, nil, []uuid.UUID{demoContractor1, demoContractor2}},
-		{demoWorkOrderIDs[3], "DEMO-00004", "灯具更换", model.WorkOrderStatusWorking, &demoContractor2, &demoEngCon2Usr, []uuid.UUID{demoContractor1, demoContractor2}},
+		{demoWorkOrderIDs[3], "DEMO-00004", "灯具更换", model.WorkOrderStatusDispatched, &demoContractor2, &demoEngCon2Usr, []uuid.UUID{demoContractor1, demoContractor2}},
 		{demoWorkOrderIDs[4], "DEMO-00005", "POS机故障", model.WorkOrderStatusFinished, &demoContractor2, &demoEngCon2Usr, []uuid.UUID{demoContractor1, demoContractor2}},
 		{demoWorkOrderIDs[5], "DEMO-00006", "排烟系统异常", model.WorkOrderStatusDispatched, &demoContractor1, &demoEngCon2, []uuid.UUID{demoContractor1}},
 		{demoWorkOrderIDs[6], "DEMO-00007", "验收退回", model.WorkOrderStatusFinished, &demoContractor2, &demoEngCon2Usr, []uuid.UUID{demoContractor1, demoContractor2}},
