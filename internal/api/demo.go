@@ -112,6 +112,17 @@ func toDemoWorkOrderMap(wo *model.WorkOrder) map[string]interface{} {
 		"category_path":    wo.Info.CategoryPath,
 	}
 
+	// Filter out invalid blob: URLs from photo_urls
+	if len(wo.Info.PhotoURLs) > 0 {
+		var validURLs []string
+		for _, u := range wo.Info.PhotoURLs {
+			if u != "" && !strings.HasPrefix(u, "blob:") {
+				validURLs = append(validURLs, u)
+			}
+		}
+		result["photo_urls"] = validURLs
+	}
+
 	if wo.Info.Title == "" {
 		result["title"] = wo.Info.Description
 	}
