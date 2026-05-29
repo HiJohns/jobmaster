@@ -10,6 +10,7 @@ export interface PendingOrder {
   is_urgent: boolean
   address_detail?: string
   appointment_type: number
+  selected_contractor?: string
   created_at: string
 }
 

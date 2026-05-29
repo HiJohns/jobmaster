@@ -263,6 +263,7 @@ export default function CreateOrderPage() {
       address_detail: addressDetail,
       appointment_type: appointmentType,
       time_slots: appointmentType === 1 ? timeSlots : undefined,
+      selected_contractor: selectedContractor,
       created_at: new Date().toISOString(),
     })
     Toast.show('已存入待提交')

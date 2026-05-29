@@ -19,7 +19,7 @@ export default function PendingOrdersPage() {
     let failed = 0
     for (const order of orders) {
       try {
-        await demoApi.createWorkOrder({
+        const resp = await demoApi.createWorkOrder({
           title: order.title,
           description: order.description,
           category_id: order.category_id || '',
@@ -28,7 +28,15 @@ export default function PendingOrdersPage() {
           priority: order.priority,
           is_urgent: order.is_urgent,
           address_detail: order.address_detail || '',
-        })
+          appointment_type: order.appointment_type || 1,
+          time_slots: (order as any).time_slots,
+        }) as any
+        // If contractor was selected, dispatch
+        if (order.selected_contractor && resp?.id) {
+          try {
+            await demoApi.dispatchWorkOrder(resp.id, order.selected_contractor)
+          } catch { /* dispatch failed but order created */ }
+        }
         success++
       } catch {
         failed++
