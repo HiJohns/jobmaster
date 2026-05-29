@@ -163,21 +163,7 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
           {order.order_no}
         </span>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {(order.status === 'FINISHED' || order.status === 'CLOSED') && (
-            <div
-              style={{
-                padding: '2px 8px',
-                borderRadius: '4px',
-                fontSize: '12px',
-                backgroundColor: order.id.charCodeAt(order.id.length - 1) % 2 === 0 ? '#F3F4F615' : '#3B82F615',
-                color: order.id.charCodeAt(order.id.length - 1) % 2 === 0 ? '#6B7280' : '#3B82F6',
-                border: `1px solid ${order.id.charCodeAt(order.id.length - 1) % 2 === 0 ? '#6B728040' : '#3B82F640'}`,
-                fontWeight: 500,
-              }}
-            >
-              {order.id.charCodeAt(order.id.length - 1) % 2 === 0 ? '未报价' : '已报价'}
-            </div>
-          )}
+
           <div
             style={{
               padding: '2px 8px',
@@ -193,6 +179,13 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
           </div>
         </div>
       </div>
+
+      {/* Title */}
+      {order.title || order.description ? (
+        <div style={{ fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 12 }}>
+          {order.title || order.description}
+        </div>
+      ) : null}
 
       {/* Urgent badge with SLA countdown */}
       {urgent && (
