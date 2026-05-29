@@ -1260,7 +1260,6 @@ func (h *DemoHandlers) UploadImage(c *gin.Context) {
 	}
 	defer file.Close()
 
-	// Size check (5MB)
 	if header.Size > 5*1024*1024 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "file too large (max 5MB)"})
 		return
@@ -1282,7 +1281,7 @@ func (h *DemoHandlers) UploadImage(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-// ServeLogImage serves uploaded log images
+// ServeLogImage serves uploaded log images with optional thumbnail
 func (h *DemoHandlers) ServeLogImage(c *gin.Context) {
 	fileKey := c.Param("filekey")
 	if fileKey == "" {
@@ -1290,22 +1289,24 @@ func (h *DemoHandlers) ServeLogImage(c *gin.Context) {
 		return
 	}
 
-	db, err := database.GetDB()
-	if err != nil {
-		c.String(http.StatusInternalServerError, "database error")
-		return
-	}
-
-	var logImage model.LogImage
-	if err := db.Where("file_key = ?", fileKey).First(&logImage).Error; err != nil {
-		c.String(http.StatusNotFound, "file not found")
-		return
-	}
-
+	serveThumb := c.Query("thumb") == "1"
 	basePath := os.Getenv("LOG_STORAGE_PATH")
 	if basePath == "" {
 		basePath = "./data/logs"
 	}
+
+	if serveThumb {
+		// Try thumbnail path directly (consistent with GetThumbnailPath logic)
+		ext := filepath.Ext(fileKey)
+		withoutExt := fileKey[:len(fileKey)-len(ext)]
+		thumbKey := withoutExt + "_thumb" + ext
+		thumbPath := filepath.Join(basePath, thumbKey)
+		if _, err := os.Stat(thumbPath); err == nil {
+			c.File(thumbPath)
+			return
+		}
+	}
+
 	fullPath := filepath.Join(basePath, fileKey)
 	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
 		// Try archive path
@@ -1313,8 +1314,13 @@ func (h *DemoHandlers) ServeLogImage(c *gin.Context) {
 		if len(parts) == 2 {
 			archiveKey := parts[0] + "_archive/" + parts[1]
 			archivePath := filepath.Join(basePath, archiveKey)
-			fullPath = archivePath
+			if _, err := os.Stat(archivePath); err == nil {
+				c.File(archivePath)
+				return
+			}
 		}
+		c.String(http.StatusNotFound, "file not found")
+		return
 	}
 
 	c.File(fullPath)
