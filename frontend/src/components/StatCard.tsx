@@ -16,7 +16,7 @@ interface StatCardProps {
  * Displays title, value, and optional trend
  */
 export function StatCard({ title, value, color, onClick, trend = 'stable' }: StatCardProps) {
-  const trendColor = trend === 'up' ? '#00B578' : trend === 'down' ? '#FF4D4F' : '#999'
+  const trendColor = trend === 'up' ? '#C49A3C' : trend === 'down' ? '#FF4D4F' : '#999'
   const trendIcon = trend === 'up' ? '↑' : trend === 'down' ? '↓' : '→'
 
   return (

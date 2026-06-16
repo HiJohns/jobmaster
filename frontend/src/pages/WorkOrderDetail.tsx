@@ -431,7 +431,7 @@ function WorkOrderDetail() {
                 fontSize: 16
               }}>
                 <span>总价</span>
-                <span style={{ color: '#2563EB' }}>¥{quotationTotal.toFixed(2)}</span>
+                <span style={{ color: '#B81F25' }}>¥{quotationTotal.toFixed(2)}</span>
               </div>
             </div>
           ) : (
@@ -483,7 +483,7 @@ function WorkOrderDetail() {
                   + 添加项目
                 </Button>
                 <span style={{ fontWeight: 'bold', fontSize: 16 }}>
-                  总价: <span style={{ color: '#2563EB' }}>¥{quotationTotal.toFixed(2)}</span>
+                  总价: <span style={{ color: '#B81F25' }}>¥{quotationTotal.toFixed(2)}</span>
                 </span>
               </div>
               <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center' }}>

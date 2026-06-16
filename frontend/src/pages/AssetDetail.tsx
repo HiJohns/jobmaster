@@ -187,7 +187,7 @@ export default function AssetDetail() {
         <Timeline
           items={[
             {
-              color: 'green',
+              color: '#C49A3C',
               children: '设备登记',
             },
           ]}

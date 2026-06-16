@@ -9,7 +9,7 @@ import './index.css'
 // Set dayjs locale to Chinese
 dayjs.locale('zh-cn')
 
-// Ant Design theme configuration with primary color #0033FF
+// Ant Design theme configuration with primary color #B81F25
 const themeConfig = {
   token: {
     colorPrimary: '#B61C22',

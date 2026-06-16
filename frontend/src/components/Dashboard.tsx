@@ -40,7 +40,7 @@ export function Dashboard({ orders }: DashboardProps) {
       })
 
       return [
-        { title: '今日报修', value: todayOrders.length, color: '#0033FF', action: () => navigate('/workorders?date=today') },
+        { title: '今日报修', value: todayOrders.length, color: '#B81F25', action: () => navigate('/workorders?date=today') },
         { title: '待验收', value: pendingReview.length, color: '#FF8F1F', action: () => navigate('/workorders?status=FINISHED') },
         { title: '异常延迟', value: delayed.length, color: '#FF4D4F', action: () => navigate('/workorders?status=PENDING,DISPATCHED') },
       ]
@@ -52,8 +52,8 @@ export function Dashboard({ orders }: DashboardProps) {
 
       return [
         { title: '未指派', value: unassigned.length, color: '#999', action: () => navigate('/workorders?status=PENDING') },
-        { title: '已转派', value: dispatched.length, color: '#00B578', action: () => navigate('/workorders?status=DISPATCHED,RESERVED') },
-        { title: '供应商覆盖率', value: coverage, color: '#0033FF', action: () => {}, suffix: '%' },
+        { title: '已转派', value: dispatched.length, color: '#C49A3C', action: () => navigate('/workorders?status=DISPATCHED,RESERVED') },
+        { title: '供应商覆盖率', value: coverage, color: '#B81F25', action: () => {}, suffix: '%' },
       ]
     }
 

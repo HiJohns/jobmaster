@@ -36,7 +36,7 @@ function AppLayout() {
       try {
         const config = JSON.parse(brandConfig)
         setLogoText(config.brand_name || 'JobMaster')
-        setLogoColor(config.primary_color || '#0033FF')
+        setLogoColor(config.primary_color || '#B81F25')
       } catch (err) {
         console.warn('Failed to parse brand config:', err)
       }

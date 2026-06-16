@@ -124,7 +124,7 @@ function EngineerHome() {
       {/* Header */}
       <div style={{
         padding: '20px 16px',
-        background: 'linear-gradient(135deg, #0033FF 0%, #0055FF 100%)',
+        background: 'linear-gradient(135deg, #B81F25 0%, #0055FF 100%)',
         color: '#fff',
       }}>
         <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>

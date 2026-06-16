@@ -105,8 +105,8 @@ function WorkOrderList() {
   // KPI items config for compact style
   const KPI_ITEMS = [
     { key: 'total', label: '今日工单', value: 'total' as const, color: '#1f2937' },
-    { key: 'pending', label: '待处理', value: 'pending' as const, color: '#0033FF' },
-    { key: 'working', label: '进行中', value: 'working' as const, color: '#00B578' },
+    { key: 'pending', label: '待处理', value: 'pending' as const, color: '#B81F25' },
+    { key: 'working', label: '进行中', value: 'working' as const, color: '#C49A3C' },
     { key: 'abnormal', label: '异常', value: 'abnormal' as const, color: '#F59E0B' },
   ]
 
@@ -185,7 +185,7 @@ function WorkOrderList() {
               <span
                 onClick={() => setCreateModalVisible(true)}
                 style={{
-                  background: '#2563EB',
+                  background: '#B81F25',
                   color: 'white',
                   padding: '4px 12px',
                   borderRadius: '6px',
@@ -218,7 +218,7 @@ function WorkOrderList() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
           <div
             onClick={() => setPendingModalVisible(true)}
-            style={{ cursor: 'pointer', color: '#1677FF', fontSize: '12px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}
+            style={{ cursor: 'pointer', color: '#C45C4E', fontSize: '12px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}
           >
             待提交{getPendingCount() > 0 && `（${getPendingCount()}）`}
           </div>
@@ -257,7 +257,7 @@ function WorkOrderList() {
               <div style={{ 
                 fontSize: '64px', 
                 marginBottom: '24px',
-                color: '#10B981'
+                color: '#C49A3C'
               }}>
                 ✅
               </div>
@@ -283,7 +283,7 @@ function WorkOrderList() {
                     fetchOrders()
                   }}
                   style={{ 
-                    color: '#2563EB', 
+                    color: '#B81F25', 
                     cursor: 'pointer',
                     marginLeft: '4px',
                     textDecoration: 'underline'
@@ -298,7 +298,7 @@ function WorkOrderList() {
                   onClick={() => setCreateModalVisible(true)}
                   style={{
                     padding: '16px 32px',
-                    background: '#2563EB',
+                    background: '#B81F25',
                     color: 'white',
                     borderRadius: '12px',
                     fontWeight: 600,

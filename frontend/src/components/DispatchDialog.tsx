@@ -67,7 +67,7 @@ function DispatchDialog({ visible, onCancel, onSuccess, workOrder }: DispatchDia
       <div style={{ marginBottom: 16, padding: 12, background: '#f5f5f5', borderRadius: 8 }}>
         <p style={{ margin: 0 }}>
           <strong>工单编号：</strong>
-          <span style={{ color: '#0033FF' }}>{workOrder.order_no}</span>
+          <span style={{ color: '#B81F25' }}>{workOrder.order_no}</span>
         </p>
         {workOrder.store_name && (
           <p style={{ margin: '8px 0 0 0' }}>

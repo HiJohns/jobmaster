@@ -72,7 +72,7 @@ export const STATUS_CONFIG: Record<WorkOrderStatus, StatusConfig> = {
   },
   DISPATCHED: {
     text: '流转',
-    color: 'blue',
+    color: '#B81F25',
     icon: 'send',
     description: '工单已指派，等待接收',
     actions: ['accept', 'dispatch'],
@@ -104,7 +104,7 @@ export const STATUS_CONFIG: Record<WorkOrderStatus, StatusConfig> = {
   },
   FINISHED: {
     text: '验收',
-    color: 'green',
+    color: '#C49A3C',
     icon: 'check-circle',
     description: '已提交完工，等待验收',
     actions: ['approve', 'reject'],

@@ -33,7 +33,7 @@ const EmptyStateIllustration: React.FC<EmptyStateIllustrationProps> = ({
         {/* Folder outline */}
         <path 
           d="M20 35C20 30 24 26 29 26H45L52 35H91C96 35 100 39 100 44V85C100 90 96 94 91 94H29C24 94 20 90 20 85V35Z" 
-          stroke="#0033FF" 
+          stroke="#B81F25" 
           strokeWidth="2" 
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -41,17 +41,17 @@ const EmptyStateIllustration: React.FC<EmptyStateIllustrationProps> = ({
         />
         
         {/* Checklist lines */}
-        <line x1="35" y1="50" x2="85" y2="50" stroke="#0033FF" strokeWidth="2" strokeLinecap="round" opacity="0.6"/>
-        <line x1="35" y1="62" x2="75" y2="62" stroke="#0033FF" strokeWidth="2" strokeLinecap="round" opacity="0.4"/>
-        <line x1="35" y1="74" x2="65" y2="74" stroke="#0033FF" strokeWidth="2" strokeLinecap="round" opacity="0.3"/>
+        <line x1="35" y1="50" x2="85" y2="50" stroke="#B81F25" strokeWidth="2" strokeLinecap="round" opacity="0.6"/>
+        <line x1="35" y1="62" x2="75" y2="62" stroke="#B81F25" strokeWidth="2" strokeLinecap="round" opacity="0.4"/>
+        <line x1="35" y1="74" x2="65" y2="74" stroke="#B81F25" strokeWidth="2" strokeLinecap="round" opacity="0.3"/>
         
         {/* Checkmark circle */}
-        <circle cx="32" cy="50" r="4" stroke="#0033FF" strokeWidth="2" fill="none"/>
-        <path d="M30 50L31.5 51.5L34 49" stroke="#0033FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <circle cx="32" cy="50" r="4" stroke="#B81F25" strokeWidth="2" fill="none"/>
+        <path d="M30 50L31.5 51.5L34 49" stroke="#B81F25" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         
         {/* Empty circle */}
-        <circle cx="32" cy="62" r="4" stroke="#0033FF" strokeWidth="2" fill="none" opacity="0.5"/>
-        <circle cx="32" cy="74" r="4" stroke="#0033FF" strokeWidth="2" fill="none" opacity="0.3"/>
+        <circle cx="32" cy="62" r="4" stroke="#B81F25" strokeWidth="2" fill="none" opacity="0.5"/>
+        <circle cx="32" cy="74" r="4" stroke="#B81F25" strokeWidth="2" fill="none" opacity="0.3"/>
       </svg>
       
       <div style={{
@@ -74,8 +74,8 @@ const EmptyStateIllustration: React.FC<EmptyStateIllustrationProps> = ({
           style={{
             marginTop: '24px',
             minWidth: '200px',
-            '--background-color': '#0033FF',
-            '--border-color': '#0033FF',
+            '--background-color': '#B81F25',
+            '--border-color': '#B81F25',
             borderRadius: '8px',
             fontSize: '15px',
             fontWeight: 500,

@@ -470,7 +470,7 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
             type="submit"
             loading={loading}
             style={{
-              '--background-color': '#00B578',
+              '--background-color': '#C49A3C',
               '--border-radius': '8px',
               height: '48px',
               fontSize: '16px',
@@ -486,11 +486,11 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
               block
               fill="none"
               style={{
-                '--border-color': '#1677FF',
+                '--border-color': '#C45C4E',
                 '--border-radius': '8px',
                 height: '40px',
                 fontSize: '14px',
-                color: '#1677FF',
+                color: '#C45C4E',
               }}
               onClick={handleSavePending}
             >

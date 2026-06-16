@@ -98,7 +98,7 @@ function WeekCalendar({ onDateChange, selectedDate: initialDate }: WeekCalendarP
               style={{
                 fontSize: 20,
                 fontWeight: 'bold',
-                color: isSelected(date) ? '#000' : isToday(date) ? '#0033FF' : '#333',
+                color: isSelected(date) ? '#000' : isToday(date) ? '#B81F25' : '#333',
                 display: 'block',
               }}
             >
@@ -110,7 +110,7 @@ function WeekCalendar({ onDateChange, selectedDate: initialDate }: WeekCalendarP
                   width: 4,
                   height: 4,
                   borderRadius: '50%',
-                  backgroundColor: isSelected(date) ? '#000' : '#0033FF',
+                  backgroundColor: isSelected(date) ? '#000' : '#B81F25',
                   margin: '4px auto 0',
                 }}
               />

@@ -26,8 +26,8 @@ interface Quotation {
 
 const statusConfig: Record<string, { text: string; color: string }> = {
   pending: { text: '待审核', color: 'orange' },
-  processed: { text: '已处理', color: 'blue' },
-  accepted: { text: '接受', color: 'green' },
+  processed: { text: '已处理', color: '#B81F25' },
+  accepted: { text: '接受', color: '#C49A3C' },
   rejected: { text: '拒绝', color: 'red' },
 }
 

@@ -227,7 +227,7 @@ function Login() {
                     borderRadius: '4px',
                     fontSize: '12px',
                     cursor: 'pointer',
-                    background: selectedOrg === org.name ? '#1677FF' : '#f0f0f0',
+                    background: selectedOrg === org.name ? '#C45C4E' : '#f0f0f0',
                     color: selectedOrg === org.name ? '#fff' : '#333',
                     border: '1px solid #e8e8e8',
                   }}
@@ -251,7 +251,7 @@ function Login() {
                         borderRadius: '4px',
                         fontSize: '12px',
                         cursor: 'pointer',
-                        background: selectedDemo === acc.username ? '#1677FF' : '#f5f5f5',
+                        background: selectedDemo === acc.username ? '#C45C4E' : '#f5f5f5',
                         color: selectedDemo === acc.username ? '#fff' : '#333',
                         border: '1px solid #e8e8e8',
                       }}

@@ -109,9 +109,9 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedDate, onDateCha
                 justifyContent: 'center',
                 transition: 'all 0.2s ease',
                 position: 'relative',
-                backgroundColor: selected ? '#0033FF' : '#fff',
+                backgroundColor: selected ? '#B81F25' : '#fff',
                 color: selected ? '#fff' : '#64748b',
-                border: selected ? '2px solid #0033FF' : '1px solid #f1f5f9',
+                border: selected ? '2px solid #B81F25' : '1px solid #f1f5f9',
                 boxShadow: selected ? '0 4px 12px rgba(0, 51, 255, 0.25)' : 'none',
               }}
             >
@@ -134,7 +134,7 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedDate, onDateCha
                   width: '6px',
                   height: '6px',
                   borderRadius: '50%',
-                  backgroundColor: selected ? '#fff' : '#0033FF',
+                  backgroundColor: selected ? '#fff' : '#B81F25',
                   animation: 'pulse 2s ease-in-out infinite',
                 }} />
               )}

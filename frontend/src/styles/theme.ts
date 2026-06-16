@@ -1,7 +1,7 @@
 // Theme variables for unified styling
 export const theme = {
   // Colors
-  primary: '#2563EB',
+  primary: '#B81F25',
   success: '#16A34A',
   warning: '#F59E0B',
   danger: '#DC2626',

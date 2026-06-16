@@ -42,7 +42,7 @@ export function WorkOrderCenter({ orders, loading, hasMore }: WorkOrderCenterPro
   if (loading && orders.length === 0) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 40 }}>
-        <div className="loading-spinner" style={{ width: 32, height: 32, border: '2px solid #f3f3f3', borderTop: '2px solid #0033FF', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        <div className="loading-spinner" style={{ width: 32, height: 32, border: '2px solid #f3f3f3', borderTop: '2px solid #B81F25', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
       </div>
     )
   }
@@ -63,7 +63,7 @@ export function WorkOrderCenter({ orders, loading, hasMore }: WorkOrderCenterPro
               style={{
                 marginBottom: 12,
                 cursor: 'pointer',
-                border: isSelected ? '2px solid #0033FF' : '1px solid #e8e8e8',
+                border: isSelected ? '2px solid #B81F25' : '1px solid #e8e8e8',
                 backgroundColor: isSelected ? '#f0f8ff' : '#fff',
               }}
             >

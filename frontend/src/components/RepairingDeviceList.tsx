@@ -17,7 +17,7 @@ function RepairingDeviceList({ devices, loading, onDispatch }: RepairingDeviceLi
       key: 'sn',
       width: 150,
       render: (sn: string) => (
-        <span style={{ fontFamily: 'monospace', color: '#0033FF' }}>{sn}</span>
+        <span style={{ fontFamily: 'monospace', color: '#B81F25' }}>{sn}</span>
       ),
     },
     {

@@ -8,7 +8,7 @@ interface StatusFilterProps {
 
 const STATUS_OPTIONS = [
   { key: null, label: '全部', color: 'default' },
-  { key: 'ACTIVE', label: '正常', color: 'green' },
+  { key: 'ACTIVE', label: '正常', color: '#C49A3C' },
   { key: 'BROKEN', label: '故障', color: 'orange' },
   { key: 'REPAIRING', label: '报修中', color: 'red' },
   { key: 'INACTIVE', label: '停用', color: 'gray' },

@@ -48,8 +48,8 @@ const getHopColor = (currentHop?: number, hopLimit?: number) => {
   
   const ratio = currentHop / hopLimit
   if (ratio >= 0.8) return '#F59E0B' // Warning: yellow
-  if (ratio >= 0.5) return '#3B82F6'  // Normal: blue
-  return '#10B981'  // Safe: green
+  if (ratio >= 0.5) return '#C45C4E'  // Normal: blue
+  return '#C49A3C'  // Safe: green
 }
 
 interface WorkOrderCardProps {
@@ -272,7 +272,7 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
         <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {order.owner_org_name && (
             <span style={{
-              background: '#3B82F6',
+              background: '#C45C4E',
               color: '#fff',
               padding: '2px 8px',
               borderRadius: '4px',

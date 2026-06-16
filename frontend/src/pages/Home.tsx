@@ -30,8 +30,8 @@ import { useAuthStore } from '../store/useAuthStore'
  * Tab configuration with status groups and colors
  */
 const TABS = [
-  { key: 'pending', title: '待服务', statuses: STATUS_GROUPS.pending.statuses, color: '#0033FF' },
-  { key: 'working', title: '服务中', statuses: STATUS_GROUPS.working.statuses, color: '#00B578' },
+  { key: 'pending', title: '待服务', statuses: STATUS_GROUPS.pending.statuses, color: '#B81F25' },
+  { key: 'working', title: '服务中', statuses: STATUS_GROUPS.working.statuses, color: '#C49A3C' },
   { key: 'review', title: '待修正', statuses: STATUS_GROUPS.review.statuses, color: '#FF8F1F' },
   { key: 'completed', title: '已完成', statuses: STATUS_GROUPS.completed.statuses, color: '#999999' },
 ]
@@ -305,9 +305,9 @@ function Home() {
           style={{
             padding: '6px 12px',
             borderRadius: '4px',
-            border: '1px solid #0033FF',
-            backgroundColor: useDualColumn ? '#0033FF' : '#fff',
-            color: useDualColumn ? '#fff' : '#0033FF',
+            border: '1px solid #B81F25',
+            backgroundColor: useDualColumn ? '#B81F25' : '#fff',
+            color: useDualColumn ? '#fff' : '#B81F25',
             fontSize: '12px',
             cursor: 'pointer',
           }}
@@ -373,7 +373,7 @@ function Home() {
         <FloatingBubble
           onClick={handleCreateOrder}
           style={{
-            '--background': '#0033FF',
+            '--background': '#B81F25',
             '--size': '56px',
           }}
         >

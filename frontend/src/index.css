@@ -17,7 +17,7 @@ body {
 
   /* Theme Colors */
   --primary-blue: #B61C22;
-  --success-green: #00B578;
+  --success-green: #C49A3C;
   --warning-orange: #FF8F1F;
   --danger-red: #FF3141;
   --bg-color: #FBF8F6;
@@ -83,7 +83,7 @@ body {
 /* Sidebar Menu Item Active State */
 .ant-menu-dark .ant-menu-item-selected {
   background-color: rgba(0, 51, 255, 0.2) !important;
-  border-left: 3px solid #0033FF !important;
+  border-left: 3px solid #B81F25 !important;
   color: #ffffff !important;
   font-weight: 500;
 }
