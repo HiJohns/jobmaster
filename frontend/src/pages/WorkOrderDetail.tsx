@@ -29,6 +29,8 @@ function WorkOrderDetail() {
   const [reserveTime, setReserveTime] = useState('')
   const [finishModalVisible, setFinishModalVisible] = useState(false)
   const [finishDescription, setFinishDescription] = useState('')
+  const [verifyModalVisible, setVerifyModalVisible] = useState<'approve' | 'reject' | null>(null)
+  const [verifyComment, setVerifyComment] = useState('')
   const [quotationItems, setQuotationItems] = useState<QuotationItem[]>([])
   const [quotationSubmitted, setQuotationSubmitted] = useState(false)
   const [logs, setLogs] = useState<any[]>([])
@@ -178,6 +180,29 @@ function WorkOrderDetail() {
     return getStatusConfig(status as WorkOrderStatus).color
   }
 
+  const handleVerifyOrder = async () => {
+    if (!id || !verifyModalVisible) return
+    if (verifyModalVisible === 'reject' && !verifyComment.trim()) {
+      Toast.show('请输入退回理由')
+      return
+    }
+    setActionLoading(true)
+    try {
+      const response = await api.workorder.verify(id, verifyModalVisible, verifyComment) as any
+      if (response.code === 200) {
+        Toast.show({ content: verifyModalVisible === 'approve' ? '验收合格' : '已退回整改', icon: 'success' })
+        setVerifyModalVisible(null)
+        setVerifyComment('')
+        fetchOrderDetail()
+      }
+    } catch (error) {
+      console.error('Verify failed:', error)
+      Toast.show('操作失败')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   const canQuote = order?.status === 'FINISHED' && (
     userInfo?.role === 'CONTRACTOR_EMPLOYEE' || userInfo?.role === 'VENDOR_EMPLOYEE'
   )
@@ -218,10 +243,24 @@ function WorkOrderDetail() {
     if (!order || isImpersonated) return null
 
     const buttons: React.ReactNode[] = []
+    const isBranch = userInfo?.role === 'BRANCH_ADMIN' || userInfo?.role === 'EMPLOYEE'
     
-    // The line below was removed as its return value was not being used.
-    // getAvailableActions(order.status)
-    
+    if (canPerformAction(order.status, 'approve') && isBranch) {
+      buttons.push(
+        <Button key="approve" onClick={() => { setVerifyComment(''); setVerifyModalVisible('approve') }} loading={actionLoading} color="success">
+          验收合格
+        </Button>
+      )
+    }
+
+    if (canPerformAction(order.status, 'reject') && isBranch) {
+      buttons.push(
+        <Button key="reject" onClick={() => { setVerifyComment(''); setVerifyModalVisible('reject') }} loading={actionLoading} danger>
+          退回整改
+        </Button>
+      )
+    }
+
     if (canPerformAction(order.status, 'reserve') && order.appointment_type !== 1) {
       buttons.push(
         <Button key="reserve" onClick={() => setReserveModalVisible(true)} loading={actionLoading} style={isImpersonated ? {
@@ -493,6 +532,31 @@ function WorkOrderDetail() {
             placeholder="输入施工总结"
             rows={4}
           />
+        }
+      />
+
+      <Modal
+        visible={verifyModalVisible !== null}
+        onClose={() => setVerifyModalVisible(null)}
+        title={verifyModalVisible === 'approve' ? '验收合格' : '退回整改'}
+        actions={[
+          { key: 'cancel', text: '取消', onClick: () => setVerifyModalVisible(null) },
+          { key: 'confirm', text: '确认', onClick: handleVerifyOrder },
+        ]}
+        content={
+          <div>
+            <div style={{ marginBottom: 8, fontSize: 14, color: '#666' }}>
+              {verifyModalVisible === 'approve'
+                ? '请输入验收评论（可选）'
+                : '请输入退回理由（必填）'}
+            </div>
+            <TextArea
+              value={verifyComment}
+              onChange={setVerifyComment}
+              placeholder={verifyModalVisible === 'approve' ? '选填评论' : '请填写退回理由'}
+              rows={4}
+            />
+          </div>
         }
       />
     </div>

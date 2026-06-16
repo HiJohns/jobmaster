@@ -59,6 +59,9 @@ export default function WorkOrderDetailPage() {
   const [organizations, setOrganizations] = useState<any[]>([])
   const [engineers, setEngineers] = useState<EngineerOption[]>([])
   const [reservePickerVisible, setReservePickerVisible] = useState(false)
+  const [verifyModalAction, setVerifyModalAction] = useState<'approve' | 'reject' | null>(null)
+  const [verifyComment, setVerifyComment] = useState('')
+  const [verifyLoading, setVerifyLoading] = useState(false)
 
   if (!orderId) {
     Toast.show('无效的工单ID')
@@ -162,6 +165,26 @@ export default function WorkOrderDetailPage() {
         }
       },
     })
+  }
+
+  /**
+   * 处理验收
+   */
+  const handleVerify = async (action: 'approve' | 'reject') => {
+    if (action === 'reject' && !verifyComment.trim()) {
+      Toast.show({ content: '请输入退回理由', icon: 'fail' })
+      return
+    }
+    setVerifyLoading(true)
+    try {
+      await demoApi.verifyWorkOrder(orderId, { action, comment: verifyComment })
+      Toast.show({ content: action === 'approve' ? '验收合格' : '已退回整改', icon: 'success' })
+      navigate(-1)
+    } catch {
+      Toast.show({ content: '操作失败', icon: 'fail' })
+    } finally {
+      setVerifyLoading(false)
+    }
   }
 
   /**
@@ -464,6 +487,108 @@ export default function WorkOrderDetailPage() {
             </Card>
           )
         })()}
+
+        {/* 验收操作（仅分公司角色，FINISHED 状态） */}
+        {(() => {
+          const role = userInfo?.role || ''
+          const isBranch = role === 'BRANCH_ADMIN' || role === 'EMPLOYEE'
+          const canVerify = isBranch && workOrder.status === 'FINISHED'
+          if (!canVerify || !workOrder) return null
+
+          return (
+            <Card style={{ marginBottom: '16px' }}>
+              <div style={{ padding: '16px' }}>
+                <div style={{ fontSize: '14px', color: '#666', marginBottom: '12px' }}>
+                  工单已完成，请选择验收操作
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <Button
+                    block
+                    size="large"
+                    style={{
+                      '--background-color': '#00B578',
+                      '--border-radius': '8px',
+                      height: '48px',
+                      fontSize: '16px',
+                      flex: 1,
+                    }}
+                    onClick={() => {
+                      setVerifyComment('')
+                      setVerifyModalAction('approve')
+                    }}
+                  >
+                    验收合格
+                  </Button>
+                  <Button
+                    block
+                    size="large"
+                    style={{
+                      '--background-color': '#FF4D4F',
+                      '--border-radius': '8px',
+                      height: '48px',
+                      fontSize: '16px',
+                      flex: 1,
+                    }}
+                    onClick={() => {
+                      setVerifyComment('')
+                      setVerifyModalAction('reject')
+                    }}
+                  >
+                    退回整改
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )
+        })()}
+
+        {/* 验收/退回弹窗 */}
+        <Dialog
+          visible={verifyModalAction !== null}
+          title={verifyModalAction === 'approve' ? '验收合格' : '退回整改'}
+          onClose={() => setVerifyModalAction(null)}
+          content={
+            <div>
+              <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>
+                {verifyModalAction === 'approve'
+                  ? '请输入验收评论（可选）'
+                  : '请输入退回理由（必填）'}
+              </div>
+              <textarea
+                value={verifyComment}
+                onChange={(e) => setVerifyComment(e.target.value)}
+                placeholder={verifyModalAction === 'approve' ? '选填评论' : '请填写退回理由'}
+                style={{
+                  width: '100%',
+                  height: '80px',
+                  padding: '8px',
+                  border: '1px solid #d9d9d9',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  resize: 'none',
+                  outline: 'none',
+                }}
+              />
+            </div>
+          }
+          actions={[
+            {
+              key: 'cancel',
+              text: '取消',
+              onClick: () => setVerifyModalAction(null),
+            },
+            {
+              key: 'confirm',
+              text: '确认',
+              loading: verifyLoading,
+              onClick: async () => {
+                if (!verifyModalAction) return
+                await handleVerify(verifyModalAction)
+                setVerifyModalAction(null)
+              },
+            },
+          ]}
+        />
 
         {/* 拒单查看 */}
         {workOrder.status === 'PENDING' && (workOrder as any).rejection_reason && (

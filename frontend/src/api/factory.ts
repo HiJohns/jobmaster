@@ -120,10 +120,11 @@ export const demoApi = {
     })
     return response.data || response
   },
-  verifyWorkOrder: async (id: string) => {
+  verifyWorkOrder: async (id: string, params?: { action?: string; comment?: string }) => {
     const response = await apiClient.request({
       url: `/workorders/${id}/verify`,
       method: 'POST',
+      data: params || {},
     })
     return response.data
   },
@@ -350,10 +351,16 @@ export const createApi = () => {
           Promise.resolve({ code: 200, data: {} }),
         finish: () =>
           Promise.resolve({ code: 200, data: {} }),
-        verify: () =>
-          Promise.resolve({ code: 200, data: {} }),
-        reject: () =>
-          Promise.resolve({ code: 200, data: {} }),
+        verify: (id: string, action = 'approve', comment?: string) =>
+          demoApi.verifyWorkOrder(id, { action, comment }).then((res) => ({
+            code: 200,
+            data: res,
+          })),
+        reject: (id: string, reason: string) =>
+          demoApi.rejectWorkOrder(id, reason).then((res) => ({
+            code: 200,
+            data: res,
+          })),
         generateQRCode: () =>
           Promise.resolve({ code: 200, data: { qrcode: '' } }),
         myTasks: () =>

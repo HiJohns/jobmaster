@@ -72,10 +72,11 @@ export const demoApi = {
     })
     return response.data || response
   },
-  verifyWorkOrder: async (id: string) => {
+  verifyWorkOrder: async (id: string, params?: { action?: string; comment?: string }) => {
     const response = await demoApiClient.request({
       url: `/workorders/${id}/verify`,
       method: 'POST',
+      data: params || {},
     })
     return response.data
   },
