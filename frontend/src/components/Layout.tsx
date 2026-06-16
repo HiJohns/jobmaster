@@ -322,7 +322,7 @@ function AppLayout() {
                 style={{
                   width: collapsed ? '32px' : '140px',
                   height: 'auto',
-                  maxHeight: collapsed ? '32px' : '60px',
+                  objectFit: 'contain',
                 }}
               />
             </div>
