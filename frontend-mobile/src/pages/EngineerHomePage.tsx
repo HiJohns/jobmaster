@@ -45,6 +45,7 @@ export default function EngineerHomePage() {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
 
+  const isEngineer = userInfo?.role === 'ENGINEER'
   const canCreateOrder = userInfo?.role === 'BRANCH_ADMIN' || userInfo?.role === 'EMPLOYEE'
 
   /**
@@ -223,8 +224,8 @@ export default function EngineerHomePage() {
         )}
       </Card>
 
-      {/* 任务提示区 - 显示下一个即将开始的工单 */}
-      {nextUpcomingOrder && !currentWorkingOrder && (
+      {/* 任务提示区 - 显示下一个即将开始的工单（仅工程师） */}
+      {isEngineer && nextUpcomingOrder && !currentWorkingOrder && (
         <Card
           style={{
             margin: '12px 16px 0',
@@ -247,8 +248,8 @@ export default function EngineerHomePage() {
         </Card>
       )}
 
-      {/* 当前工单大卡片 - WORKING状态工单置顶 */}
-      {currentWorkingOrder && (
+      {/* 当前工单大卡片 - WORKING状态工单置顶（仅工程师） */}
+      {isEngineer && currentWorkingOrder && (
         <Card
           style={{
             margin: '12px 16px',
