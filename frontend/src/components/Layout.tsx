@@ -13,7 +13,6 @@ import type { MenuProps } from 'antd'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useMediaQuery } from 'react-responsive'
 import { useAuthStore } from '../store/useAuthStore'
-import Logo from './Logo'
 import TabBar from './TabBar'
 import '../styles/sidebar.css'
 import { useEffect, useState } from 'react'
@@ -308,7 +307,7 @@ function AppLayout() {
               flexDirection: 'column',
             }}
           >
-            {/* Logo Section - 80px height (8px * 10) */}
+            {/* Logo Section */}
             <div style={{
               height: '80px',
               display: 'flex',
@@ -317,11 +316,15 @@ function AppLayout() {
               borderBottom: '1px solid rgba(255,255,255,0.1)',
               padding: '0 8px',
             }}>
-              {collapsed ? (
-                <Logo size={24} theme="light" showText={false} layout="horizontal" />
-              ) : (
-                <Logo size={36} theme="light" showText={true} layout="horizontal" />
-              )}
+              <img
+                src="/logo.png"
+                alt="工单匠"
+                style={{
+                  width: collapsed ? '32px' : '140px',
+                  height: 'auto',
+                  maxHeight: collapsed ? '32px' : '60px',
+                }}
+              />
             </div>
 
             {/* Toggle Button */}

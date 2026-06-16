@@ -4,7 +4,6 @@ import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/useAuthStore'
 import { initializeMockData } from '../api/local'
-import Logo from '../components/Logo'
 import { demoApi, setUserRole } from '../api/factory'
 
 interface DemoOrg {
@@ -147,7 +146,11 @@ function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100">
       <div className="flex flex-col items-center">
         <div className="mb-8">
-          <Logo size={60} theme="dark" showText={true} />
+          <img
+            src="/logo.png"
+            alt="工单匠"
+            style={{ width: '160px', height: 'auto', margin: '0 auto', display: 'block' }}
+          />
         </div>
         
         <Card 

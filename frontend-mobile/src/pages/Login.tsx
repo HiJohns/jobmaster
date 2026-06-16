@@ -181,12 +181,13 @@ export default function LoginPage() {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#f5f5f5' }}>
-      {/* 标题 */}
-      <div style={{ padding: '40px 20px 20px', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0033FF', marginBottom: '8px' }}>
-          工单匠移动端
-        </h1>
-        <p style={{ fontSize: '14px', color: '#666' }}>登录您的账号</p>
+      {/* Logo */}
+      <div style={{ padding: '60px 20px 20px', textAlign: 'center' }}>
+        <img
+          src="/logo.png"
+          alt="工单匠"
+          style={{ width: '140px', height: 'auto', margin: '0 auto' }}
+        />
       </div>
 
       {/* 登录表单 */}
