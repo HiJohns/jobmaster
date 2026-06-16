@@ -27,7 +27,7 @@ function AppLayout() {
   const isMobile = useMediaQuery({ query: '(max-width: 768px)' })
   const [collapsed, setCollapsed] = useState(false)
   const [logoText, setLogoText] = useState('JobMaster')
-  const [logoColor, setLogoColor] = useState('#0033FF')
+  const [logoColor, setLogoColor] = useState('#B61C22')
 
   // Load brand config on mount
   useEffect(() => {
@@ -215,7 +215,7 @@ function AppLayout() {
   }
 
   // Collapsed sidebar user info (only avatar)
-  const SidebarUserInfoCollapsed = () => (
+   const SidebarUserInfoCollapsed = () => (
     <div
       style={{
         padding: '16px 8px',
@@ -223,7 +223,7 @@ function AppLayout() {
         justifyContent: 'center',
         alignItems: 'center',
         cursor: 'pointer',
-        borderTop: '1px solid rgba(255,255,255,0.1)',
+        borderTop: '1px solid #DDE1E6',
       }}
       onClick={(e) => e.preventDefault()}
     >
@@ -231,15 +231,15 @@ function AppLayout() {
         icon={<UserOutlined />}
         size="large"
         style={{
-          backgroundColor: 'rgba(255,255,255,0.15)',
-          color: '#fff',
+          backgroundColor: 'rgba(182,28,34,0.12)',
+          color: '#B61C22',
         }}
       />
     </div>
   )
 
   // Sidebar footer user info component
-  const SidebarUserInfo = () => (
+   const SidebarUserInfo = () => (
     <Dropdown
       menu={{ items: userMenuItems, onClick: handleMenuClick }}
       placement="topRight"
@@ -252,24 +252,23 @@ function AppLayout() {
           alignItems: 'center',
           gap: '12px',
           cursor: 'pointer',
-          borderTop: '1px solid rgba(255,255,255,0.1)',
+          borderTop: '1px solid #DDE1E6',
           transition: 'background-color 0.2s',
         }}
-        className="hover:bg-white/5"
         onClick={(e) => e.preventDefault()}
       >
         <Avatar
           icon={<UserOutlined />}
           size="large"
           style={{
-            backgroundColor: 'rgba(255,255,255,0.15)',
-            color: '#fff',
+            backgroundColor: 'rgba(182,28,34,0.12)',
+            color: '#B61C22',
             flexShrink: 0,
           }}
         />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            color: '#ffffff',
+            color: '#1F2937',
             fontSize: '14px',
             fontWeight: 500,
             whiteSpace: 'nowrap',
@@ -279,7 +278,7 @@ function AppLayout() {
             {userInfo?.displayName || '用户'}
           </div>
           <div style={{
-            color: 'rgba(255,255,255,0.7)',
+            color: '#8B919E',
             fontSize: '12px',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
@@ -297,7 +296,7 @@ function AppLayout() {
         <ImpersonationBanner />
         {!isMobile && (
           <Sider
-            theme="dark"
+            theme="light"
             className="shadow-md"
             breakpoint="lg"
             collapsedWidth="60"
@@ -305,6 +304,7 @@ function AppLayout() {
             style={{
               display: 'flex',
               flexDirection: 'column',
+              background: '#F0F4F8',
             }}
           >
             {/* Logo Section */}
@@ -313,7 +313,7 @@ function AppLayout() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              borderBottom: '1px solid rgba(255,255,255,0.1)',
+              borderBottom: '1px solid #DDE1E6',
               padding: '0 8px',
             }}>
               <img
@@ -355,7 +355,7 @@ function AppLayout() {
             {/* Menu Section - flex: 1 to take remaining space */}
             <div style={{ flex: 1, overflow: 'auto' }}>
               <Menu
-                theme="dark"
+                theme="light"
                 mode="inline"
                 selectedKeys={['/' + location.pathname.split('/')[1]]}
                 items={menuItems}
@@ -379,8 +379,8 @@ function AppLayout() {
                 padding: '16px 8px',
                 textAlign: 'center',
                 fontSize: '12px',
-                color: 'rgba(255,255,255,0.7)',
-                borderTop: '1px solid rgba(255,255,255,0.1)',
+                color: '#8B919E',
+                borderTop: '1px solid #DDE1E6',
               }}>
                 {logoText}
               </div>

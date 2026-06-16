@@ -1,7 +1,7 @@
 /* Tenant Admin Sidebar Active State */
 .tenant-admin-sidebar .ant-menu-item-selected {
-  background-color: rgba(42, 109, 244, 0.1) !important;
-  border-left: 4px solid #2A6DF4 !important;
+  background-color: rgba(182, 28, 34, 0.08) !important;
+  border-left: 4px solid #B61C22 !important;
   margin-left: 0 !important;
   padding-left: 20px !important;
 }

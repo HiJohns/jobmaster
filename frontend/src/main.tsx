@@ -12,9 +12,9 @@ dayjs.locale('zh-cn')
 // Ant Design theme configuration with primary color #0033FF
 const themeConfig = {
   token: {
-    colorPrimary: '#0033FF',
-    colorPrimaryHover: '#3366FF',
-    colorPrimaryActive: '#0029CC',
+    colorPrimary: '#B61C22',
+    colorPrimaryHover: '#CC2A30',
+    colorPrimaryActive: '#9A171D',
     borderRadius: 6,
   },
   components: {

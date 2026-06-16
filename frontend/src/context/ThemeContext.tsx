@@ -26,7 +26,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     root.setAttribute('data-theme-primary', config.primary_color)
     
     // Update document title with brand name
-    document.title = `${config.brand_name} - JobMaster`
+    document.title = `${config.brand_name} - 工单匠`
   }
 
   const handleSetBrandConfig = (config: BrandConfig) => {

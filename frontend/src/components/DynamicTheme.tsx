@@ -40,7 +40,7 @@ export default function DynamicThemeLoader({ children }: { children: React.React
         if (brand_config) {
           setBrandConfig({
             logo_url: brand_config.logo_url || '',
-            primary_color: brand_config.primary_color || '#0033FF',
+            primary_color: brand_config.primary_color || '#B61C22',
             brand_name: brand_config.brand_name || 'JobMaster',
           })
         }
