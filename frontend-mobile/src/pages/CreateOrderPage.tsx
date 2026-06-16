@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Button, Input, Toast, NavBar, ImageUploader, Picker, TextArea } from 'antd-mobile'
 import { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
@@ -26,6 +26,7 @@ export default function CreateOrderPage() {
   const [addressDetail, setAddressDetail] = useState(defaultAddress)
   const [isUrgent, setIsUrgent] = useState(false)
   const [photoUrls, setPhotoUrls] = useState<string[]>([])
+  const uploadFilesRef = useRef<File[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [appointmentType, setAppointmentType] = useState(1)
   
@@ -65,6 +66,7 @@ export default function CreateOrderPage() {
   const isBranchRole = userInfo?.role === 'BRANCH_ADMIN' || userInfo?.role === 'EMPLOYEE'
 
   const handlePhotoUpload = async (file: File): Promise<ImageUploadItem> => {
+    uploadFilesRef.current.push(file)
     const url = URL.createObjectURL(file)
     setPhotoUrls(prev => [...prev, url])
     return { url }
@@ -180,7 +182,7 @@ export default function CreateOrderPage() {
         description,
         category_id: selectedCategory,
         category_path: selectedCategoryName,
-        photo_urls: photoUrls,
+        photo_urls: [],
         priority: isUrgent ? 1 : 0,
         is_urgent: isUrgent,
         address_detail: addressDetail,
@@ -193,7 +195,28 @@ export default function CreateOrderPage() {
       
       if (response.code === 200 || response.id) {
         const workOrderId = response.id || response.data?.id
-        
+
+        // Upload tracked files to the new work order
+        if (workOrderId && uploadFilesRef.current.length > 0) {
+          try {
+            await Promise.all(
+              uploadFilesRef.current.map(file => {
+                const formData = new FormData()
+                formData.append('file', file)
+                return demoApi.request({
+                  url: `/workorders/${workOrderId}/images`,
+                  method: 'POST',
+                  data: formData,
+                  headers: { 'Content-Type': null },
+                })
+              })
+            )
+          } catch (uploadError) {
+            console.error('Photo upload failed:', uploadError)
+          }
+          uploadFilesRef.current = []
+        }
+
         // If Branch role and contractor selected, dispatch the order
         if (isBranchRole && selectedContractor && workOrderId) {
           try {
