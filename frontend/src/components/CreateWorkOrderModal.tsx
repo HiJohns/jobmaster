@@ -3,7 +3,7 @@
  * 调整：区域选择移到分类之上，分类联动显示
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Modal,
   Form,
@@ -15,7 +15,7 @@ import {
   Card,
 } from 'antd-mobile'
 import { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
-import { api } from '../api/factory'
+import { api, demoApi } from '../api/factory'
 import { CreateWorkOrderRequest } from '../api/workorder'
 import { useAuthStore } from '../store/useAuthStore'
 import { addPendingOrder } from '../utils/pendingOrders'
@@ -48,6 +48,7 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
   const [form] = Form.useForm<FormValues>()
   const [loading, setLoading] = useState(false)
   const [activePriority, setActivePriority] = useState<0 | 1 | 2>(0)
+  const uploadFilesRef = useRef<File[]>([])
 
   // Region and Category states
   const [regions, setRegions] = useState<string[]>([])
@@ -136,7 +137,7 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
         store_id: userInfo.orgId,
         title: values.title,
         description: values.description,
-        photo_urls: values.photoUrls || [],
+        photo_urls: [],
         priority: activePriority || 0,
         is_urgent: (activePriority || 0) > 0,
         address_detail: values.addressDetail,
@@ -149,6 +150,29 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
       const response = await api.workorder.create(requestData)
       
       if (response.code === 200) {
+        const newOrderId = response.data?.id || response.id
+
+        // Upload tracked files to the new work order
+        if (newOrderId && uploadFilesRef.current.length > 0) {
+          try {
+            await Promise.all(
+              uploadFilesRef.current.map(file => {
+                const formData = new FormData()
+                formData.append('file', file)
+                return demoApi.request({
+                  url: `/workorders/${newOrderId}/images`,
+                  method: 'POST',
+                  data: formData,
+                  headers: { 'Content-Type': null },
+                })
+              })
+            )
+          } catch (uploadError) {
+            console.error('Photo upload failed:', uploadError)
+          }
+          uploadFilesRef.current = []
+        }
+
         Toast.show({
           content: '工单创建成功',
           icon: 'success',
@@ -174,6 +198,16 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
     }
   }
 
+  const handleClose = () => {
+    uploadFilesRef.current = []
+    form.resetFields()
+    setActivePriority(0)
+    setSelectedRegion('')
+    setCategoriesVisible(false)
+    setSelectedDivisionPath([])
+    onClose()
+  }
+
   const handleSavePending = () => {
     const values = form.getFieldsValue()
     if (!values.title || values.title.length < 3) {
@@ -194,10 +228,7 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
       created_at: new Date().toISOString(),
     })
     Toast.show('已存入待提交')
-    onClose()
-    form.resetFields()
-    setActivePriority(0)
-    setSelectedRegion('')
+    handleClose()
     setCategoriesVisible(false)
     setSelectedDivisionPath([])
   }
@@ -205,7 +236,7 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
   return (
     <Modal
       visible={visible}
-      onClose={onClose}
+      onClose={handleClose}
       title="创建工单"
       content={
         <Form
@@ -374,6 +405,7 @@ export const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
               >
                 <ImageUploader
                   upload={async (file: File): Promise<ImageUploadItem> => {
+                    uploadFilesRef.current.push(file)
                     return {
                       url: URL.createObjectURL(file),
                       thumbnailUrl: URL.createObjectURL(file),
