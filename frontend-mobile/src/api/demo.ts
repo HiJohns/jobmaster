@@ -12,22 +12,10 @@ export const demoApi = {
     return response
   },
   getWorkOrders: async (_params?: Record<string, unknown>) => {
-    let statusFilter = ''
-    
-    if (currentUserRole === 'BRANCH_ADMIN' || currentUserRole === 'EMPLOYEE') {
-      statusFilter = ''
-    } else if (currentUserRole === 'ENGINEER') {
-      statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING,FINISHED'
-    } else if (currentUserRole === 'CONTRACTOR_EMPLOYEE' || currentUserRole === 'CONTRACTOR_ADMIN') {
-      statusFilter = 'PENDING,DISPATCHED,ACCEPTED,RESERVED,WORKING,FINISHED'
-    } else if (currentUserRole === 'VENDOR_EMPLOYEE' || currentUserRole === 'VENDOR_ADMIN') {
-      statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING,FINISHED'
-    }
-    
     const response = await demoApiClient.request({
       url: '/workorders',
       method: 'GET',
-      params: { status: statusFilter },
+      params: { status: '' },
     })
     const data = response.data || response
     if (data && data.list && Array.isArray(data.list)) {

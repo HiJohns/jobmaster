@@ -1,4 +1,4 @@
-import { USE_LOCAL_API, USE_DEMO_API, API_BASE_URL, setDemoUserRole, getDemoUserRole } from '../config/env'
+import { USE_LOCAL_API, USE_DEMO_API, API_BASE_URL, setDemoUserRole } from '../config/env'
 import { localAuthApi, localWorkorderApi, localOrganizationApi, localReservationApi, initializeMockData } from './local'
 import { authApi, workorderApi } from './index'
 import apiClient from './client'
@@ -8,8 +8,6 @@ console.log('[DEBUG] env config:', { USE_LOCAL_API, USE_DEMO_API, API_BASE_URL }
 export const setUserRole = (role: string) => {
   setDemoUserRole(role)
 }
-
-const getUserRole = () => getDemoUserRole()
 
 const shouldUseLocal = (): boolean => {
   return USE_LOCAL_API
@@ -45,29 +43,10 @@ export const demoApi = {
     return data
   },
   getWorkOrders: async (_params?: Record<string, unknown>) => {
-    // 根据角色设置不同的状态过滤
-    const userRole = getUserRole()
-    console.log('[DEBUG demoApi.getWorkOrders] userRole:', userRole, 'statusFilter will be:', !userRole ? 'ALL' : userRole)
-    
-    let statusFilter = '' // 不设置则返回全部
-    
-    if (userRole === 'BRANCH_ADMIN' || userRole === 'EMPLOYEE') {
-      statusFilter = ''
-    } else if (userRole === 'ENGINEER') {
-      statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING,FINISHED'
-    } else if (userRole === 'CONTRACTOR_EMPLOYEE' || userRole === 'CONTRACTOR_ADMIN') {
-      statusFilter = 'PENDING,DISPATCHED,ACCEPTED,RESERVED,WORKING,FINISHED'
-    } else if (userRole === 'VENDOR_EMPLOYEE' || userRole === 'VENDOR_ADMIN') {
-      statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING,FINISHED'
-    } else if (userRole === 'VENDOR_EMPLOYEE' || userRole === 'VENDOR_ADMIN') {
-      statusFilter = 'DISPATCHED,ACCEPTED,RESERVED,WORKING,FINISHED'
-    }
-    
-    console.log('[DEBUG demoApi.getWorkOrders] requesting with status:', statusFilter)
     const response = await apiClient.request({
       url: '/workorders',
       method: 'GET',
-      params: { status: statusFilter },
+      params: { status: '' },
     })
     // Demo API returns data directly, not wrapped in response.data
     return response.data || response
