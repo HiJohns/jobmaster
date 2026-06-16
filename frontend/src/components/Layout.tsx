@@ -320,8 +320,8 @@ function AppLayout() {
                 src="/logo.png"
                 alt="工单匠"
                 style={{
-                  width: collapsed ? '32px' : '140px',
-                  height: 'auto',
+                  maxWidth: collapsed ? '32px' : '140px',
+                  maxHeight: '72px',
                   objectFit: 'contain',
                 }}
               />
