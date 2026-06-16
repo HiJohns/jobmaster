@@ -6,6 +6,10 @@
   padding-left: 20px !important;
 }
 
+.tenant-admin-sidebar .ant-menu-item-selected .ant-menu-title-content {
+  color: #B61C22 !important;
+}
+
 .tenant-admin-sidebar .ant-menu-item-selected::after {
   display: none !important; /* Hide default blue bar */
 }

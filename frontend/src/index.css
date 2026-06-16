@@ -11,16 +11,16 @@ body {
 
 /* Ant Design theme overrides */
 :root {
-  --ant-primary-color: #0033FF;
-  --ant-primary-color-hover: #3366FF;
-  --ant-primary-color-active: #0029CC;
+  --ant-primary-color: #B61C22;
+  --ant-primary-color-hover: #CC2A30;
+  --ant-primary-color-active: #9A171D;
 
   /* Theme Colors */
-  --primary-blue: #0033FF;
+  --primary-blue: #B61C22;
   --success-green: #00B578;
   --warning-orange: #FF8F1F;
   --danger-red: #FF3141;
-  --bg-color: #F5F7FA;
+  --bg-color: #FBF8F6;
   
   /* Component Colors */
   --dot-color-today: #ffffff;
