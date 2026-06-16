@@ -205,7 +205,7 @@ export default function LoginPage() {
                 size="large"
                 loading={loading}
                 style={{
-                  '--background-color': '#0033FF',
+                  '--background-color': '#B61C22',
                   '--border-radius': '8px',
                   height: '48px',
                   fontSize: '16px',
@@ -267,7 +267,7 @@ export default function LoginPage() {
                 key={org.name}
                 size="small"
                 style={{
-                  '--background-color': selectedOrg === org.name ? '#0033FF' : '#fff',
+                  '--background-color': selectedOrg === org.name ? '#B61C22' : '#fff',
                   '--text-color': selectedOrg === org.name ? '#fff' : '#333',
                   border: '1px solid #e8e8e8',
                   fontSize: '12px',
@@ -292,7 +292,7 @@ export default function LoginPage() {
                     key={acc.username}
                     size="small"
                     style={{
-                      '--background-color': selectedAccount === acc.username ? '#0033FF' : '#f5f5f5',
+                      '--background-color': selectedAccount === acc.username ? '#B61C22' : '#f5f5f5',
                       '--text-color': selectedAccount === acc.username ? '#fff' : '#333',
                       border: '1px solid #e8e8e8',
                       fontSize: '12px',

@@ -190,7 +190,7 @@ export default function EngineerHomePage() {
       >
         <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0033FF', lineHeight: 1 }}>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#B61C22', lineHeight: 1 }}>
               {stats.total}
             </div>
             <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>今日工单</div>
@@ -198,10 +198,10 @@ export default function EngineerHomePage() {
           
           {Object.entries(stats.by_status).slice(0, 3).map(([status, count]) => {
             const statusConfig = {
-              DISPATCHED: { text: '流转中', color: '#0033FF' },
-              ACCEPTED: { text: '已接单', color: '#00B578' },
+              DISPATCHED: { text: '流转中', color: '#B61C22' },
+              ACCEPTED: { text: '已接单', color: '#C49A3C' },
               RESERVED: { text: '已预约', color: '#FF8F1F' },
-              WORKING: { text: '施工中', color: '#6366F1' },
+              WORKING: { text: '施工中', color: '#C75B2E' },
             }[status] || { text: status, color: '#999' }
 
             return (
@@ -217,7 +217,7 @@ export default function EngineerHomePage() {
         {userInfo?.role && ['BRANCH_ADMIN', 'EMPLOYEE'].includes(userInfo.role) && (
           <div
             onClick={() => navigate('/wechat/pending-orders')}
-            style={{ textAlign: 'center', padding: '8px 0 0', fontSize: '12px', color: '#1677FF', cursor: 'pointer' }}
+            style={{ textAlign: 'center', padding: '8px 0 0', fontSize: '12px', color: '#C45C4E', cursor: 'pointer' }}
           >
             待提交
           </div>
@@ -254,9 +254,9 @@ export default function EngineerHomePage() {
           style={{
             margin: '12px 16px',
             borderRadius: theme.borderRadius,
-            background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+            background: 'linear-gradient(135deg, #C75B2E 0%, #D4852A 100%)',
             color: '#fff',
-            boxShadow: '0 4px 16px rgba(99, 102, 241, 0.3)',
+            boxShadow: '0 4px 16px rgba(199, 91, 46, 0.3)',
           }}
         >
           <div style={{ padding: '20px 16px' }}>
@@ -276,7 +276,7 @@ export default function EngineerHomePage() {
               onClick={() => handleSubmitRecord(currentWorkingOrder.id)}
               style={{
                 background: '#fff',
-                color: '#6366F1',
+                color: '#C75B2E',
                 padding: '16px',
                 borderRadius: '12px',
                 textAlign: 'center',
@@ -297,7 +297,7 @@ export default function EngineerHomePage() {
         <PullToRefresh onRefresh={handleRefresh}>
           {loading && orders.length === 0 ? (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '40px' }}>
-              <Loading color="#0033FF" />
+              <Loading color="#B61C22" />
             </div>
           ) : orders.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
@@ -334,11 +334,11 @@ export default function EngineerHomePage() {
             width: '56px',
             height: '56px',
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #0033FF 0%, #0066FF 100%)',
+            background: 'linear-gradient(135deg, #B61C22 0%, #D44A50 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(0, 51, 255, 0.4)',
+            boxShadow: '0 4px 12px rgba(182, 28, 34, 0.3)',
             cursor: 'pointer',
             zIndex: 1000,
           }}

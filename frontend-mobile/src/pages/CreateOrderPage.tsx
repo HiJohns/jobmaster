@@ -406,7 +406,7 @@ export default function CreateOrderPage() {
                 <Button
                   size="small"
                   onClick={() => setTimeSlots([...timeSlots, { days: 'weekday', start_time: '09:00', end_time: '18:00' }])}
-                  style={{ fontSize: '12px', padding: '4px 12px', color: '#1677FF', borderColor: '#1677FF' }}
+                  style={{ fontSize: '12px', padding: '4px 12px', color: '#C45C4E', borderColor: '#C45C4E' }}
                   fill="none"
                 >
                   + 添加上门时段
@@ -558,7 +558,7 @@ export default function CreateOrderPage() {
                   width: '44px',
                   height: '24px',
                   borderRadius: '12px',
-                  background: isUrgent ? '#00B578' : '#E5E5E5',
+                  background: isUrgent ? '#C49A3C' : '#E5E5E5',
                   position: 'relative',
                   cursor: 'pointer',
                   transition: 'background 0.3s',
@@ -587,7 +587,7 @@ export default function CreateOrderPage() {
           loading={submitting}
           onClick={handleSubmit}
           style={{
-            background: '#00B578',
+            background: '#C49A3C',
             borderRadius: '8px',
             height: '48px',
             fontSize: '16px',
@@ -606,8 +606,8 @@ export default function CreateOrderPage() {
             height: '44px',
             fontSize: '15px',
             fontWeight: '400',
-            border: '1px solid #1677FF',
-            color: '#1677FF',
+            border: '1px solid #C45C4E',
+            color: '#C45C4E',
             marginTop: 8,
           }}
           block

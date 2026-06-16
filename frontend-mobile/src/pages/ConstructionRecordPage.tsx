@@ -46,9 +46,23 @@ export default function ConstructionRecordPage() {
   }, [orderId])
 
   const handlePhotoUpload = async (file: File): Promise<ImageUploadItem> => {
-    const url = URL.createObjectURL(file)
-    setUploadedPhotos(prev => [...prev, url])
-    return { url }
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const response = await demoApi.request({
+        url: `/workorders/${orderId}/images`,
+        method: 'POST',
+        data: formData,
+        headers: { 'Content-Type': null },
+      })
+      const data: { url: string } = response.data || response
+      const permanentUrl = data.url
+      setUploadedPhotos(prev => [...prev, permanentUrl])
+      return { url: permanentUrl }
+    } catch {
+      Toast.show({ content: '图片上传失败', icon: 'fail', duration: 2000 })
+      throw new Error('upload failed')
+    }
   }
 
   const submitRecord = async (andFinish: boolean) => {
@@ -140,7 +154,7 @@ export default function ConstructionRecordPage() {
             block
             size="large"
             loading={submitting}
-            style={{ '--background-color': '#0033FF', '--text-color': '#fff', '--border-radius': '8px', height: '48px', fontSize: '16px' }}
+            style={{ '--background-color': '#B61C22', '--text-color': '#fff', '--border-radius': '8px', height: '48px', fontSize: '16px' }}
             onClick={() => submitRecord(false)}
           >
             提交
@@ -149,7 +163,7 @@ export default function ConstructionRecordPage() {
             block
             size="large"
             loading={submitting}
-            style={{ '--background-color': '#00B578', '--text-color': '#fff', '--border-radius': '8px', height: '48px', fontSize: '16px' }}
+            style={{ '--background-color': '#C49A3C', '--text-color': '#fff', '--border-radius': '8px', height: '48px', fontSize: '16px' }}
             onClick={() => submitRecord(true)}
           >
             提交并结束

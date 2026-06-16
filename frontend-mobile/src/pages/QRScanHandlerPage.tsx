@@ -190,7 +190,7 @@ export default function QRScanHandlerPage() {
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 40 }}>
-        <Loading color="#0033FF" />
+        <Loading color="#B61C22" />
       </div>
     )
   }

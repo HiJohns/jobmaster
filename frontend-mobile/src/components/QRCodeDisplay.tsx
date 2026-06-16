@@ -40,7 +40,7 @@ export default function QRCodeDisplay({ workOrderId, size = 200 }: QRCodeDisplay
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: size }}>
-        <Loading color="#0033FF" />
+        <Loading color="#B61C22" />
       </div>
     )
   }

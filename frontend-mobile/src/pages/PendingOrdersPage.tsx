@@ -70,7 +70,7 @@ export default function PendingOrdersPage() {
                   {order.description?.length > 50 ? '...' : ''}
                 </div>
                 <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 12, color: '#1677FF' }}>待提交</span>
+                  <span style={{ fontSize: 12, color: '#C45C4E' }}>待提交</span>
                   <Button size="small" color="danger" fill="none" onClick={() => handleDelete(order.id)}>
                     删除
                   </Button>

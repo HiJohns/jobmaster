@@ -7,7 +7,7 @@ import TabBar from '../components/TabBar'
 
 const STATUS_LABELS: Record<string, { text: string; color: string }> = {
   pending: { text: '待确认', color: '#FF8F1F' },
-  confirmed: { text: '已确认', color: '#00B578' },
+  confirmed: { text: '已确认', color: '#C49A3C' },
   rejected: { text: '已拒绝', color: '#FF4D4F' },
   expired: { text: '已过期', color: '#999' },
 }
