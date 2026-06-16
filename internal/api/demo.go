@@ -1115,7 +1115,7 @@ func (h *DemoHandlers) GetWorkOrderRecords(c *gin.Context) {
 	// Get arrive and work_record logs
 	var list []map[string]interface{}
 	for _, log := range wo.Logs {
-		if log.Action != model.LogActionArrive && log.Action != model.LogActionWorkRecord && log.Action != model.LogActionStatusChangeToWorking {
+		if log.Action != model.LogActionArrive && log.Action != model.LogActionWorkRecord && log.Action != model.LogActionStatusChangeToWorking && log.Action != model.LogActionFinish {
 			continue
 		}
 		entry := map[string]interface{}{
@@ -1129,6 +1129,8 @@ func (h *DemoHandlers) GetWorkOrderRecords(c *gin.Context) {
 			entry["type"] = "arrive"
 		} else if log.Action == model.LogActionStatusChangeToWorking {
 			entry["type"] = "start"
+		} else if log.Action == model.LogActionFinish {
+			entry["type"] = "finish"
 		} else {
 			entry["type"] = "record"
 		}

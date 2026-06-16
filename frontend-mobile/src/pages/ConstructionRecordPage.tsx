@@ -74,6 +74,13 @@ export default function ConstructionRecordPage() {
       setLogs(prev => [...prev, newLog])
 
       if (andFinish) {
+        setLogs(prev => [...prev, {
+          timestamp: new Date().toISOString(),
+          user_name: '',
+          type: 'finish',
+          details: '施工完成',
+          photo_urls: [],
+        }])
         await demoApi.finishWorkOrder(orderId, { description: message, photo_urls: uploadedPhotos })
         Toast.show({ content: '施工完成', icon: 'success', duration: 1500 })
         setTimeout(() => navigate(-1), 1500)
@@ -159,7 +166,7 @@ export default function ConstructionRecordPage() {
             logs.map((log, i) => (
               <div key={i} style={{ padding: '8px 0', borderBottom: i < logs.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
                 <div style={{ fontSize: '12px', color: '#999', marginBottom: '2px' }}>
-                  {log.type === 'arrive' ? '📋 到场签到' : log.type === 'start' ? '🛠️ 开始施工' : '📝 施工记录'} · {formatTime(log.timestamp)}
+                  {log.type === 'arrive' ? '📋 到场签到' : log.type === 'start' ? '🛠️ 开始施工' : log.type === 'finish' ? '✅ 施工完成' : '📝 施工记录'} · {formatTime(log.timestamp)}
                 </div>
                 {log.details && <div style={{ fontSize: '14px', color: '#333' }}>{log.details}</div>}
                 {log.photo_urls && log.photo_urls.length > 0 && (
