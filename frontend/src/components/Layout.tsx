@@ -335,7 +335,6 @@ function AppLayout() {
               zIndex: 10,
             }}>
               <Button
-                type="primary"
                 shape="circle"
                 size="small"
                 icon={collapsed ? '＞' : '＜'}
@@ -347,6 +346,7 @@ function AppLayout() {
                   justifyContent: 'center',
                   alignItems: 'center',
                   backgroundColor: logoColor,
+                  color: '#fff',
                   border: 'none',
                 }}
               />
