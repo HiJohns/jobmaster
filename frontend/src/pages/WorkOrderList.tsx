@@ -11,10 +11,10 @@ import { PendingOrdersModal } from '../components/PendingOrdersModal'
 import { getPendingCount } from '../utils/pendingOrders'
 
 const FILTER_MAP: Record<string, string[]> = {
-  total: ['PENDING', 'DISPATCHED', 'RESERVED', 'WORKING', 'FINISHED', 'CLOSED'],
-  pending: ['PENDING', 'DISPATCHED'],
-  working: ['RESERVED', 'WORKING'],
-  abnormal: ['FINISHED', 'CLOSED'],
+  total: ['PENDING', 'DISPATCHED', 'RESERVED', 'WORKING', 'FINISHED', 'PENDING_EVALUATION', 'CLOSED'],
+  pending: ['PENDING'],
+  working: ['DISPATCHED', 'ACCEPTED', 'RESERVED', 'WORKING'],
+  abnormal: ['PENDING_EVALUATION', 'FINISHED', 'CLOSED'],
 }
 
 function WorkOrderList() {

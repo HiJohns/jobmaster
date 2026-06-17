@@ -464,14 +464,14 @@ export const localWorkorderApi = {
       throw new Error('工单不存在')
     }
 
-    if (workorders[idx].status !== 'FINISHED') {
+    if (workorders[idx].status !== 'PENDING_EVALUATION') {
       throw new Error('当前状态无法验收')
     }
 
     const now = new Date().toISOString()
     workorders[idx] = {
       ...workorders[idx],
-      status: 'CLOSED',
+      status: 'FINISHED',
       updated_at: now,
     }
 
@@ -484,8 +484,8 @@ export const localWorkorderApi = {
       user_name: user.display_name,
       action: 'VERIFY',
       details: '验收通过',
-      old_status: 'FINISHED',
-      new_status: 'CLOSED',
+      old_status: 'PENDING_EVALUATION',
+      new_status: 'FINISHED',
       created_at: now,
     })
     storage.set(STORAGE_KEYS.WORK_RECORDS, records)
@@ -622,7 +622,7 @@ export const localWorkorderApi = {
       throw new Error('工单不存在')
     }
 
-    if (workorders[idx].status !== 'FINISHED') {
+    if (workorders[idx].status !== 'PENDING_EVALUATION') {
       throw new Error('当前状态无法验收不通过')
     }
 

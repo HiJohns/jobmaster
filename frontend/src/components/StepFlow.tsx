@@ -19,6 +19,7 @@ export function StepFlow({ currentStatus, appointmentType, className }: StepFlow
     'ACCEPTED',
     'RESERVED',
     'WORKING',
+    'PENDING_EVALUATION',
     'FINISHED',
     'CLOSED',
   ]
@@ -37,8 +38,9 @@ export function StepFlow({ currentStatus, appointmentType, className }: StepFlow
       ACCEPTED: { title: '已接单', description: '供应商已接单' },
       RESERVED: { title: '已预约', description: '确认进场时间' },
       WORKING: { title: '施工中', description: '进行中' },
-      FINISHED: { title: '待验收', description: '提交完工' },
-      CLOSED: { title: '已完成', description: '验收通过' },
+      PENDING_EVALUATION: { title: '待验收', description: '提交完工' },
+      FINISHED: { title: '已完成', description: '验收通过' },
+      CLOSED: { title: '已完结', description: '评分归档' },
     }
 
     return {

@@ -29,55 +29,38 @@ export function Dashboard({ orders }: DashboardProps) {
       const todayOrders = orders.filter(order => 
         dayjs(order.created_at).format('YYYY-MM-DD') === today
       )
-      const pendingReview = orders.filter(order => order.status === 'FINISHED')
-      const delayed = orders.filter(order => {
-        if (order.status === 'PENDING' || order.status === 'DISPATCHED') {
-          const created = dayjs(order.created_at)
-          const hours = dayjs().diff(created, 'hour')
-          return hours > 24 // Over 24 hours
-        }
-        return false
-      })
-
-      return [
-        { title: '今日报修', value: todayOrders.length, color: '#B81F25', action: () => navigate('/workorders?date=today') },
-        { title: '待验收', value: pendingReview.length, color: '#FF8F1F', action: () => navigate('/workorders?status=FINISHED') },
-        { title: '异常延迟', value: delayed.length, color: '#FF4D4F', action: () => navigate('/workorders?status=PENDING,DISPATCHED') },
-      ]
-    } else if (role === 'MAIN_CONTRACTOR') {
-      // Contractor stats
-      const unassigned = orders.filter(order => order.status === 'PENDING')
-      const dispatched = orders.filter(order => order.status === 'DISPATCHED' || order.status === 'RESERVED')
-      const coverage = orders.length > 0 ? Math.round((dispatched.length / orders.length) * 100) : 0
-
-      return [
-        { title: '未指派', value: unassigned.length, color: '#999', action: () => navigate('/workorders?status=PENDING') },
-        { title: '已转派', value: dispatched.length, color: '#C49A3C', action: () => navigate('/workorders?status=DISPATCHED,RESERVED') },
-        { title: '供应商覆盖率', value: coverage, color: '#B81F25', action: () => {}, suffix: '%' },
-      ]
+      const pendingReview = orders.filter(order => order.status === 'PENDING_EVALUATION')
+      const { data: orgsData } = await api.organization.list()
+      const organizations = orgsData?.list || []
+      setOrgCount(organizations.length)
+    } catch (error) {
+      console.error('Failed to fetch stats:', error)
     }
+  }, [])
 
-    return []
-  }
-
-  const stats = getStatsForRole()
-
-  if (stats.length === 0) {
-    return null // Don't show dashboard for other roles
-  }
+  const navigate = useNavigate()
 
   return (
-    <div style={{ marginBottom: 24 }}>
-      <Card title="业务概览" style={{ background: '#fff' }}>
-        <Space direction="vertical" style={{ width: '100%' }}>
-          {stats.map((stat, index) => (
-            <StatCard
-              key={index}
-              title={stat.title}
-              value={stat.value}
-              color={stat.color}
-              onClick={stat.action}
-            />
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <StatCard
+        title="今日报修"
+        value={todayOrders.length}
+        color="#0033FF"
+        onClick={() => navigate('/workorders?date=today')}
+      />
+      <StatCard
+        title="供应商覆盖率"
+        value={coverage}
+        color="#0033FF"
+        suffix="%"
+      />
+      </div>
+      <StatCard
+        title="待验收"
+        value={pendingReview.length}
+        color="#FF8F1F"
+        onClick={() => navigate('/workorders?status=PENDING_EVALUATION')}
+      />
           ))}
         </Space>
       </Card>

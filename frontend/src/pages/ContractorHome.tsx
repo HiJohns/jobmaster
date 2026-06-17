@@ -17,18 +17,19 @@ const STATUS_COLORS: Record<string, string> = {
   ACCEPTED: 'success',
   RESERVED: 'warning',
   WORKING: 'danger',
-  FINISHED: 'default',
+  FINISHED: 'success',
   CLOSED: 'default',
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: '待派单',
-  DISPATCHED: '已指派',
+  PENDING: '等待',
+  DISPATCHED: '流转中',
   ACCEPTED: '已接单',
   RESERVED: '已预约',
   WORKING: '施工中',
-  FINISHED: '待验收',
-  CLOSED: '已完成',
+  PENDING_EVALUATION: '待验收',
+  FINISHED: '已完成',
+  CLOSED: '已完结',
 }
 
 function ContractorHome() {

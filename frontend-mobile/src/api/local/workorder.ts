@@ -399,7 +399,7 @@ export const localWorkorderApi = {
 
     workorders[idx] = {
       ...workorders[idx],
-      status: 'FINISHED',
+      status: 'PENDING_EVALUATION',
       labor_fee,
       material_fee,
       other_fee,
@@ -418,7 +418,7 @@ export const localWorkorderApi = {
       action: 'FINISH',
       details: description,
       old_status: 'WORKING',
-      new_status: 'FINISHED',
+      new_status: 'PENDING_EVALUATION',
       created_at: now,
     })
     storage.set(STORAGE_KEYS.WORK_RECORDS, records)
@@ -439,12 +439,12 @@ export const localWorkorderApi = {
       throw new Error('工单不存在')
     }
 
-    if (workorders[idx].status !== 'FINISHED') {
+    if (workorders[idx].status !== 'PENDING_EVALUATION') {
       throw new Error('当前状态无法验收')
     }
 
     const now = new Date().toISOString()
-    const newStatus = action === 'approve' ? 'PENDING_EVALUATION' : 'DISPATCHED'
+    const newStatus = action === 'approve' ? 'FINISHED' : 'DISPATCHED'
     const details = action === 'approve' ? '验收通过' : `验收拒绝: ${comment || ''}`
 
     workorders[idx] = {
@@ -466,7 +466,7 @@ export const localWorkorderApi = {
       user_name: user.display_name,
       action: action === 'approve' ? 'APPROVE' : 'REJECT',
       details,
-      old_status: 'FINISHED',
+      old_status: 'PENDING_EVALUATION',
       new_status: newStatus,
       created_at: now,
     })
@@ -617,7 +617,7 @@ export const localWorkorderApi = {
       throw new Error('工单不存在')
     }
 
-    if (workorders[idx].status !== 'FINISHED') {
+    if (workorders[idx].status !== 'PENDING_EVALUATION') {
       throw new Error('当前状态无法验收不通过')
     }
 
