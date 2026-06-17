@@ -37,7 +37,7 @@ const STATUS_CONFIG: Record<string, { text: string; color: string }> = {
   RESERVED: { text: '已预约', color: '#FF8F1F' },
   WORKING: { text: '施工中', color: '#B45309' },
   FINISHED: { text: '已完成', color: '#0F766E' },
-  PENDING_EVALUATION: { text: '待评估', color: '#F59E0B' },
+  PENDING_EVALUATION: { text: '待验收', color: '#0F766E' },
   CLOSED: { text: '已关闭', color: '#1F2937' },
 }
 
@@ -492,7 +492,7 @@ export default function WorkOrderDetailPage() {
         {(() => {
           const role = userInfo?.role || ''
           const isBranch = role === 'BRANCH_ADMIN' || role === 'EMPLOYEE'
-          const canVerify = isBranch && workOrder.status === 'FINISHED'
+          const canVerify = isBranch && workOrder.status === 'PENDING_EVALUATION'
           if (!canVerify || !workOrder) return null
 
           return (

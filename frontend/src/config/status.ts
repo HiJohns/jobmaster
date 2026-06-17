@@ -15,6 +15,7 @@ export type WorkOrderStatus =
   | 'ACCEPTED'
   | 'RESERVED'
   | 'WORKING'
+  | 'PENDING_EVALUATION'
   | 'FINISHED'
   | 'CLOSED'
 
@@ -45,6 +46,7 @@ export const STATUS_ID_MAP: Record<number, WorkOrderStatus> = {
   5: 'WORKING',
   6: 'FINISHED',
   7: 'CLOSED',
+  9: 'PENDING_EVALUATION',
 }
 
 export const STATUS_ID_REVERSE_MAP: Record<WorkOrderStatus, number> = {
@@ -55,6 +57,7 @@ export const STATUS_ID_REVERSE_MAP: Record<WorkOrderStatus, number> = {
   WORKING: 5,
   FINISHED: 6,
   CLOSED: 7,
+  PENDING_EVALUATION: 9,
 }
 
 /**
@@ -102,12 +105,20 @@ export const STATUS_CONFIG: Record<WorkOrderStatus, StatusConfig> = {
     actions: ['finish'],
     viewPermissions: ['BRANCH_ADMIN', 'EMPLOYEE', 'CONTRACTOR_ADMIN', 'CONTRACTOR_EMPLOYEE', 'ENGINEER'],
   },
-  FINISHED: {
-    text: '验收',
+  PENDING_EVALUATION: {
+    text: '待验收',
     color: '#0F766E',
     icon: 'check-circle',
     description: '已提交完工，等待验收',
     actions: ['approve', 'reject'],
+    viewPermissions: ['BRANCH_ADMIN', 'EMPLOYEE', 'CONTRACTOR_ADMIN', 'CONTRACTOR_EMPLOYEE', 'ENGINEER'],
+  },
+  FINISHED: {
+    text: '已完成',
+    color: '#0F766E',
+    icon: 'check-circle',
+    description: '验收完成，等待评估',
+    actions: [],
     viewPermissions: ['BRANCH_ADMIN', 'EMPLOYEE', 'CONTRACTOR_ADMIN', 'CONTRACTOR_EMPLOYEE', 'ENGINEER'],
   },
   CLOSED: {
@@ -142,11 +153,11 @@ export const STATUS_GROUPS = {
   },
   review: {
     title: '待验收',
-    statuses: ['FINISHED'],
+    statuses: ['PENDING_EVALUATION'],
   },
   completed: {
     title: '已完成',
-    statuses: ['CLOSED'],
+    statuses: ['FINISHED', 'CLOSED'],
   },
 } as const
 

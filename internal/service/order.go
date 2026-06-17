@@ -91,10 +91,13 @@ func (s *OrderService) handleStateEntry(tx *gorm.DB, order *model.WorkOrder, sta
 		now := time.Now()
 		order.StartedAt = &now
 
-	case model.WorkOrderStatusFinished:
-		// Record finish time
+	case model.WorkOrderStatusPendingEvaluation:
+		// Record finish time (engineer completed work)
 		now := time.Now()
 		order.FinishedAt = &now
+
+	case model.WorkOrderStatusFinished:
+		// Verification complete — no timestamp change
 	}
 
 	return nil
@@ -231,8 +234,8 @@ func (s *OrderService) Accept(ctx context.Context, orderID uuid.UUID, userID uui
 }
 
 // Verify verifies a finished work order (approve or reject)
-// Approve: FINISHED -> PENDING_EVALUATION
-// Reject: FINISHED -> DISPATCHED (rejected back to contractor)
+// Approve: PENDING_EVALUATION -> FINISHED
+// Reject: PENDING_EVALUATION -> DISPATCHED (rejected back to contractor)
 func (s *OrderService) Verify(ctx context.Context, orderID uuid.UUID, userID uuid.UUID, userOrgID uuid.UUID, userName string, action string, comment string) (*model.WorkOrder, error) {
 	if action != "approve" && action != "reject" {
 		return nil, fmt.Errorf("invalid action: must be 'approve' or 'reject'")
@@ -250,8 +253,8 @@ func (s *OrderService) Verify(ctx context.Context, orderID uuid.UUID, userID uui
 		}
 
 		oldStatus := order.Status
-		if oldStatus != model.WorkOrderStatusFinished {
-			return fmt.Errorf("work order must be in FINISHED status to verify: current status is %s", oldStatus.String())
+		if oldStatus != model.WorkOrderStatusPendingEvaluation {
+			return fmt.Errorf("work order must be in PENDING_EVALUATION status to verify: current status is %s", oldStatus.String())
 		}
 
 		var newStatus model.WorkOrderStatus
@@ -259,8 +262,8 @@ func (s *OrderService) Verify(ctx context.Context, orderID uuid.UUID, userID uui
 		var details string
 
 		if action == "approve" {
-			newStatus = model.WorkOrderStatusPendingEvaluation
-			logAction = model.LogActionStatusChangeToPendingEvaluation
+			newStatus = model.WorkOrderStatusFinished
+			logAction = model.LogActionStatusChangeToFinished
 			details = "Verification approved"
 			if comment != "" {
 				details += fmt.Sprintf(": %s", comment)
@@ -276,15 +279,6 @@ func (s *OrderService) Verify(ctx context.Context, orderID uuid.UUID, userID uui
 
 		if err := tx.Save(&order).Error; err != nil {
 			return fmt.Errorf("failed to save work order: %w", err)
-		}
-
-		// Send notification if verification approved
-		if action == "approve" {
-			notificationSvc := NewNotificationService(tx)
-			if err := notificationSvc.NotifyEvaluationNeeded(order); err != nil {
-				// Log but don't fail the transaction
-				fmt.Printf("failed to send evaluation notification: %v\n", err)
-			}
 		}
 
 		return nil
@@ -501,7 +495,7 @@ func (s *OrderService) AddWorkRecord(ctx context.Context, orderID uuid.UUID, use
 }
 
 // Finish completes the work and records completion details
-// Transitions from WORKING to FINISHED
+// Transitions from WORKING to PENDING_EVALUATION
 func (s *OrderService) Finish(ctx context.Context, orderID uuid.UUID, userID uuid.UUID, orgID uuid.UUID, userName string, description string, photoURLs []string, laborFee, materialFee, otherFee float64) (*model.WorkOrder, error) {
 	if description == "" {
 		return nil, fmt.Errorf("completion description is required")
@@ -534,14 +528,14 @@ func (s *OrderService) Finish(ctx context.Context, orderID uuid.UUID, userID uui
 			return fmt.Errorf("not assigned to this order: engineer mismatch")
 		}
 
-		// Validate transition to FINISHED
+		// Validate transition to PENDING_EVALUATION
 		oldStatus := order.Status
-		if err := order.CanTransitionTo(model.WorkOrderStatusFinished); err != nil {
+		if err := order.CanTransitionTo(model.WorkOrderStatusPendingEvaluation); err != nil {
 			return err
 		}
 
 		now := time.Now()
-		order.Status = model.WorkOrderStatusFinished
+		order.Status = model.WorkOrderStatusPendingEvaluation
 		order.FinishedAt = &now
 		order.LaborFee = laborFee
 		order.MaterialFee = materialFee
@@ -552,10 +546,16 @@ func (s *OrderService) Finish(ctx context.Context, orderID uuid.UUID, userID uui
 		if len(photoURLs) > 0 {
 			details += fmt.Sprintf(" | Photos: %d attached", len(photoURLs))
 		}
-		order.Logs.AddLog(userID, userName, model.LogActionFinish, details, oldStatus, model.WorkOrderStatusFinished)
+		order.Logs.AddLog(userID, userName, model.LogActionFinish, details, oldStatus, model.WorkOrderStatusPendingEvaluation)
 
 		if err := tx.Save(&order).Error; err != nil {
 			return fmt.Errorf("failed to save work order: %w", err)
+		}
+
+		// Notify store staff to verify the completed work
+		notificationSvc := NewNotificationService(tx)
+		if err := notificationSvc.NotifyEvaluationNeeded(order); err != nil {
+			fmt.Printf("failed to send evaluation notification: %v\n", err)
 		}
 
 		return nil
@@ -568,7 +568,7 @@ func (s *OrderService) Finish(ctx context.Context, orderID uuid.UUID, userID uui
 	return &order, nil
 }
 
-// Evaluate evaluates a work order and transitions it from PENDING_EVALUATION to CLOSED
+// Evaluate evaluates a work order and transitions it from FINISHED to CLOSED
 // Only users from the same organization as the work order can evaluate it
 func (s *OrderService) Evaluate(ctx context.Context, orderID uuid.UUID, userID uuid.UUID, userOrgID uuid.UUID, userName string, evaluationScore int, evaluationNotes string, estimatedCost float64) (*model.WorkOrder, error) {
 	db, err := database.GetDB()
@@ -588,10 +588,10 @@ func (s *OrderService) Evaluate(ctx context.Context, orderID uuid.UUID, userID u
 			return fmt.Errorf("permission denied: you can only evaluate work orders from your organization")
 		}
 
-		// Validate transition to CLOSED (must be from PENDING_EVALUATION)
+		// Validate transition to CLOSED (must be from FINISHED)
 		oldStatus := order.Status
 		if err := order.CanTransitionTo(model.WorkOrderStatusClosed); err != nil {
-			return fmt.Errorf("work order must be in PENDING_EVALUATION status: %w", err)
+			return fmt.Errorf("work order must be in FINISHED status: %w", err)
 		}
 
 		// Update status and evaluation details

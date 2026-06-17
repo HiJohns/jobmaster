@@ -62,6 +62,6 @@ func (s *NotificationService) NotifyEvaluationNeeded(order model.WorkOrder) erro
 		return fmt.Errorf("failed to get organization: %w", err)
 	}
 
-	message := fmt.Sprintf("工单 %s 已通过验收，需要进行评估评分", order.OrderNo)
+	message := fmt.Sprintf("工单 %s 已完成施工，需要进行验收", order.OrderNo)
 	return model.RecordEscalation(s.db, order.ID, org.TenantID.String(), message)
 }

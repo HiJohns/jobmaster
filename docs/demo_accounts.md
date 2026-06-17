@@ -107,7 +107,7 @@ Contractor B (jm-contractor2) [External vendor for Contractor A]
 | WO-20260413-C1-0006 | ACCEPTED | employee1@branch1 | Contractor A → Engineer1 |
 | WO-20260413-C1-0007 | RESERVED | employee1@branch1 | Contractor A → Engineer1 |
 | WO-20260413-C1-0008 | WORKING | employee1@branch1 | Contractor A → Engineer1 |
-| WO-20260413-C1-0009 | FINISHED | employee1@branch1 | Contractor A → Engineer1 |
+| WO-20260413-C1-0009 | PENDING_EVALUATION | employee1@branch1 | Contractor A → Engineer1 |
 | WO-20260413-C1-0010 | CLOSED | employee1@branch1 | Contractor A → Engineer1 |
 
 ---
@@ -121,7 +121,7 @@ Contractor B (jm-contractor2) [External vendor for Contractor A]
     - 工单列表，显示本分公司发起且未关闭的所有工单：标题、创建时间、创建人、当前状态，点击工单=>工单详情
     - 工单表单，输入标题、工作内容、上传图片
     - 工单详情：显示工单详情。
-        - 验收状态时，可以点击『验收通过』或『验收不通过』，两种情况下均可输入评论并上传图片，验收不通过时工单状态转为拒单，回转给工程公司
+        - 待验收状态时，可以点击『验收合格』或『退回整改』，两种情况下均可输入评论并上传图片，退回整改时工单状态转为拒单，回转给工程公司
         - 拒单状态可以查看拒单理由
         - 流转、分配、已预约、施工中状态下，界面上显示二维码
 2. 预约页

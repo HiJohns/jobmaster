@@ -372,9 +372,9 @@ func (w *WorkOrder) IsValidTransition(newStatus WorkOrderStatus) bool {
 		WorkOrderStatusAccepted:          {WorkOrderStatusReserved, WorkOrderStatusArrived, WorkOrderStatusPending},
 		WorkOrderStatusReserved:          {WorkOrderStatusArrived},
 		WorkOrderStatusArrived:           {WorkOrderStatusWorking},
-		WorkOrderStatusWorking:           {WorkOrderStatusFinished},
-		WorkOrderStatusFinished:          {WorkOrderStatusPendingEvaluation},                 // After work completion, go to evaluation
-		WorkOrderStatusPendingEvaluation: {WorkOrderStatusClosed},                            // After evaluation, close
+		WorkOrderStatusWorking:           {WorkOrderStatusPendingEvaluation},                   // Engineer finishes → pending evaluation
+		WorkOrderStatusFinished:          {WorkOrderStatusClosed},                               // After evaluation, close
+		WorkOrderStatusPendingEvaluation: {WorkOrderStatusFinished, WorkOrderStatusDispatched},  // Approve → finished, reject → dispatched
 		WorkOrderStatusObserving:         {WorkOrderStatusClosed, WorkOrderStatusDispatched}, // Support rejection flow
 		WorkOrderStatusClosed:            {},                                                 // Terminal state
 	}

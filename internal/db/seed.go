@@ -297,7 +297,7 @@ func (s *Seeder) seedDemoWorkOrders() error {
 		{demoWorkOrderIDs[3], "DEMO-00004", "灯具更换", model.WorkOrderStatusDispatched, &demoContractor2, &demoEngCon2Usr, []uuid.UUID{demoContractor1, demoContractor2}},
 		{demoWorkOrderIDs[4], "DEMO-00005", "POS机故障", model.WorkOrderStatusFinished, &demoContractor2, &demoEngCon2Usr, []uuid.UUID{demoContractor1, demoContractor2}},
 		{demoWorkOrderIDs[5], "DEMO-00006", "排烟系统异常", model.WorkOrderStatusDispatched, &demoContractor1, &demoEngCon2, []uuid.UUID{demoContractor1}},
-		{demoWorkOrderIDs[6], "DEMO-00007", "验收退回", model.WorkOrderStatusFinished, &demoContractor2, &demoEngCon2Usr, []uuid.UUID{demoContractor1, demoContractor2}},
+		{demoWorkOrderIDs[6], "DEMO-00007", "验收退回", model.WorkOrderStatusDispatched, &demoContractor2, &demoEngCon2Usr, []uuid.UUID{demoContractor1, demoContractor2}},
 		{demoWorkOrderIDs[7], "DEMO-00008", "地板损坏", model.WorkOrderStatusDispatched, &demoContractor1, nil, []uuid.UUID{demoContractor1}},
 	}
 

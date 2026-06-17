@@ -31,7 +31,8 @@ const STATUS_CONFIG: Record<string, { text: string; color: string; bgColor: stri
   RESERVED: { text: '已预约', color: '#FF8F1F', bgColor: '#fff4e6' },
   WORKING: { text: '施工中', color: '#B45309', bgColor: '#FFFBEB' },
   FINISHED: { text: '已完成', color: '#0F766E', bgColor: '#F0FDFA' },
-  PENDING_EVALUATION: { text: '待评估', color: '#F59E0B', bgColor: '#fef3c7' },
+  PENDING_EVALUATION: { text: '待验收', color: '#0F766E', bgColor: '#F0FDFA' },
+  FINISHED: { text: '已完成', color: '#0F766E', bgColor: '#F0FDFA' },
   CLOSED: { text: '已关闭', color: '#1F2937', bgColor: '#f3f4f6' },
 }
 
