@@ -378,6 +378,22 @@ function WorkOrderDetail() {
           <span style={{ display: 'block', marginBottom: 8 }}>地址: {order.address_detail}</span>
         )}
 
+        {(order as any).appointment_type === 1 && (
+          <div style={{ margin: '8px 0', padding: '10px 14px', background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0', fontSize: 13, color: '#166534' }}>
+            本工单已指定上门时段，无需预约，可直接到场签到
+          </div>
+        )}
+        {(order as any).time_slots && Array.isArray((order as any).time_slots) && (order as any).time_slots.length > 0 && (
+          <div style={{ margin: '8px 0' }}>
+            <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>指定时段：</div>
+            {(order as any).time_slots.map((slot: any, i: number) => (
+              <div key={i} style={{ fontSize: 12, color: '#666', marginBottom: 2, paddingLeft: 8 }}>
+                {slot.days === 'weekday' ? '工作日' : slot.days === 'weekend' ? '周末' : '每天'} {slot.start_time} - {slot.end_time}
+              </div>
+            ))}
+          </div>
+        )}
+
         {userInfo?.role !== 'STORE' && (
           <div style={{ display: "flex", marginTop: 12 }}>
             <span style={{ color: theme.fontSize.caption ? '#6B7280' : '#666' }}>费用合计: </span>

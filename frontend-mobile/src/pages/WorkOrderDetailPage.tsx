@@ -282,7 +282,7 @@ export default function WorkOrderDetailPage() {
               <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>指定时段：</div>
               {(workOrder as any).time_slots.map((slot: any, i: number) => (
                 <div key={i} style={{ fontSize: 12, color: '#666', marginBottom: 2, paddingLeft: 8 }}>
-                  {slot.days === 'weekday' ? '工作日' : slot.days === 'weekend' ? '周末' : '每天'} {slot.startTime} - {slot.endTime}
+                  {slot.days === 'weekday' ? '工作日' : slot.days === 'weekend' ? '周末' : '每天'} {slot.start_time} - {slot.end_time}
                 </div>
               ))}
             </div>
