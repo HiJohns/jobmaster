@@ -157,7 +157,7 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
           style={{
             fontSize: 16,
             fontWeight: 'bold',
-            color: theme.primary,
+            color: '#1E293B',
           }}
         >
           {order.order_no}
@@ -259,8 +259,7 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
             <span
               style={{
                 fontSize: 14,
-                color: theme.primary,
-                fontWeight: 500,
+                color: '#94A3B8',
               }}
             >
               {renderCategoryPath(order.category_path)}
@@ -272,8 +271,8 @@ function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
         <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {order.owner_org_name && (
             <span style={{
-              background: '#C45C4E',
-              color: '#fff',
+              background: '#FFF1F2',
+              color: '#E11D48',
               padding: '2px 8px',
               borderRadius: '4px',
               fontSize: '12px',

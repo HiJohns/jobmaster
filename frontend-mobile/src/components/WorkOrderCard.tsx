@@ -25,12 +25,12 @@ interface WorkOrderCardProps {
 }
 
 const STATUS_CONFIG: Record<string, { text: string; color: string; bgColor: string }> = {
-  PENDING: { text: '待处理', color: '#999999', bgColor: '#f0f0f0' },
-  DISPATCHED: { text: '流转中', color: '#B61C22', bgColor: '#fce8e6' },
+  PENDING: { text: '待处理', color: '#475569', bgColor: '#F1F5F9' },
+  DISPATCHED: { text: '流转中', color: '#C2410C', bgColor: '#FFF7ED' },
   ACCEPTED: { text: '已接单', color: '#C49A3C', bgColor: '#f9f3e6' },
   RESERVED: { text: '已预约', color: '#FF8F1F', bgColor: '#fff4e6' },
-  WORKING: { text: '施工中', color: '#C75B2E', bgColor: '#fbeae0' },
-  FINISHED: { text: '已完成', color: '#C49A3C', bgColor: '#f9f3e6' },
+  WORKING: { text: '施工中', color: '#B45309', bgColor: '#FFFBEB' },
+  FINISHED: { text: '已完成', color: '#C2410C', bgColor: '#FFF7ED' },
   PENDING_EVALUATION: { text: '待评估', color: '#F59E0B', bgColor: '#fef3c7' },
   CLOSED: { text: '已关闭', color: '#1F2937', bgColor: '#f3f4f6' },
 }
@@ -122,7 +122,7 @@ export default function WorkOrderCard({ order, onClick }: WorkOrderCardProps) {
           <div>工程师：{order.engineer_name || '未分配'}</div>
         </div>
         {order.owner_org_name && (
-          <div style={{ marginTop: '4px', fontSize: '12px', color: '#C45C4E' }}>
+          <div style={{ marginTop: '4px', fontSize: '12px', color: '#E11D48' }}>
             当前归属：{order.owner_org_name}
           </div>
         )}

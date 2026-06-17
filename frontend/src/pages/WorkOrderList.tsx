@@ -105,8 +105,8 @@ function WorkOrderList() {
   // KPI items config for compact style
   const KPI_ITEMS = [
     { key: 'total', label: '今日工单', value: 'total' as const, color: '#1f2937' },
-    { key: 'pending', label: '待处理', value: 'pending' as const, color: '#B81F25' },
-    { key: 'working', label: '进行中', value: 'working' as const, color: '#C49A3C' },
+    { key: 'pending', label: '待处理', value: 'pending' as const, color: '#475569' },
+    { key: 'working', label: '进行中', value: 'working' as const, color: '#B45309' },
     { key: 'abnormal', label: '异常', value: 'abnormal' as const, color: '#F59E0B' },
   ]
 
@@ -257,7 +257,7 @@ function WorkOrderList() {
               <div style={{ 
                 fontSize: '64px', 
                 marginBottom: '24px',
-                color: '#C49A3C'
+                color: '#B45309'
               }}>
                 ✅
               </div>
@@ -283,7 +283,7 @@ function WorkOrderList() {
                     fetchOrders()
                   }}
                   style={{ 
-                    color: '#B81F25', 
+                    color: '#475569', 
                     cursor: 'pointer',
                     marginLeft: '4px',
                     textDecoration: 'underline'

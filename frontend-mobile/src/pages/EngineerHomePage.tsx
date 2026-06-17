@@ -190,7 +190,7 @@ export default function EngineerHomePage() {
       >
         <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#B61C22', lineHeight: 1 }}>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1E293B', lineHeight: 1 }}>
               {stats.total}
             </div>
             <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>今日工单</div>
@@ -198,10 +198,10 @@ export default function EngineerHomePage() {
           
           {Object.entries(stats.by_status).slice(0, 3).map(([status, count]) => {
             const statusConfig = {
-              DISPATCHED: { text: '流转中', color: '#B61C22' },
-              ACCEPTED: { text: '已接单', color: '#C49A3C' },
+              DISPATCHED: { text: '流转中', color: '#C2410C' },
+              ACCEPTED: { text: '已接单', color: '#B45309' },
               RESERVED: { text: '已预约', color: '#FF8F1F' },
-              WORKING: { text: '施工中', color: '#C75B2E' },
+              WORKING: { text: '施工中', color: '#B45309' },
             }[status] || { text: status, color: '#999' }
 
             return (
