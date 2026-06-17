@@ -619,10 +619,8 @@ export default function WorkOrderDetailPage() {
         )}
 
 
-        {/* 施工记录 */}
-        {workOrder.status === 'WORKING' && (
-          <WorkOrderRecords workOrderId={orderId} />
-        )}
+        {/* 施工记录（所有状态可见） */}
+        <WorkOrderRecords workOrderId={orderId} />
         {/* 预约日志 */}
         <Card title="预约日志" style={{ marginTop: '16px' }}>
           <ReservationLogs workOrderId={orderId} />
