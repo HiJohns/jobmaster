@@ -30,7 +30,7 @@ import { useAuthStore } from '../store/useAuthStore'
  * Tab configuration with status groups and colors
  */
 const TABS = [
-  { key: 'pending', title: '待服务', statuses: STATUS_GROUPS.pending.statuses, color: '#475569' },
+  { key: 'pending', title: '待服务', statuses: STATUS_GROUPS.pending.statuses, color: '#57534E' },
   { key: 'working', title: '服务中', statuses: STATUS_GROUPS.working.statuses, color: '#B45309' },
   { key: 'review', title: '待修正', statuses: STATUS_GROUPS.review.statuses, color: '#FF8F1F' },
   { key: 'completed', title: '已完成', statuses: STATUS_GROUPS.completed.statuses, color: '#999999' },

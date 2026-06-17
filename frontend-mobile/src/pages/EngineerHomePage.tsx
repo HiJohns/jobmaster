@@ -198,7 +198,7 @@ export default function EngineerHomePage() {
           
           {Object.entries(stats.by_status).slice(0, 3).map(([status, count]) => {
             const statusConfig = {
-              DISPATCHED: { text: '流转中', color: '#C2410C' },
+              DISPATCHED: { text: '流转中', color: '#57534E' },
               ACCEPTED: { text: '已接单', color: '#B45309' },
               RESERVED: { text: '已预约', color: '#FF8F1F' },
               WORKING: { text: '施工中', color: '#B45309' },

@@ -105,7 +105,7 @@ function WorkOrderList() {
   // KPI items config for compact style
   const KPI_ITEMS = [
     { key: 'total', label: '今日工单', value: 'total' as const, color: '#1f2937' },
-    { key: 'pending', label: '待处理', value: 'pending' as const, color: '#475569' },
+    { key: 'pending', label: '待处理', value: 'pending' as const, color: '#57534E' },
     { key: 'working', label: '进行中', value: 'working' as const, color: '#B45309' },
     { key: 'abnormal', label: '异常', value: 'abnormal' as const, color: '#F59E0B' },
   ]

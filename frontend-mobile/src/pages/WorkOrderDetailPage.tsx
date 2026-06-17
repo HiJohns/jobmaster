@@ -32,11 +32,11 @@ interface EngineerOption {
 
 const STATUS_CONFIG: Record<string, { text: string; color: string }> = {
   PENDING: { text: '待处理', color: '#999999' },
-  DISPATCHED: { text: '流转中', color: '#C2410C' },
+  DISPATCHED: { text: '流转中', color: '#57534E' },
   ACCEPTED: { text: '已接单', color: '#C49A3C' },
   RESERVED: { text: '已预约', color: '#FF8F1F' },
   WORKING: { text: '施工中', color: '#B45309' },
-  FINISHED: { text: '已完成', color: '#C2410C' },
+  FINISHED: { text: '已完成', color: '#0F766E' },
   PENDING_EVALUATION: { text: '待评估', color: '#F59E0B' },
   CLOSED: { text: '已关闭', color: '#1F2937' },
 }

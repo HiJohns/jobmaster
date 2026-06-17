@@ -64,7 +64,7 @@ export const STATUS_ID_REVERSE_MAP: Record<WorkOrderStatus, number> = {
 export const STATUS_CONFIG: Record<WorkOrderStatus, StatusConfig> = {
   PENDING: {
     text: '等待',
-    color: '#475569',
+    color: '#57534E',
     icon: 'clock-circle',
     description: '工单已创建，等待指派',
     actions: ['dispatch'],
@@ -72,7 +72,7 @@ export const STATUS_CONFIG: Record<WorkOrderStatus, StatusConfig> = {
   },
   DISPATCHED: {
     text: '流转',
-    color: '#C2410C',
+    color: '#57534E',
     icon: 'send',
     description: '工单已指派，等待接收',
     actions: ['accept', 'dispatch'],
@@ -104,7 +104,7 @@ export const STATUS_CONFIG: Record<WorkOrderStatus, StatusConfig> = {
   },
   FINISHED: {
     text: '验收',
-    color: '#C2410C',
+    color: '#0F766E',
     icon: 'check-circle',
     description: '已提交完工，等待验收',
     actions: ['approve', 'reject'],
@@ -112,7 +112,7 @@ export const STATUS_CONFIG: Record<WorkOrderStatus, StatusConfig> = {
   },
   CLOSED: {
     text: '完成',
-    color: '#475569',
+    color: '#57534E',
     icon: 'file-done',
     description: '工单已关闭',
     actions: [],
