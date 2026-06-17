@@ -409,7 +409,7 @@ func (h *DemoHandlers) CreateWorkOrder(c *gin.Context) {
 		Logs:            make(model.WorkOrderLogs, 0),
 	}
 
-	wo.Logs.AddLog(user.ID, user.DisplayName, model.LogActionCreate, "Work order created", 0, model.WorkOrderStatusPending)
+	wo.Logs.AddLog(user.ID, user.DisplayName, model.LogActionCreate, "工单已创建", 0, model.WorkOrderStatusPending)
 
 	if err := db.Create(wo).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to create work order: %v", err)})

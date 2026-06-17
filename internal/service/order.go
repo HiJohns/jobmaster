@@ -216,7 +216,7 @@ func (s *OrderService) Accept(ctx context.Context, orderID uuid.UUID, userID uui
 		order.Status = model.WorkOrderStatusAccepted
 		order.ScheduledAt = &scheduledAt
 
-		details := fmt.Sprintf("Accepted, scheduled for %s", scheduledAt.Format(time.RFC3339))
+		details := fmt.Sprintf("已接单，预约时间：%s", scheduledAt.Format(time.RFC3339))
 		order.Logs.AddLog(userID, userName, model.LogActionAccept, details, oldStatus, model.WorkOrderStatusAccepted)
 
 		if err := tx.Save(&order).Error; err != nil {
@@ -264,14 +264,14 @@ func (s *OrderService) Verify(ctx context.Context, orderID uuid.UUID, userID uui
 		if action == "approve" {
 			newStatus = model.WorkOrderStatusFinished
 			logAction = model.LogActionStatusChangeToFinished
-			details = "Verification approved"
+			details = "验收通过"
 			if comment != "" {
-				details += fmt.Sprintf(": %s", comment)
+				details += fmt.Sprintf("：%s", comment)
 			}
 		} else {
 			newStatus = model.WorkOrderStatusDispatched
 			logAction = model.LogActionReject
-			details = fmt.Sprintf("Verification rejected: %s", comment)
+			details = fmt.Sprintf("验收退回：%s", comment)
 		}
 
 		order.Status = newStatus
@@ -322,7 +322,7 @@ func (s *OrderService) Reject(ctx context.Context, orderID uuid.UUID, userID uui
 		order.DispatchPath = []byte("[]")
 		order.Status = model.WorkOrderStatusPending
 
-		details := fmt.Sprintf("Reason: %s", reason)
+		details := fmt.Sprintf("原因：%s", reason)
 		order.Logs.AddLog(userID, userName, model.LogActionReject, details, oldStatus, model.WorkOrderStatusPending)
 
 		if err := tx.Save(&order).Error; err != nil {
@@ -375,7 +375,7 @@ func (s *OrderService) Reserve(ctx context.Context, orderID uuid.UUID, userID uu
 		order.Status = model.WorkOrderStatusReserved
 		order.AppointedAt = &appointedAt
 
-		details := fmt.Sprintf("Appointment scheduled for %s", appointedAt.Format(time.RFC3339))
+		details := fmt.Sprintf("预约时间：%s", appointedAt.Format(time.RFC3339))
 		order.Logs.AddLog(userID, userName, model.LogActionReserve, details, oldStatus, model.WorkOrderStatusReserved)
 
 		if err := tx.Save(&order).Error; err != nil {
@@ -428,7 +428,7 @@ func (s *OrderService) Arrive(ctx context.Context, orderID uuid.UUID, userID uui
 		order.Status = model.WorkOrderStatusArrived
 		order.ArrivedAt = &now
 
-		details := "Arrived at work site"
+		details := "已到场签到"
 		if comment != "" {
 			details = comment
 		}
@@ -444,7 +444,7 @@ func (s *OrderService) Arrive(ctx context.Context, orderID uuid.UUID, userID uui
 		// Auto-transition to WORKING
 		order.Status = model.WorkOrderStatusWorking
 		order.StartedAt = &now
-		order.Logs.AddLog(userID, userName, model.LogActionStatusChangeToWorking, "Started working", model.WorkOrderStatusArrived, model.WorkOrderStatusWorking)
+		order.Logs.AddLog(userID, userName, model.LogActionStatusChangeToWorking, "开始施工", model.WorkOrderStatusArrived, model.WorkOrderStatusWorking)
 
 		if err := tx.Save(&order).Error; err != nil {
 			return fmt.Errorf("failed to save work order: %w", err)
@@ -542,7 +542,7 @@ func (s *OrderService) Finish(ctx context.Context, orderID uuid.UUID, userID uui
 		order.OtherFee = otherFee
 
 		// Build completion details
-		details := fmt.Sprintf("Work completed: %s", description)
+		details := fmt.Sprintf("施工完成：%s", description)
 		if len(photoURLs) > 0 {
 			details += fmt.Sprintf(" | Photos: %d attached", len(photoURLs))
 		}
@@ -603,7 +603,7 @@ func (s *OrderService) Evaluate(ctx context.Context, orderID uuid.UUID, userID u
 		order.Info.EvaluatedAt = evaluatedAt
 
 		// Add log entry
-		details := fmt.Sprintf("Evaluation completed: score=%d, cost=%.2f", evaluationScore, estimatedCost)
+		details := fmt.Sprintf("评估完成：评分=%d, 费用=%.2f", evaluationScore, estimatedCost)
 		if evaluationNotes != "" {
 			details += fmt.Sprintf(" | Notes: %s", evaluationNotes)
 		}

@@ -341,7 +341,7 @@ func CreateWorkOrder(c *gin.Context) {
 	userName := getCurrentUserName(c, userID)
 
 	// Add creation log
-	workOrder.Logs.AddLog(userID, userName, model.LogActionCreate, "Work order created", 0, model.WorkOrderStatusPending)
+	workOrder.Logs.AddLog(userID, userName, model.LogActionCreate, "工单已创建", 0, model.WorkOrderStatusPending)
 
 	if err := db.Create(&workOrder).Error; err != nil {
 		response.InternalServerError(c, fmt.Errorf("failed to create work order: %w", err).Error())
@@ -1275,13 +1275,9 @@ func extractWorkRecords(logs model.WorkOrderLogs) []WorkRecordResponse {
 		switch log.Action {
 		case model.LogActionStatusChangeToWorking:
 			record.Type = "start_work"
-			record.Description = "Started working"
-		case model.LogActionStatusChangeToFinished:
-			record.Type = "finish_work"
-			record.Description = log.Details
+			record.Description = "开始施工"
 		case model.LogActionArrive:
-			record.Type = "arrival"
-			record.Description = "Arrived at site"
+			record.Description = "已到场签到"
 		case model.LogActionAccept:
 			record.Type = "appointment"
 			record.Description = log.Details
